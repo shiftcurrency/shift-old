@@ -58,7 +58,7 @@ var (
 		"shf_shiftbase":                            (*ethApi).Coinbase,
 		"shf_mining":                              (*ethApi).IsMining,
 		"shf_syncing":                             (*ethApi).IsSyncing,
-		"shf_gasPrice":                            (*ethApi).GasPrice,
+		"shf_nrgPrice":                            (*ethApi).NrgPrice,
 		"shf_getStorage":                          (*ethApi).GetStorage,
 		"shf_storageAt":                           (*ethApi).GetStorage,
 		"shf_getStorageAt":                        (*ethApi).GetStorageAt,
@@ -73,7 +73,7 @@ var (
 		"shf_sendRawTransaction":                  (*ethApi).SendTransaction,
 		"shf_sendTransaction":                     (*ethApi).SendTransaction,
 		"shf_transact":                            (*ethApi).SendTransaction,
-		"shf_estimateGas":                         (*ethApi).EstimateGas,
+		"shf_estimateNrg":                         (*ethApi).EstimateNrg,
 		"shf_call":                                (*ethApi).Call,
 		"shf_flush":                               (*ethApi).Flush,
 		"shf_getBlockByHash":                      (*ethApi).GetBlockByHash,
@@ -181,8 +181,8 @@ func (self *ethApi) IsSyncing(req *shared.Request) (interface{}, error) {
 	return false, nil
 }
 
-func (self *ethApi) GasPrice(req *shared.Request) (interface{}, error) {
-	return newHexNum(self.xeth.DefaultGasPrice().Bytes()), nil
+func (self *ethApi) NrgPrice(req *shared.Request) (interface{}, error) {
+	return newHexNum(self.xeth.DefaultNrgPrice().Bytes()), nil
 }
 
 func (self *ethApi) GetStorage(req *shared.Request) (interface{}, error) {
@@ -317,14 +317,14 @@ func (self *ethApi) SignTransaction(req *shared.Request) (interface{}, error) {
 		nonce = args.Nonce.String()
 	}
 
-	var gas, price string
-	if args.Gas != nil {
-		gas = args.Gas.String()
+	var nrg, price string
+	if args.Nrg != nil {
+		nrg = args.Nrg.String()
 	}
-	if args.GasPrice != nil {
-		price = args.GasPrice.String()
+	if args.NrgPrice != nil {
+		price = args.NrgPrice.String()
 	}
-	tx, err := self.xeth.SignTransaction(args.From, args.To, nonce, args.Value.String(), gas, price, args.Data)
+	tx, err := self.xeth.SignTransaction(args.From, args.To, nonce, args.Value.String(), nrg, price, args.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -349,14 +349,14 @@ func (self *ethApi) SendTransaction(req *shared.Request) (interface{}, error) {
 		nonce = args.Nonce.String()
 	}
 
-	var gas, price string
-	if args.Gas != nil {
-		gas = args.Gas.String()
+	var nrg, price string
+	if args.Nrg != nil {
+		nrg = args.Nrg.String()
 	}
-	if args.GasPrice != nil {
-		price = args.GasPrice.String()
+	if args.NrgPrice != nil {
+		price = args.NrgPrice.String()
 	}
-	v, err := self.xeth.Transact(args.From, args.To, nonce, args.Value.String(), gas, price, args.Data)
+	v, err := self.xeth.Transact(args.From, args.To, nonce, args.Value.String(), nrg, price, args.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -375,17 +375,17 @@ func (self *ethApi) GetNatSpec(req *shared.Request) (interface{}, error) {
 	return notice, nil
 }
 
-func (self *ethApi) EstimateGas(req *shared.Request) (interface{}, error) {
-	_, gas, err := self.doCall(req.Params)
+func (self *ethApi) EstimateNrg(req *shared.Request) (interface{}, error) {
+	_, nrg, err := self.doCall(req.Params)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO unwrap the parent method's ToHex call
-	if len(gas) == 0 {
+	if len(nrg) == 0 {
 		return newHexNum(0), nil
 	} else {
-		return newHexNum(common.String2Big(gas)), err
+		return newHexNum(common.String2Big(nrg)), err
 	}
 }
 
@@ -413,7 +413,7 @@ func (self *ethApi) doCall(params json.RawMessage) (string, string, error) {
 		return "", "", err
 	}
 
-	return self.xeth.AtStateNum(args.BlockNumber).Call(args.From, args.To, args.Value.String(), args.Gas.String(), args.GasPrice.String(), args.Data)
+	return self.xeth.AtStateNum(args.BlockNumber).Call(args.From, args.To, args.Value.String(), args.Nrg.String(), args.NrgPrice.String(), args.Data)
 }
 
 func (self *ethApi) GetBlockByHash(req *shared.Request) (interface{}, error) {
@@ -660,7 +660,7 @@ func (self *ethApi) Resend(req *shared.Request) (interface{}, error) {
 	for _, p := range pending {
 		if pFrom, err := p.FromFrontier(); err == nil && pFrom == from && p.SigHash() == args.Tx.tx.SigHash() {
 			self.shift.TxPool().RemoveTx(common.HexToHash(args.Tx.Hash))
-			return self.xeth.Transact(args.Tx.From, args.Tx.To, args.Tx.Nonce, args.Tx.Value, args.GasLimit, args.GasPrice, args.Tx.Data)
+			return self.xeth.Transact(args.Tx.From, args.Tx.To, args.Tx.Nonce, args.Tx.Value, args.NrgLimit, args.NrgPrice, args.Tx.Data)
 		}
 	}
 

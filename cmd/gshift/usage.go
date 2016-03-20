@@ -117,15 +117,15 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.MiningGPUFlag,
 			utils.AutoDAGFlag,
 			utils.EtherbaseFlag,
-			utils.GasPriceFlag,
+			utils.NrgPriceFlag,
 			utils.ExtraDataFlag,
 		},
 	},
 	{
 		Name: "GAS PRICE ORACLE",
 		Flags: []cli.Flag{
-			utils.GpoMinGasPriceFlag,
-			utils.GpoMaxGasPriceFlag,
+			utils.GpoMinNrgPriceFlag,
+			utils.GpoMaxNrgPriceFlag,
 			utils.GpoFullBlockRatioFlag,
 			utils.GpobaseStepDownFlag,
 			utils.GpobaseStepUpFlag,

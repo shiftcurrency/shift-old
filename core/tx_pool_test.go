@@ -29,8 +29,8 @@ import (
 	"github.com/shiftcurrency/shift/event"
 )
 
-func transaction(nonce uint64, gaslimit *big.Int, key *ecdsa.PrivateKey) *types.Transaction {
-	tx, _ := types.NewTransaction(nonce, common.Address{}, big.NewInt(100), gaslimit, big.NewInt(1), nil).SignECDSA(key)
+func transaction(nonce uint64, nrglimit *big.Int, key *ecdsa.PrivateKey) *types.Transaction {
+	tx, _ := types.NewTransaction(nonce, common.Address{}, big.NewInt(100), nrglimit, big.NewInt(1), nil).SignECDSA(key)
 	return tx
 }
 
@@ -60,10 +60,10 @@ func TestInvalidTransactions(t *testing.T) {
 		t.Error("expected", ErrInsufficientFunds)
 	}
 
-	balance := new(big.Int).Add(tx.Value(), new(big.Int).Mul(tx.Gas(), tx.GasPrice()))
+	balance := new(big.Int).Add(tx.Value(), new(big.Int).Mul(tx.Nrg(), tx.NrgPrice()))
 	currentState.AddBalance(from, balance)
-	if err := pool.Add(tx); err != ErrIntrinsicGas {
-		t.Error("expected", ErrIntrinsicGas, "got", err)
+	if err := pool.Add(tx); err != ErrIntrinsicNrg {
+		t.Error("expected", ErrIntrinsicNrg, "got", err)
 	}
 
 	currentState.SetNonce(from, 1)

@@ -180,9 +180,9 @@ var (
 		Usage: "Public address for block mining rewards (default = first account created)",
 		Value: "0",
 	}
-	GasPriceFlag = cli.StringFlag{
-		Name:  "gasprice",
-		Usage: "Minimal gas price to accept for mining a transactions",
+	NrgPriceFlag = cli.StringFlag{
+		Name:  "nrgprice",
+		Usage: "Minimal nrg price to accept for mining a transactions",
 		Value: new(big.Int).Mul(big.NewInt(20), common.Shannon).String(),
 	}
 	ExtraDataFlag = cli.StringFlag{
@@ -352,35 +352,35 @@ var (
 		Value: "solc",
 	}
 
-	// Gas price oracle settings
-	GpoMinGasPriceFlag = cli.StringFlag{
+	// Nrg price oracle settings
+	GpoMinNrgPriceFlag = cli.StringFlag{
 		Name:  "gpomin",
-		Usage: "Minimum suggested gas price",
+		Usage: "Minimum suggested nrg price",
 		Value: new(big.Int).Mul(big.NewInt(20), common.Shannon).String(),
 	}
-	GpoMaxGasPriceFlag = cli.StringFlag{
+	GpoMaxNrgPriceFlag = cli.StringFlag{
 		Name:  "gpomax",
-		Usage: "Maximum suggested gas price",
+		Usage: "Maximum suggested nrg price",
 		Value: new(big.Int).Mul(big.NewInt(500), common.Shannon).String(),
 	}
 	GpoFullBlockRatioFlag = cli.IntFlag{
 		Name:  "gpofull",
-		Usage: "Full block threshold for gas price calculation (%)",
+		Usage: "Full block threshold for nrg price calculation (%)",
 		Value: 80,
 	}
 	GpobaseStepDownFlag = cli.IntFlag{
 		Name:  "gpobasedown",
-		Usage: "Suggested gas price base step down ratio (1/1000)",
+		Usage: "Suggested nrg price base step down ratio (1/1000)",
 		Value: 10,
 	}
 	GpobaseStepUpFlag = cli.IntFlag{
 		Name:  "gpobaseup",
-		Usage: "Suggested gas price base step up ratio (1/1000)",
+		Usage: "Suggested nrg price base step up ratio (1/1000)",
 		Value: 100,
 	}
 	GpobaseCorrectionFactorFlag = cli.IntFlag{
 		Name:  "gpobasecf",
-		Usage: "Suggested gas price base correction factor (%)",
+		Usage: "Suggested nrg price base correction factor (%)",
 		Value: 110,
 	}
 )
@@ -453,9 +453,9 @@ func MakeEthConfig(clientID, version string, ctx *cli.Context) *shf.Config {
 		Shh:                     ctx.GlobalBool(WhisperEnabledFlag.Name),
 		Dial:                    true,
 		BootNodes:               ctx.GlobalString(BootnodesFlag.Name),
-		GasPrice:                common.String2Big(ctx.GlobalString(GasPriceFlag.Name)),
-		GpoMinGasPrice:          common.String2Big(ctx.GlobalString(GpoMinGasPriceFlag.Name)),
-		GpoMaxGasPrice:          common.String2Big(ctx.GlobalString(GpoMaxGasPriceFlag.Name)),
+		NrgPrice:                common.String2Big(ctx.GlobalString(NrgPriceFlag.Name)),
+		GpoMinNrgPrice:          common.String2Big(ctx.GlobalString(GpoMinNrgPriceFlag.Name)),
+		GpoMaxNrgPrice:          common.String2Big(ctx.GlobalString(GpoMaxNrgPriceFlag.Name)),
 		GpoFullBlockRatio:       ctx.GlobalInt(GpoFullBlockRatioFlag.Name),
 		GpobaseStepDown:         ctx.GlobalInt(GpobaseStepDownFlag.Name),
 		GpobaseStepUp:           ctx.GlobalInt(GpobaseStepUpFlag.Name),
@@ -487,8 +487,8 @@ func MakeEthConfig(clientID, version string, ctx *cli.Context) *shf.Config {
 		if !ctx.GlobalIsSet(MaxPeersFlag.Name) {
 			cfg.MaxPeers = 0
 		}
-		if !ctx.GlobalIsSet(GasPriceFlag.Name) {
-			cfg.GasPrice = new(big.Int)
+		if !ctx.GlobalIsSet(NrgPriceFlag.Name) {
+			cfg.NrgPrice = new(big.Int)
 		}
 		if !ctx.GlobalIsSet(ListenPortFlag.Name) {
 			cfg.Port = "0" // auto port
@@ -520,8 +520,8 @@ func SetupNetwork(ctx *cli.Context) {
 	switch {
 	case ctx.GlobalBool(OlympicFlag.Name):
 		params.DurationLimit = big.NewInt(8)
-		params.GenesisGasLimit = big.NewInt(3141592)
-		params.MinGasLimit = big.NewInt(125000)
+		params.GenesisNrgLimit = big.NewInt(3141592)
+		params.MinNrgLimit = big.NewInt(125000)
 		params.MaximumExtraDataSize = big.NewInt(1024)
 		NetworkIdFlag.Value = 0
 		core.BlockReward = big.NewInt(1.5e+18)

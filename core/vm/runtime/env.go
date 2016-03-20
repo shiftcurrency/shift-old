@@ -36,7 +36,7 @@ type Env struct {
 	number     *big.Int
 	time       *big.Int
 	difficulty *big.Int
-	gasLimit   *big.Int
+	nrgLimit   *big.Int
 
 	logs []vm.StructLog
 
@@ -52,7 +52,7 @@ func NewEnv(cfg *Config, state *state.StateDB) vm.Environment {
 		number:     cfg.BlockNumber,
 		time:       cfg.Time,
 		difficulty: cfg.Difficulty,
-		gasLimit:   cfg.GasLimit,
+		nrgLimit:   cfg.NrgLimit,
 	}
 }
 
@@ -70,7 +70,7 @@ func (self *Env) Coinbase() common.Address { return self.shiftbase }
 func (self *Env) Time() *big.Int           { return self.time }
 func (self *Env) Difficulty() *big.Int     { return self.difficulty }
 func (self *Env) Db() vm.Database          { return self.state }
-func (self *Env) GasLimit() *big.Int       { return self.gasLimit }
+func (self *Env) NrgLimit() *big.Int       { return self.nrgLimit }
 func (self *Env) VmType() vm.Type          { return vm.StdVmTy }
 func (self *Env) GetHash(n uint64) common.Hash {
 	return self.getHashFn(n)
@@ -94,17 +94,17 @@ func (self *Env) Transfer(from, to vm.Account, amount *big.Int) {
 	core.Transfer(from, to, amount)
 }
 
-func (self *Env) Call(caller vm.ContractRef, addr common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
-	return core.Call(self, caller, addr, data, gas, price, value)
+func (self *Env) Call(caller vm.ContractRef, addr common.Address, data []byte, nrg, price, value *big.Int) ([]byte, error) {
+	return core.Call(self, caller, addr, data, nrg, price, value)
 }
-func (self *Env) CallCode(caller vm.ContractRef, addr common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
-	return core.CallCode(self, caller, addr, data, gas, price, value)
-}
-
-func (self *Env) DelegateCall(me vm.ContractRef, addr common.Address, data []byte, gas, price *big.Int) ([]byte, error) {
-	return core.DelegateCall(self, me, addr, data, gas, price)
+func (self *Env) CallCode(caller vm.ContractRef, addr common.Address, data []byte, nrg, price, value *big.Int) ([]byte, error) {
+	return core.CallCode(self, caller, addr, data, nrg, price, value)
 }
 
-func (self *Env) Create(caller vm.ContractRef, data []byte, gas, price, value *big.Int) ([]byte, common.Address, error) {
-	return core.Create(self, caller, data, gas, price, value)
+func (self *Env) DelegateCall(me vm.ContractRef, addr common.Address, data []byte, nrg, price *big.Int) ([]byte, error) {
+	return core.DelegateCall(self, me, addr, data, nrg, price)
+}
+
+func (self *Env) Create(caller vm.ContractRef, data []byte, nrg, price, value *big.Int) ([]byte, common.Address, error) {
+	return core.Create(self, caller, data, nrg, price, value)
 }

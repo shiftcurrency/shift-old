@@ -21,19 +21,19 @@ import (
 	"math/big"
 )
 
-type GasLimitErr struct {
+type NrgLimitErr struct {
 	Message string
 	Is, Max *big.Int
 }
 
-func IsGasLimitErr(err error) bool {
-	_, ok := err.(*GasLimitErr)
+func IsNrgLimitErr(err error) bool {
+	_, ok := err.(*NrgLimitErr)
 
 	return ok
 }
-func (err *GasLimitErr) Error() string {
+func (err *NrgLimitErr) Error() string {
 	return err.Message
 }
-func GasLimitError(is, max *big.Int) *GasLimitErr {
-	return &GasLimitErr{Message: fmt.Sprintf("GasLimit error. Max %s, transaction would take it to %s", max, is), Is: is, Max: max}
+func NrgLimitError(is, max *big.Int) *NrgLimitErr {
+	return &NrgLimitErr{Message: fmt.Sprintf("NrgLimit error. Max %s, transaction would take it to %s", max, is), Is: is, Max: max}
 }

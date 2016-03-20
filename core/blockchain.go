@@ -322,12 +322,12 @@ func (self *BlockChain) FastSyncCommitHead(hash common.Hash) error {
 	return nil
 }
 
-// GasLimit returns the gas limit of the current HEAD block.
-func (self *BlockChain) GasLimit() *big.Int {
+// NrgLimit returns the nrg limit of the current HEAD block.
+func (self *BlockChain) NrgLimit() *big.Int {
 	self.mu.RLock()
 	defer self.mu.RUnlock()
 
-	return self.currentBlock.GasLimit()
+	return self.currentBlock.NrgLimit()
 }
 
 // LastBlockHash return the hash of the HEAD block.
@@ -982,11 +982,11 @@ func (self *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain
 					from, _ := transactions[j].From()
 					receipts[j].ContractAddress = crypto.CreateAddress(from, transactions[j].Nonce())
 				}
-				// The used gas can be calculated based on previous receipts
+				// The used nrg can be calculated based on previous receipts
 				if j == 0 {
-					receipts[j].GasUsed = new(big.Int).Set(receipts[j].CumulativeGasUsed)
+					receipts[j].NrgUsed = new(big.Int).Set(receipts[j].CumulativeNrgUsed)
 				} else {
-					receipts[j].GasUsed = new(big.Int).Sub(receipts[j].CumulativeGasUsed, receipts[j-1].CumulativeGasUsed)
+					receipts[j].NrgUsed = new(big.Int).Sub(receipts[j].CumulativeNrgUsed, receipts[j-1].CumulativeNrgUsed)
 				}
 				// The derived log fields can simply be set from the block and transaction
 				for k := 0; k < len(receipts[j].Logs); k++ {
@@ -1199,13 +1199,13 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (int, error) {
 			return i, err
 		}
 		// Process block using the parent state as reference point.
-		receipts, logs, usedGas, err := self.processor.Process(block, statedb)
+		receipts, logs, usedNrg, err := self.processor.Process(block, statedb)
 		if err != nil {
 			reportBlock(block, err)
 			return i, err
 		}
 		// Validate the state using the default validator
-		err = self.Validator().ValidateState(block, self.GetBlock(block.ParentHash()), statedb, receipts, usedGas)
+		err = self.Validator().ValidateState(block, self.GetBlock(block.ParentHash()), statedb, receipts, usedNrg)
 		if err != nil {
 			reportBlock(block, err)
 			return i, err
@@ -1233,7 +1233,7 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (int, error) {
 		switch status {
 		case CanonStatTy:
 			if glog.V(logger.Debug) {
-				glog.Infof("[%v] inserted block #%d (%d TXs %v G %d UNCs) (%x...). Took %v\n", time.Now().UnixNano(), block.Number(), len(block.Transactions()), block.GasUsed(), len(block.Uncles()), block.Hash().Bytes()[0:4], time.Since(bstart))
+				glog.Infof("[%v] inserted block #%d (%d TXs %v G %d UNCs) (%x...). Took %v\n", time.Now().UnixNano(), block.Number(), len(block.Transactions()), block.NrgUsed(), len(block.Uncles()), block.Hash().Bytes()[0:4], time.Since(bstart))
 			}
 			events = append(events, ChainEvent{block, block.Hash(), logs})
 

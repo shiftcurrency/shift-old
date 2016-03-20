@@ -202,8 +202,8 @@ func (c *StateObject) St() Storage {
 	return c.storage
 }
 
-// Return the gas back to the origin. Used by the Virtual machine or Closures
-func (c *StateObject) ReturnGas(gas, price *big.Int) {}
+// Return the nrg back to the origin. Used by the Virtual machine or Closures
+func (c *StateObject) ReturnNrg(nrg, price *big.Int) {}
 
 func (self *StateObject) Copy() *StateObject {
 	stateObject := NewStateObject(self.Address(), self.db)

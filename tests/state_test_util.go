@@ -80,7 +80,7 @@ func BenchStateTest(p string, conf bconf, b *testing.B) error {
 	env := make(map[string]string)
 	env["currentCoinbase"] = test.Env.CurrentCoinbase
 	env["currentDifficulty"] = test.Env.CurrentDifficulty
-	env["currentGasLimit"] = test.Env.CurrentGasLimit
+	env["currentNrgLimit"] = test.Env.CurrentNrgLimit
 	env["currentNumber"] = test.Env.CurrentNumber
 	env["previousHash"] = test.Env.PreviousHash
 	if n, ok := test.Env.CurrentTimestamp.(float64); ok {
@@ -155,7 +155,7 @@ func runStateTest(test VmTest) error {
 	env := make(map[string]string)
 	env["currentCoinbase"] = test.Env.CurrentCoinbase
 	env["currentDifficulty"] = test.Env.CurrentDifficulty
-	env["currentGasLimit"] = test.Env.CurrentGasLimit
+	env["currentNrgLimit"] = test.Env.CurrentNrgLimit
 	env["currentNumber"] = test.Env.CurrentNumber
 	env["previousHash"] = test.Env.PreviousHash
 	if n, ok := test.Env.CurrentTimestamp.(float64); ok {
@@ -166,7 +166,7 @@ func runStateTest(test VmTest) error {
 
 	var (
 		ret []byte
-		// gas  *big.Int
+		// nrg  *big.Int
 		// err  error
 		logs vm.Logs
 	)
@@ -222,8 +222,8 @@ func runStateTest(test VmTest) error {
 func RunState(statedb *state.StateDB, env, tx map[string]string) ([]byte, vm.Logs, *big.Int, error) {
 	var (
 		data  = common.FromHex(tx["data"])
-		gas   = common.Big(tx["gasLimit"])
-		price = common.Big(tx["gasPrice"])
+		nrg   = common.Big(tx["nrgLimit"])
+		price = common.Big(tx["nrgPrice"])
 		value = common.Big(tx["value"])
 		nonce = common.Big(tx["nonce"]).Uint64()
 	)
@@ -237,18 +237,18 @@ func RunState(statedb *state.StateDB, env, tx map[string]string) ([]byte, vm.Log
 	vm.Precompiled = vm.PrecompiledContracts()
 	vm.Debug = false
 	snapshot := statedb.Copy()
-	gaspool := new(core.GasPool).AddGas(common.Big(env["currentGasLimit"]))
+	nrgpool := new(core.NrgPool).AddNrg(common.Big(env["currentNrgLimit"]))
 
 	key, _ := hex.DecodeString(tx["secretKey"])
 	addr := crypto.PubkeyToAddress(crypto.ToECDSA(key).PublicKey)
-	message := NewMessage(addr, to, data, value, gas, price, nonce)
+	message := NewMessage(addr, to, data, value, nrg, price, nonce)
 	vmenv := NewEnvFromMap(statedb, env, tx)
 	vmenv.origin = addr
-	ret, _, err := core.ApplyMessage(vmenv, message, gaspool)
-	if core.IsNonceErr(err) || core.IsInvalidTxErr(err) || core.IsGasLimitErr(err) {
+	ret, _, err := core.ApplyMessage(vmenv, message, nrgpool)
+	if core.IsNonceErr(err) || core.IsInvalidTxErr(err) || core.IsNrgLimitErr(err) {
 		statedb.Set(snapshot)
 	}
 	statedb.Commit()
 
-	return ret, vmenv.state.Logs(), vmenv.Gas, err
+	return ret, vmenv.state.Logs(), vmenv.Nrg, err
 }

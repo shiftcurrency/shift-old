@@ -121,7 +121,7 @@ func (p *Program) addInstr(op OpCode, pc uint64, fn instrFn, data *big.Int) {
 	base := _baseCheck[baseOp]
 
 	returns := op == RETURN || op == SUICIDE || op == STOP
-	instr := instruction{op, pc, fn, data, base.gas, base.stackPop, base.stackPush, returns}
+	instr := instruction{op, pc, fn, data, base.nrg, base.stackPop, base.stackPush, returns}
 
 	p.instructions = append(p.instructions, instr)
 	p.mapping[pc] = uint64(len(p.instructions) - 1)
@@ -222,7 +222,7 @@ func CompileProgram(program *Program) (err error) {
 		case EXTCODECOPY:
 			program.addInstr(op, pc, opExtCodeCopy, nil)
 		case GASPRICE:
-			program.addInstr(op, pc, opGasprice, nil)
+			program.addInstr(op, pc, opNrgprice, nil)
 		case BLOCKHASH:
 			program.addInstr(op, pc, opBlockhash, nil)
 		case COINBASE:
@@ -234,7 +234,7 @@ func CompileProgram(program *Program) (err error) {
 		case DIFFICULTY:
 			program.addInstr(op, pc, opDifficulty, nil)
 		case GASLIMIT:
-			program.addInstr(op, pc, opGasLimit, nil)
+			program.addInstr(op, pc, opNrgLimit, nil)
 		case PUSH1, PUSH2, PUSH3, PUSH4, PUSH5, PUSH6, PUSH7, PUSH8, PUSH9, PUSH10, PUSH11, PUSH12, PUSH13, PUSH14, PUSH15, PUSH16, PUSH17, PUSH18, PUSH19, PUSH20, PUSH21, PUSH22, PUSH23, PUSH24, PUSH25, PUSH26, PUSH27, PUSH28, PUSH29, PUSH30, PUSH31, PUSH32:
 			size := uint64(op - PUSH1 + 1)
 			bytes := getData([]byte(program.code), new(big.Int).SetUint64(pc+1), new(big.Int).SetUint64(size))
@@ -273,7 +273,7 @@ func CompileProgram(program *Program) (err error) {
 		case MSIZE:
 			program.addInstr(op, pc, opMsize, nil)
 		case GAS:
-			program.addInstr(op, pc, opGas, nil)
+			program.addInstr(op, pc, opNrg, nil)
 		case CREATE:
 			program.addInstr(op, pc, opCreate, nil)
 		case DELEGATECALL:
@@ -359,19 +359,19 @@ func validDest(dests map[uint64]struct{}, dest *big.Int) bool {
 	return ok
 }
 
-// jitCalculateGasAndSize calculates the required given the opcode and stack items calculates the new memorysize for
-// the operation. This does not reduce gas or resizes the memory.
-func jitCalculateGasAndSize(env Environment, contract *Contract, instr instruction, statedb Database, mem *Memory, stack *stack) (*big.Int, *big.Int, error) {
+// jitCalculateNrgAndSize calculates the required given the opcode and stack items calculates the new memorysize for
+// the operation. This does not reduce nrg or resizes the memory.
+func jitCalculateNrgAndSize(env Environment, contract *Contract, instr instruction, statedb Database, mem *Memory, stack *stack) (*big.Int, *big.Int, error) {
 	var (
-		gas                 = new(big.Int)
+		nrg                 = new(big.Int)
 		newMemSize *big.Int = new(big.Int)
 	)
-	err := jitBaseCheck(instr, stack, gas)
+	err := jitBaseCheck(instr, stack, nrg)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// stack Check, memory resize & gas phase
+	// stack Check, memory resize & nrg phase
 	switch op := instr.op; op {
 	case SWAP1, SWAP2, SWAP3, SWAP4, SWAP5, SWAP6, SWAP7, SWAP8, SWAP9, SWAP10, SWAP11, SWAP12, SWAP13, SWAP14, SWAP15, SWAP16:
 		n := int(op - SWAP1 + 2)
@@ -379,14 +379,14 @@ func jitCalculateGasAndSize(env Environment, contract *Contract, instr instructi
 		if err != nil {
 			return nil, nil, err
 		}
-		gas.Set(GasFastestStep)
+		nrg.Set(NrgFastestStep)
 	case DUP1, DUP2, DUP3, DUP4, DUP5, DUP6, DUP7, DUP8, DUP9, DUP10, DUP11, DUP12, DUP13, DUP14, DUP15, DUP16:
 		n := int(op - DUP1 + 1)
 		err := stack.require(n)
 		if err != nil {
 			return nil, nil, err
 		}
-		gas.Set(GasFastestStep)
+		nrg.Set(NrgFastestStep)
 	case LOG0, LOG1, LOG2, LOG3, LOG4:
 		n := int(op - LOG0)
 		err := stack.require(n + 2)
@@ -397,13 +397,13 @@ func jitCalculateGasAndSize(env Environment, contract *Contract, instr instructi
 		mSize, mStart := stack.data[stack.len()-2], stack.data[stack.len()-1]
 
 		add := new(big.Int)
-		gas.Add(gas, params.LogGas)
-		gas.Add(gas, add.Mul(big.NewInt(int64(n)), params.LogTopicGas))
-		gas.Add(gas, add.Mul(mSize, params.LogDataGas))
+		nrg.Add(nrg, params.LogNrg)
+		nrg.Add(nrg, add.Mul(big.NewInt(int64(n)), params.LogTopicNrg))
+		nrg.Add(nrg, add.Mul(mSize, params.LogDataNrg))
 
 		newMemSize = calcMemSize(mStart, mSize)
 	case EXP:
-		gas.Add(gas, new(big.Int).Mul(big.NewInt(int64(len(stack.data[stack.len()-2].Bytes()))), params.ExpByteGas))
+		nrg.Add(nrg, new(big.Int).Mul(big.NewInt(int64(len(stack.data[stack.len()-2].Bytes()))), params.ExpByteNrg))
 	case SSTORE:
 		err := stack.require(2)
 		if err != nil {
@@ -414,23 +414,23 @@ func jitCalculateGasAndSize(env Environment, contract *Contract, instr instructi
 		y, x := stack.data[stack.len()-2], stack.data[stack.len()-1]
 		val := statedb.GetState(contract.Address(), common.BigToHash(x))
 
-		// This checks for 3 scenario's and calculates gas accordingly
+		// This checks for 3 scenario's and calculates nrg accordingly
 		// 1. From a zero-value address to a non-zero value         (NEW VALUE)
 		// 2. From a non-zero value address to a zero-value address (DELETE)
 		// 3. From a nen-zero to a non-zero                         (CHANGE)
 		if common.EmptyHash(val) && !common.EmptyHash(common.BigToHash(y)) {
-			g = params.SstoreSetGas
+			g = params.SstoreSetNrg
 		} else if !common.EmptyHash(val) && common.EmptyHash(common.BigToHash(y)) {
-			statedb.AddRefund(params.SstoreRefundGas)
+			statedb.AddRefund(params.SstoreRefundNrg)
 
-			g = params.SstoreClearGas
+			g = params.SstoreClearNrg
 		} else {
-			g = params.SstoreClearGas
+			g = params.SstoreClearNrg
 		}
-		gas.Set(g)
+		nrg.Set(g)
 	case SUICIDE:
 		if !statedb.IsDeleted(contract.Address()) {
-			statedb.AddRefund(params.SuicideRefundGas)
+			statedb.AddRefund(params.SuicideRefundNrg)
 		}
 	case MLOAD:
 		newMemSize = calcMemSize(stack.peek(), u256(32))
@@ -444,36 +444,36 @@ func jitCalculateGasAndSize(env Environment, contract *Contract, instr instructi
 		newMemSize = calcMemSize(stack.peek(), stack.data[stack.len()-2])
 
 		words := toWordSize(stack.data[stack.len()-2])
-		gas.Add(gas, words.Mul(words, params.Sha3WordGas))
+		nrg.Add(nrg, words.Mul(words, params.Sha3WordNrg))
 	case CALLDATACOPY:
 		newMemSize = calcMemSize(stack.peek(), stack.data[stack.len()-3])
 
 		words := toWordSize(stack.data[stack.len()-3])
-		gas.Add(gas, words.Mul(words, params.CopyGas))
+		nrg.Add(nrg, words.Mul(words, params.CopyNrg))
 	case CODECOPY:
 		newMemSize = calcMemSize(stack.peek(), stack.data[stack.len()-3])
 
 		words := toWordSize(stack.data[stack.len()-3])
-		gas.Add(gas, words.Mul(words, params.CopyGas))
+		nrg.Add(nrg, words.Mul(words, params.CopyNrg))
 	case EXTCODECOPY:
 		newMemSize = calcMemSize(stack.data[stack.len()-2], stack.data[stack.len()-4])
 
 		words := toWordSize(stack.data[stack.len()-4])
-		gas.Add(gas, words.Mul(words, params.CopyGas))
+		nrg.Add(nrg, words.Mul(words, params.CopyNrg))
 
 	case CREATE:
 		newMemSize = calcMemSize(stack.data[stack.len()-2], stack.data[stack.len()-3])
 	case CALL, CALLCODE:
-		gas.Add(gas, stack.data[stack.len()-1])
+		nrg.Add(nrg, stack.data[stack.len()-1])
 
 		if op == CALL {
 			if !env.Db().Exist(common.BigToAddress(stack.data[stack.len()-2])) {
-				gas.Add(gas, params.CallNewAccountGas)
+				nrg.Add(nrg, params.CallNewAccountNrg)
 			}
 		}
 
 		if len(stack.data[stack.len()-3].Bytes()) > 0 {
-			gas.Add(gas, params.CallValueTransferGas)
+			nrg.Add(nrg, params.CallValueTransferNrg)
 		}
 
 		x := calcMemSize(stack.data[stack.len()-6], stack.data[stack.len()-7])
@@ -481,21 +481,21 @@ func jitCalculateGasAndSize(env Environment, contract *Contract, instr instructi
 
 		newMemSize = common.BigMax(x, y)
 	case DELEGATECALL:
-		gas.Add(gas, stack.data[stack.len()-1])
+		nrg.Add(nrg, stack.data[stack.len()-1])
 
 		x := calcMemSize(stack.data[stack.len()-5], stack.data[stack.len()-6])
 		y := calcMemSize(stack.data[stack.len()-3], stack.data[stack.len()-4])
 
 		newMemSize = common.BigMax(x, y)
 	}
-	quadMemGas(mem, newMemSize, gas)
+	quadMemNrg(mem, newMemSize, nrg)
 
-	return newMemSize, gas, nil
+	return newMemSize, nrg, nil
 }
 
 // jitBaseCheck is the same as baseCheck except it doesn't do the look up in the
-// gas table. This is done during compilation instead.
-func jitBaseCheck(instr instruction, stack *stack, gas *big.Int) error {
+// nrg table. This is done during compilation instead.
+func jitBaseCheck(instr instruction, stack *stack, nrg *big.Int) error {
 	err := stack.require(instr.spop)
 	if err != nil {
 		return err
@@ -505,12 +505,12 @@ func jitBaseCheck(instr instruction, stack *stack, gas *big.Int) error {
 		return fmt.Errorf("stack limit reached %d (%d)", stack.len(), params.StackLimit.Int64())
 	}
 
-	// nil on gas means no base calculation
-	if instr.gas == nil {
+	// nil on nrg means no base calculation
+	if instr.nrg == nil {
 		return nil
 	}
 
-	gas.Add(gas, instr.gas)
+	nrg.Add(nrg, instr.nrg)
 
 	return nil
 }

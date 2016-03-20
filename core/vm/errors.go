@@ -23,6 +23,6 @@ import (
 	"github.com/shiftcurrency/shift/params"
 )
 
-var OutOfGasError = errors.New("Out of gas")
-var CodeStoreOutOfGasError = errors.New("Contract creation code storage out of gas")
+var OutOfNrgError = errors.New("Out of nrg")
+var CodeStoreOutOfNrgError = errors.New("Contract creation code storage out of nrg")
 var DepthError = fmt.Errorf("Max call depth exceeded (%d)", params.CallCreateDepth)

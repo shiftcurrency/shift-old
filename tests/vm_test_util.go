@@ -75,7 +75,7 @@ func BenchVmTest(p string, conf bconf, b *testing.B) error {
 	env := make(map[string]string)
 	env["currentCoinbase"] = test.Env.CurrentCoinbase
 	env["currentDifficulty"] = test.Env.CurrentDifficulty
-	env["currentGasLimit"] = test.Env.CurrentGasLimit
+	env["currentNrgLimit"] = test.Env.CurrentNrgLimit
 	env["currentNumber"] = test.Env.CurrentNumber
 	env["previousHash"] = test.Env.PreviousHash
 	if n, ok := test.Env.CurrentTimestamp.(float64); ok {
@@ -172,7 +172,7 @@ func runVmTest(test VmTest) error {
 	env := make(map[string]string)
 	env["currentCoinbase"] = test.Env.CurrentCoinbase
 	env["currentDifficulty"] = test.Env.CurrentDifficulty
-	env["currentGasLimit"] = test.Env.CurrentGasLimit
+	env["currentNrgLimit"] = test.Env.CurrentNrgLimit
 	env["currentNumber"] = test.Env.CurrentNumber
 	env["previousHash"] = test.Env.PreviousHash
 	if n, ok := test.Env.CurrentTimestamp.(float64); ok {
@@ -183,12 +183,12 @@ func runVmTest(test VmTest) error {
 
 	var (
 		ret  []byte
-		gas  *big.Int
+		nrg  *big.Int
 		err  error
 		logs vm.Logs
 	)
 
-	ret, logs, gas, err = RunVm(statedb, env, test.Exec)
+	ret, logs, nrg, err = RunVm(statedb, env, test.Exec)
 
 	// Compare expected and actual return
 	rexp := common.FromHex(test.Out)
@@ -196,13 +196,13 @@ func runVmTest(test VmTest) error {
 		return fmt.Errorf("return failed. Expected %x, got %x\n", rexp, ret)
 	}
 
-	// Check gas usage
-	if len(test.Gas) == 0 && err == nil {
-		return fmt.Errorf("gas unspecified, indicating an error. VM returned (incorrectly) successfull")
+	// Check nrg usage
+	if len(test.Nrg) == 0 && err == nil {
+		return fmt.Errorf("nrg unspecified, indicating an error. VM returned (incorrectly) successfull")
 	} else {
-		gshift := common.Big(test.Gas)
-		if gshift.Cmp(gas) != 0 {
-			return fmt.Errorf("gas failed. Expected %v, got %v\n", gshift, gas)
+		gshift := common.Big(test.Nrg)
+		if gshift.Cmp(nrg) != 0 {
+			return fmt.Errorf("nrg failed. Expected %v, got %v\n", gshift, nrg)
 		}
 	}
 
@@ -239,8 +239,8 @@ func RunVm(state *state.StateDB, env, exec map[string]string) ([]byte, vm.Logs, 
 		to    = common.HexToAddress(exec["address"])
 		from  = common.HexToAddress(exec["caller"])
 		data  = common.FromHex(exec["data"])
-		gas   = common.Big(exec["gas"])
-		price = common.Big(exec["gasPrice"])
+		nrg   = common.Big(exec["nrg"])
+		price = common.Big(exec["nrgPrice"])
 		value = common.Big(exec["value"])
 	)
 	// Reset the pre-compiled contracts for VM tests.
@@ -252,7 +252,7 @@ func RunVm(state *state.StateDB, env, exec map[string]string) ([]byte, vm.Logs, 
 	vmenv.vmTest = true
 	vmenv.skipTransfer = true
 	vmenv.initial = true
-	ret, err := vmenv.Call(caller, to, data, gas, price, value)
+	ret, err := vmenv.Call(caller, to, data, nrg, price, value)
 
-	return ret, vmenv.state.Logs(), vmenv.Gas, err
+	return ret, vmenv.state.Logs(), vmenv.Nrg, err
 }

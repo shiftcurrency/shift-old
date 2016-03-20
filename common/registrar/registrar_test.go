@@ -66,11 +66,11 @@ func (self *testBackend) StorageAt(ca, sa string) (res string) {
 	return
 }
 
-func (self *testBackend) Transact(fromStr, toStr, nonceStr, valueStr, gasStr, gasPriceStr, codeStr string) (string, error) {
+func (self *testBackend) Transact(fromStr, toStr, nonceStr, valueStr, nrgStr, nrgPriceStr, codeStr string) (string, error) {
 	return "", nil
 }
 
-func (self *testBackend) Call(fromStr, toStr, valueStr, gasStr, gasPriceStr, codeStr string) (string, string, error) {
+func (self *testBackend) Call(fromStr, toStr, valueStr, nrgStr, nrgPriceStr, codeStr string) (string, string, error) {
 	return "", "", nil
 }
 

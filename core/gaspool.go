@@ -18,29 +18,29 @@ package core
 
 import "math/big"
 
-// GasPool tracks the amount of gas available during
+// NrgPool tracks the amount of nrg available during
 // execution of the transactions in a block.
-// The zero value is a pool with zero gas available.
-type GasPool big.Int
+// The zero value is a pool with zero nrg available.
+type NrgPool big.Int
 
-// AddGas makes gas available for execution.
-func (gp *GasPool) AddGas(amount *big.Int) *GasPool {
+// AddNrg makes nrg available for execution.
+func (gp *NrgPool) AddNrg(amount *big.Int) *NrgPool {
 	i := (*big.Int)(gp)
 	i.Add(i, amount)
 	return gp
 }
 
-// SubGas deducts the given amount from the pool if enough gas is
+// SubNrg deducts the given amount from the pool if enough nrg is
 // available and returns an error otherwise.
-func (gp *GasPool) SubGas(amount *big.Int) error {
+func (gp *NrgPool) SubNrg(amount *big.Int) error {
 	i := (*big.Int)(gp)
 	if i.Cmp(amount) < 0 {
-		return &GasLimitErr{Have: new(big.Int).Set(i), Want: amount}
+		return &NrgLimitErr{Have: new(big.Int).Set(i), Want: amount}
 	}
 	i.Sub(i, amount)
 	return nil
 }
 
-func (gp *GasPool) String() string {
+func (gp *NrgPool) String() string {
 	return (*big.Int)(gp).String()
 }

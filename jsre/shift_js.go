@@ -2922,9 +2922,9 @@ var checkForContractAddress = function(contract, abi, callback){
 
                             } else {
                                 if(callback)
-                                    callback(new Error('The contract code couldn\'t be stored, please check your gas amount.'));
+                                    callback(new Error('The contract code couldn\'t be stored, please check your nrg amount.'));
                                 else
-                                    throw new Error('The contract code couldn\'t be stored, please check your gas amount.');
+                                    throw new Error('The contract code couldn\'t be stored, please check your nrg amount.');
                             }
                         });
                     }
@@ -3598,7 +3598,7 @@ var inputCallFormatter = function (options){
         options.to = inputAddressFormatter(options.to);
     }
 
-    ['gasPrice', 'gas', 'value', 'nonce'].filter(function (key) {
+    ['nrgPrice', 'nrg', 'value', 'nonce'].filter(function (key) {
         return options[key] !== undefined;
     }).forEach(function(key){
         options[key] = utils.fromDecimal(options[key]);
@@ -3623,7 +3623,7 @@ var inputTransactionFormatter = function (options){
         options.to = inputAddressFormatter(options.to);
     }
 
-    ['gasPrice', 'gas', 'value', 'nonce'].filter(function (key) {
+    ['nrgPrice', 'nrg', 'value', 'nonce'].filter(function (key) {
         return options[key] !== undefined;
     }).forEach(function(key){
         options[key] = utils.fromDecimal(options[key]);
@@ -3645,8 +3645,8 @@ var outputTransactionFormatter = function (tx){
     if(tx.transactionIndex !== null)
         tx.transactionIndex = utils.toDecimal(tx.transactionIndex);
     tx.nonce = utils.toDecimal(tx.nonce);
-    tx.gas = utils.toDecimal(tx.gas);
-    tx.gasPrice = utils.toBigNumber(tx.gasPrice);
+    tx.nrg = utils.toDecimal(tx.nrg);
+    tx.nrgPrice = utils.toBigNumber(tx.nrgPrice);
     tx.value = utils.toBigNumber(tx.value);
     return tx;
 };
@@ -3663,8 +3663,8 @@ var outputTransactionReceiptFormatter = function (receipt){
         receipt.blockNumber = utils.toDecimal(receipt.blockNumber);
     if(receipt.transactionIndex !== null)
         receipt.transactionIndex = utils.toDecimal(receipt.transactionIndex);
-    receipt.cumulativeGasUsed = utils.toDecimal(receipt.cumulativeGasUsed);
-    receipt.gasUsed = utils.toDecimal(receipt.gasUsed);
+    receipt.cumulativeNrgUsed = utils.toDecimal(receipt.cumulativeNrgUsed);
+    receipt.nrgUsed = utils.toDecimal(receipt.nrgUsed);
 
     if(utils.isArray(receipt.logs)) {
         receipt.logs = receipt.logs.map(function(log){
@@ -3685,8 +3685,8 @@ var outputTransactionReceiptFormatter = function (receipt){
 var outputBlockFormatter = function(block) {
 
     // transform to number
-    block.gasLimit = utils.toDecimal(block.gasLimit);
-    block.gasUsed = utils.toDecimal(block.gasUsed);
+    block.nrgLimit = utils.toDecimal(block.nrgLimit);
+    block.nrgUsed = utils.toDecimal(block.nrgUsed);
     block.size = utils.toDecimal(block.size);
     block.timestamp = utils.toDecimal(block.timestamp);
     if(block.number !== null)
@@ -3961,21 +3961,21 @@ SolidityFunction.prototype.sendTransaction = function () {
 };
 
 /**
- * Should be used to estimateGas of solidity function
+ * Should be used to estimateNrg of solidity function
  *
- * @method estimateGas
+ * @method estimateNrg
  * @param {Object} options
  */
-SolidityFunction.prototype.estimateGas = function () {
+SolidityFunction.prototype.estimateNrg = function () {
     var args = Array.prototype.slice.call(arguments);
     var callback = this.extractCallback(args);
     var payload = this.toPayload(args);
 
     if (!callback) {
-        return web3.shf.estimateGas(payload);
+        return web3.shf.estimateNrg(payload);
     }
 
-    web3.shf.estimateGas(payload, callback);
+    web3.shf.estimateNrg(payload, callback);
 };
 
 /**
@@ -4046,7 +4046,7 @@ SolidityFunction.prototype.attachToContract = function (contract) {
     execute.request = this.request.bind(this);
     execute.call = this.call.bind(this);
     execute.sendTransaction = this.sendTransaction.bind(this);
-    execute.estimateGas = this.estimateGas.bind(this);
+    execute.estimateNrg = this.estimateNrg.bind(this);
     var displayName = this.displayName();
     if (!contract[displayName]) {
         contract[displayName] = execute;
@@ -5171,9 +5171,9 @@ var call = new Method({
     inputFormatter: [formatters.inputCallFormatter, formatters.inputDefaultBlockNumberFormatter]
 });
 
-var estimateGas = new Method({
-    name: 'estimateGas',
-    call: 'shf_estimateGas',
+var estimateNrg = new Method({
+    name: 'estimateNrg',
+    call: 'shf_estimateNrg',
     params: 1,
     inputFormatter: [formatters.inputCallFormatter],
     outputFormatter: utils.toDecimal
@@ -5223,7 +5223,7 @@ var methods = [
     getTransactionReceipt,
     getTransactionCount,
     call,
-    estimateGas,
+    estimateNrg,
     sendRawTransaction,
     sendTransaction,
     compileSolidity,
@@ -5257,8 +5257,8 @@ var properties = [
         outputFormatter: formatters.outputSyncingFormatter
     }),
     new Property({
-        name: 'gasPrice',
-        getter: 'shf_gasPrice',
+        name: 'nrgPrice',
+        getter: 'shf_nrgPrice',
         outputFormatter: formatters.outputBigNumberFormatter
     }),
     new Property({

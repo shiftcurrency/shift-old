@@ -686,7 +686,7 @@ var table = [1 << 9]Atom{
 
 const atomText = "abbradiogrouparamalignmarkbdialogaccept-charsetbodyaccesskey" +
 	"genavaluealtdetailsampatternobreversedfnoembedirnamediagroup" +
-	"ingasyncanvasidefaultfooterowspanoframesetitleaudionblurubya" +
+	"innrgyncanvasidefaultfooterowspanoframesetitleaudionblurubya" +
 	"utofocusandboxmplaceholderautoplaybasefontimeupdatebdoncance" +
 	"labelooptgrouplaintextrackindisabledivarbgsoundlowbrbigblink" +
 	"blockquotebuttonabortranslatecodefercolgroupostercolorcolspa" +

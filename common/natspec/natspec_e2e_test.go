@@ -154,9 +154,9 @@ func testEth(t *testing.T) (shift *shf.Shift, err error) {
 		MaxPeers:                0,
 		PowTest:                 true,
 		NewDB:                   func(path string) (ethdb.Database, error) { return db, nil },
-		GpoMinGasPrice:          common.Big1,
+		GpoMinNrgPrice:          common.Big1,
 		GpobaseCorrectionFactor: 1,
-		GpoMaxGasPrice:          common.Big1,
+		GpoMaxNrgPrice:          common.Big1,
 	})
 }
 

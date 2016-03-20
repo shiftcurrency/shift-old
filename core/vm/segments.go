@@ -5,12 +5,12 @@ import "math/big"
 type jumpSeg struct {
 	pos uint64
 	err error
-	gas *big.Int
+	nrg *big.Int
 }
 
 func (j jumpSeg) do(program *Program, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) ([]byte, error) {
-	if !contract.UseGas(j.gas) {
-		return nil, OutOfGasError
+	if !contract.UseNrg(j.nrg) {
+		return nil, OutOfNrgError
 	}
 	if j.err != nil {
 		return nil, j.err
@@ -23,14 +23,14 @@ func (s jumpSeg) Op() OpCode  { return 0 }
 
 type pushSeg struct {
 	data []*big.Int
-	gas  *big.Int
+	nrg  *big.Int
 }
 
 func (s pushSeg) do(program *Program, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) ([]byte, error) {
-	// Use the calculated gas. When insufficient gas is present, use all gas and return an
-	// Out Of Gas error
-	if !contract.UseGas(s.gas) {
-		return nil, OutOfGasError
+	// Use the calculated nrg. When insufficient nrg is present, use all nrg and return an
+	// Out Of Nrg error
+	if !contract.UseNrg(s.nrg) {
+		return nil, OutOfNrgError
 	}
 
 	for _, d := range s.data {

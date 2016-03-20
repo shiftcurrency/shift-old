@@ -105,13 +105,13 @@ func (v *BlockValidator) ValidateBlock(block *types.Block) error {
 }
 
 // ValidateState validates the various changes that happen after a state
-// transition, such as amount of used gas, the receipt roots and the state root
+// transition, such as amount of used nrg, the receipt roots and the state root
 // itself. ValidateState returns a database batch if the validation was a succes
 // otherwise nil and an error is returned.
-func (v *BlockValidator) ValidateState(block, parent *types.Block, statedb *state.StateDB, receipts types.Receipts, usedGas *big.Int) (err error) {
+func (v *BlockValidator) ValidateState(block, parent *types.Block, statedb *state.StateDB, receipts types.Receipts, usedNrg *big.Int) (err error) {
 	header := block.Header()
-	if block.GasUsed().Cmp(usedGas) != 0 {
-		return ValidationError(fmt.Sprintf("gas used error (%v / %v)", block.GasUsed(), usedGas))
+	if block.NrgUsed().Cmp(usedNrg) != 0 {
+		return ValidationError(fmt.Sprintf("nrg used error (%v / %v)", block.NrgUsed(), usedNrg))
 	}
 	// Validate the received block's bloom with the one derived from the generated receipts.
 	// For valid blocks this should always validate to true.
@@ -224,13 +224,13 @@ func ValidateHeader(pow pow.PoW, header *types.Header, parent *types.Header, che
 		return fmt.Errorf("Difficulty check failed for header %v, %v", header.Difficulty, expd)
 	}
 
-	a := new(big.Int).Set(parent.GasLimit)
-	a = a.Sub(a, header.GasLimit)
+	a := new(big.Int).Set(parent.NrgLimit)
+	a = a.Sub(a, header.NrgLimit)
 	a.Abs(a)
-	b := new(big.Int).Set(parent.GasLimit)
-	b = b.Div(b, params.GasLimitBoundDivisor)
-	if !(a.Cmp(b) < 0) || (header.GasLimit.Cmp(params.MinGasLimit) == -1) {
-		return fmt.Errorf("GasLimit check failed for header %v (%v > %v)", header.GasLimit, a, b)
+	b := new(big.Int).Set(parent.NrgLimit)
+	b = b.Div(b, params.NrgLimitBoundDivisor)
+	if !(a.Cmp(b) < 0) || (header.NrgLimit.Cmp(params.MinNrgLimit) == -1) {
+		return fmt.Errorf("NrgLimit check failed for header %v (%v > %v)", header.NrgLimit, a, b)
 	}
 
 	num := new(big.Int).Set(parent.Number)
@@ -339,35 +339,35 @@ func calcDifficultyFrontier(time, parentTime uint64, parentNumber, parentDiff *b
 	return diff
 }
 
-// CalcGasLimit computes the gas limit of the next block after parent.
+// CalcNrgLimit computes the nrg limit of the next block after parent.
 // The result may be modified by the caller.
 // This is miner strategy, not consensus protocol.
-func CalcGasLimit(parent *types.Block) *big.Int {
-	// contrib = (parentGasUsed * 3 / 2) / 1024
-	contrib := new(big.Int).Mul(parent.GasUsed(), big.NewInt(3))
+func CalcNrgLimit(parent *types.Block) *big.Int {
+	// contrib = (parentNrgUsed * 3 / 2) / 1024
+	contrib := new(big.Int).Mul(parent.NrgUsed(), big.NewInt(3))
 	contrib = contrib.Div(contrib, big.NewInt(2))
-	contrib = contrib.Div(contrib, params.GasLimitBoundDivisor)
+	contrib = contrib.Div(contrib, params.NrgLimitBoundDivisor)
 
-	// decay = parentGasLimit / 1024 -1
-	decay := new(big.Int).Div(parent.GasLimit(), params.GasLimitBoundDivisor)
+	// decay = parentNrgLimit / 1024 -1
+	decay := new(big.Int).Div(parent.NrgLimit(), params.NrgLimitBoundDivisor)
 	decay.Sub(decay, big.NewInt(1))
 
 	/*
-		strategy: gasLimit of block-to-mine is set based on parent's
-		gasUsed value.  if parentGasUsed > parentGasLimit * (2/3) then we
+		strategy: nrgLimit of block-to-mine is set based on parent's
+		nrgUsed value.  if parentNrgUsed > parentNrgLimit * (2/3) then we
 		increase it, otherwise lower it (or leave it unchanged if it's right
 		at that usage) the amount increased/decreased depends on how far away
-		from parentGasLimit * (2/3) parentGasUsed is.
+		from parentNrgLimit * (2/3) parentNrgUsed is.
 	*/
-	gl := new(big.Int).Sub(parent.GasLimit(), decay)
+	gl := new(big.Int).Sub(parent.NrgLimit(), decay)
 	gl = gl.Add(gl, contrib)
-	gl.Set(common.BigMax(gl, params.MinGasLimit))
+	gl.Set(common.BigMax(gl, params.MinNrgLimit))
 
-	// however, if we're now below the target (GenesisGasLimit) we increase the
-	// limit as much as we can (parentGasLimit / 1024 -1)
-	if gl.Cmp(params.GenesisGasLimit) < 0 {
-		gl.Add(parent.GasLimit(), decay)
-		gl.Set(common.BigMin(gl, params.GenesisGasLimit))
+	// however, if we're now below the target (GenesisNrgLimit) we increase the
+	// limit as much as we can (parentNrgLimit / 1024 -1)
+	if gl.Cmp(params.GenesisNrgLimit) < 0 {
+		gl.Add(parent.NrgLimit(), decay)
+		gl.Set(common.BigMin(gl, params.GenesisNrgLimit))
 	}
 	return gl
 }

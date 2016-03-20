@@ -83,25 +83,25 @@ func optimiseProgram(program *Program) {
 func makePushSeg(instrs []instruction) (pushSeg, int) {
 	var (
 		data []*big.Int
-		gas  = new(big.Int)
+		nrg  = new(big.Int)
 	)
 
 	for _, instr := range instrs {
 		data = append(data, instr.data)
-		gas.Add(gas, instr.gas)
+		nrg.Add(nrg, instr.nrg)
 	}
 
-	return pushSeg{data, gas}, len(instrs)
+	return pushSeg{data, nrg}, len(instrs)
 }
 
 // makeStaticJumpSeg creates a new static jump segment from a predefined
 // destination (PUSH, JUMP).
 func makeStaticJumpSeg(to *big.Int, program *Program) jumpSeg {
-	gas := new(big.Int)
-	gas.Add(gas, _baseCheck[PUSH1].gas)
-	gas.Add(gas, _baseCheck[JUMP].gas)
+	nrg := new(big.Int)
+	nrg.Add(nrg, _baseCheck[PUSH1].nrg)
+	nrg.Add(nrg, _baseCheck[JUMP].nrg)
 
 	contract := &Contract{Code: program.code}
 	pos, err := jump(program.mapping, program.destinations, contract, to)
-	return jumpSeg{pos, err, gas}
+	return jumpSeg{pos, err, nrg}
 }

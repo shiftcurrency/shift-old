@@ -56,7 +56,7 @@ type BlockGen struct {
 	header  *types.Header
 	statedb *state.StateDB
 
-	gasPool  *GasPool
+	nrgPool  *NrgPool
 	txs      []*types.Transaction
 	receipts []*types.Receipt
 	uncles   []*types.Header
@@ -65,14 +65,14 @@ type BlockGen struct {
 // SetCoinbase sets the shiftbase of the generated block.
 // It can be called at most once.
 func (b *BlockGen) SetCoinbase(addr common.Address) {
-	if b.gasPool != nil {
+	if b.nrgPool != nil {
 		if len(b.txs) > 0 {
 			panic("shiftbase must be set before adding transactions")
 		}
 		panic("shiftbase can only be set once")
 	}
 	b.header.Coinbase = addr
-	b.gasPool = new(GasPool).AddGas(b.header.GasLimit)
+	b.nrgPool = new(NrgPool).AddNrg(b.header.NrgLimit)
 }
 
 // SetExtra sets the extra data field of the generated block.
@@ -84,21 +84,21 @@ func (b *BlockGen) SetExtra(data []byte) {
 // been set, the block's shiftbase is set to the zero address.
 //
 // AddTx panics if the transaction cannot be executed. In addition to
-// the protocol-imposed limitations (gas limit, etc.), there are some
+// the protocol-imposed limitations (nrg limit, etc.), there are some
 // further limitations on the content of transactions that can be
 // added. Notably, contract code relying on the BLOCKHASH instruction
 // will panic during execution.
 func (b *BlockGen) AddTx(tx *types.Transaction) {
-	if b.gasPool == nil {
+	if b.nrgPool == nil {
 		b.SetCoinbase(common.Address{})
 	}
-	_, gas, err := ApplyMessage(NewEnv(b.statedb, nil, tx, b.header), tx, b.gasPool)
+	_, nrg, err := ApplyMessage(NewEnv(b.statedb, nil, tx, b.header), tx, b.nrgPool)
 	if err != nil {
 		panic(err)
 	}
 	root := b.statedb.IntermediateRoot()
-	b.header.GasUsed.Add(b.header.GasUsed, gas)
-	receipt := types.NewReceipt(root.Bytes(), b.header.GasUsed)
+	b.header.NrgUsed.Add(b.header.NrgUsed, nrg)
+	receipt := types.NewReceipt(root.Bytes(), b.header.NrgUsed)
 	logs := b.statedb.GetLogs(tx.Hash())
 	receipt.Logs = logs
 	receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
@@ -206,8 +206,8 @@ func makeHeader(parent *types.Block, state *state.StateDB) *types.Header {
 		ParentHash: parent.Hash(),
 		Coinbase:   parent.Coinbase(),
 		Difficulty: CalcDifficulty(time.Uint64(), new(big.Int).Sub(time, big.NewInt(10)).Uint64(), parent.Number(), parent.Difficulty()),
-		GasLimit:   CalcGasLimit(parent),
-		GasUsed:    new(big.Int),
+		NrgLimit:   CalcNrgLimit(parent),
+		NrgUsed:    new(big.Int),
 		Number:     new(big.Int).Add(parent.Number(), common.Big1),
 		Time:       time,
 	}

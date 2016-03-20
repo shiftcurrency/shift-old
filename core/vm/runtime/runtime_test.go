@@ -36,10 +36,10 @@ func TestDefaults(t *testing.T) {
 	if cfg.Time == nil {
 		t.Error("expected time to be non nil")
 	}
-	if cfg.GasLimit == nil {
+	if cfg.NrgLimit == nil {
 		t.Error("expected time to be non nil")
 	}
-	if cfg.GasPrice == nil {
+	if cfg.NrgPrice == nil {
 		t.Error("expected time to be non nil")
 	}
 	if cfg.Value == nil {

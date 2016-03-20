@@ -34,8 +34,8 @@ import (
 // Transaction Test JSON Format
 type TtTransaction struct {
 	Data     string
-	GasLimit string
-	GasPrice string
+	NrgLimit string
+	NrgPrice string
 	Nonce    string
 	R        string
 	S        string
@@ -185,14 +185,14 @@ func verifyTxFields(txTest TransactionTest, decodedTx *types.Transaction) (err e
 		return fmt.Errorf("Tx input data mismatch: %#v %#v", expectedData, decodedTx.Data())
 	}
 
-	expectedGasLimit := mustConvertBigInt(txTest.Transaction.GasLimit, 16)
-	if expectedGasLimit.Cmp(decodedTx.Gas()) != 0 {
-		return fmt.Errorf("GasLimit mismatch: %v %v", expectedGasLimit, decodedTx.Gas())
+	expectedNrgLimit := mustConvertBigInt(txTest.Transaction.NrgLimit, 16)
+	if expectedNrgLimit.Cmp(decodedTx.Nrg()) != 0 {
+		return fmt.Errorf("NrgLimit mismatch: %v %v", expectedNrgLimit, decodedTx.Nrg())
 	}
 
-	expectedGasPrice := mustConvertBigInt(txTest.Transaction.GasPrice, 16)
-	if expectedGasPrice.Cmp(decodedTx.GasPrice()) != 0 {
-		return fmt.Errorf("GasPrice mismatch: %v %v", expectedGasPrice, decodedTx.GasPrice())
+	expectedNrgPrice := mustConvertBigInt(txTest.Transaction.NrgPrice, 16)
+	if expectedNrgPrice.Cmp(decodedTx.NrgPrice()) != 0 {
+		return fmt.Errorf("NrgPrice mismatch: %v %v", expectedNrgPrice, decodedTx.NrgPrice())
 	}
 
 	expectedNonce := mustConvertUint(txTest.Transaction.Nonce, 16)

@@ -39,7 +39,7 @@ type Miner struct {
 
 	worker *worker
 
-	MinAcceptedGasPrice *big.Int
+	MinAcceptedNrgPrice *big.Int
 
 	threads  int
 	shiftbase common.Address
@@ -90,13 +90,13 @@ out:
 	}
 }
 
-func (m *Miner) SetGasPrice(price *big.Int) {
-	// FIXME block tests set a nil gas price. Quick dirty fix
+func (m *Miner) SetNrgPrice(price *big.Int) {
+	// FIXME block tests set a nil nrg price. Quick dirty fix
 	if price == nil {
 		return
 	}
 
-	m.worker.setGasPrice(price)
+	m.worker.setNrgPrice(price)
 }
 
 func (self *Miner) Start(shiftbase common.Address, threads int) {

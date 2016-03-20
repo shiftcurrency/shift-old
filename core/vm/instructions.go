@@ -43,7 +43,7 @@ type instruction struct {
 	fn   instrFn
 	data *big.Int
 
-	gas   *big.Int
+	nrg   *big.Int
 	spop  int
 	spush int
 
@@ -60,16 +60,16 @@ func jump(mapping map[uint64]uint64, destinations map[uint64]struct{}, contract 
 }
 
 func (instr instruction) do(program *Program, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) ([]byte, error) {
-	// calculate the new memory size and gas price for the current executing opcode
-	newMemSize, cost, err := jitCalculateGasAndSize(env, contract, instr, env.Db(), memory, stack)
+	// calculate the new memory size and nrg price for the current executing opcode
+	newMemSize, cost, err := jitCalculateNrgAndSize(env, contract, instr, env.Db(), memory, stack)
 	if err != nil {
 		return nil, err
 	}
 
-	// Use the calculated gas. When insufficient gas is present, use all gas and return an
-	// Out Of Gas error
-	if !contract.UseGas(cost) {
-		return nil, OutOfGasError
+	// Use the calculated nrg. When insufficient nrg is present, use all nrg and return an
+	// Out Of Nrg error
+	if !contract.UseNrg(cost) {
+		return nil, OutOfNrgError
 	}
 	// Resize the memory calculated previously
 	memory.Resize(newMemSize.Uint64())
@@ -396,7 +396,7 @@ func opExtCodeCopy(instr instruction, pc *uint64, env Environment, contract *Con
 	memory.Set(mOff.Uint64(), l.Uint64(), codeCopy)
 }
 
-func opGasprice(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) {
+func opNrgprice(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) {
 	stack.push(new(big.Int).Set(contract.Price))
 }
 
@@ -427,8 +427,8 @@ func opDifficulty(instr instruction, pc *uint64, env Environment, contract *Cont
 	stack.push(U256(new(big.Int).Set(env.Difficulty())))
 }
 
-func opGasLimit(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) {
-	stack.push(U256(new(big.Int).Set(env.GasLimit())))
+func opNrgLimit(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) {
+	stack.push(U256(new(big.Int).Set(env.NrgLimit())))
 }
 
 func opPop(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) {
@@ -504,8 +504,8 @@ func opMsize(instr instruction, pc *uint64, env Environment, contract *Contract,
 	stack.push(big.NewInt(int64(memory.Len())))
 }
 
-func opGas(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) {
-	stack.push(new(big.Int).Set(contract.Gas))
+func opNrg(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) {
+	stack.push(new(big.Int).Set(contract.Nrg))
 }
 
 func opCreate(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) {
@@ -513,17 +513,17 @@ func opCreate(instr instruction, pc *uint64, env Environment, contract *Contract
 		value        = stack.pop()
 		offset, size = stack.pop(), stack.pop()
 		input        = memory.Get(offset.Int64(), size.Int64())
-		gas          = new(big.Int).Set(contract.Gas)
+		nrg          = new(big.Int).Set(contract.Nrg)
 	)
-	contract.UseGas(contract.Gas)
-	_, addr, suberr := env.Create(contract, input, gas, contract.Price, value)
+	contract.UseNrg(contract.Nrg)
+	_, addr, suberr := env.Create(contract, input, nrg, contract.Price, value)
 	// Push item on the stack based on the returned error. If the ruleset is
-	// homestead we must check for CodeStoreOutOfGasError (homestead only
+	// homestead we must check for CodeStoreOutOfNrgError (homestead only
 	// rule) and treat as an error, if the ruleset is frontier we must
 	// ignore this error and pretend the operation was successful.
-	if params.IsHomestead(env.BlockNumber()) && suberr == CodeStoreOutOfGasError {
+	if params.IsHomestead(env.BlockNumber()) && suberr == CodeStoreOutOfNrgError {
 		stack.push(new(big.Int))
-	} else if suberr != nil && suberr != CodeStoreOutOfGasError {
+	} else if suberr != nil && suberr != CodeStoreOutOfNrgError {
 		stack.push(new(big.Int))
 	} else {
 		stack.push(addr.Big())
@@ -531,8 +531,8 @@ func opCreate(instr instruction, pc *uint64, env Environment, contract *Contract
 }
 
 func opCall(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) {
-	gas := stack.pop()
-	// pop gas and value of the stack.
+	nrg := stack.pop()
+	// pop nrg and value of the stack.
 	addr, value := stack.pop(), stack.pop()
 	value = U256(value)
 	// pop input size and offset
@@ -546,10 +546,10 @@ func opCall(instr instruction, pc *uint64, env Environment, contract *Contract, 
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
 
 	if len(value.Bytes()) > 0 {
-		gas.Add(gas, params.CallStipend)
+		nrg.Add(nrg, params.CallStipend)
 	}
 
-	ret, err := env.Call(contract, address, args, gas, contract.Price, value)
+	ret, err := env.Call(contract, address, args, nrg, contract.Price, value)
 
 	if err != nil {
 		stack.push(new(big.Int))
@@ -562,8 +562,8 @@ func opCall(instr instruction, pc *uint64, env Environment, contract *Contract, 
 }
 
 func opCallCode(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) {
-	gas := stack.pop()
-	// pop gas and value of the stack.
+	nrg := stack.pop()
+	// pop nrg and value of the stack.
 	addr, value := stack.pop(), stack.pop()
 	value = U256(value)
 	// pop input size and offset
@@ -577,10 +577,10 @@ func opCallCode(instr instruction, pc *uint64, env Environment, contract *Contra
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
 
 	if len(value.Bytes()) > 0 {
-		gas.Add(gas, params.CallStipend)
+		nrg.Add(nrg, params.CallStipend)
 	}
 
-	ret, err := env.CallCode(contract, address, args, gas, contract.Price, value)
+	ret, err := env.CallCode(contract, address, args, nrg, contract.Price, value)
 
 	if err != nil {
 		stack.push(new(big.Int))
@@ -593,11 +593,11 @@ func opCallCode(instr instruction, pc *uint64, env Environment, contract *Contra
 }
 
 func opDelegateCall(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) {
-	gas, to, inOffset, inSize, outOffset, outSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
+	nrg, to, inOffset, inSize, outOffset, outSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 
 	toAddr := common.BigToAddress(to)
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
-	ret, err := env.DelegateCall(contract, toAddr, args, gas, contract.Price)
+	ret, err := env.DelegateCall(contract, toAddr, args, nrg, contract.Price)
 
 	if err != nil {
 		stack.push(new(big.Int))

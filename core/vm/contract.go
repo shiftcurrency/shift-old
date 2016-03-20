@@ -24,7 +24,7 @@ import (
 
 // ContractRef is a reference to the contract's backing object
 type ContractRef interface {
-	ReturnGas(*big.Int, *big.Int)
+	ReturnNrg(*big.Int, *big.Int)
 	Address() common.Address
 	Value() *big.Int
 	SetCode([]byte)
@@ -46,7 +46,7 @@ type Contract struct {
 	Input    []byte
 	CodeAddr *common.Address
 
-	value, Gas, UsedGas, Price *big.Int
+	value, Nrg, UsedNrg, Price *big.Int
 
 	Args []byte
 
@@ -54,7 +54,7 @@ type Contract struct {
 }
 
 // NewContract returns a new contract environment for the execution of EVM.
-func NewContract(caller ContractRef, object ContractRef, value, gas, price *big.Int) *Contract {
+func NewContract(caller ContractRef, object ContractRef, value, nrg, price *big.Int) *Contract {
 	c := &Contract{CallerAddress: caller.Address(), caller: caller, self: object, Args: nil}
 
 	if parent, ok := caller.(*Contract); ok {
@@ -64,14 +64,14 @@ func NewContract(caller ContractRef, object ContractRef, value, gas, price *big.
 		c.jumpdests = make(destinations)
 	}
 
-	// Gas should be a pointer so it can safely be reduced through the run
+	// Nrg should be a pointer so it can safely be reduced through the run
 	// This pointer will be off the state transition
-	c.Gas = gas //new(big.Int).Set(gas)
+	c.Nrg = nrg //new(big.Int).Set(nrg)
 	c.value = new(big.Int).Set(value)
 	// In most cases price and value are pointers to transaction objects
 	// and we don't want the transaction's values to change.
 	c.Price = new(big.Int).Set(price)
-	c.UsedGas = new(big.Int)
+	c.UsedNrg = new(big.Int)
 
 	return c
 }
@@ -108,27 +108,27 @@ func (c *Contract) Caller() common.Address {
 	return c.CallerAddress
 }
 
-// Finalise finalises the contract and returning any remaining gas to the original
+// Finalise finalises the contract and returning any remaining nrg to the original
 // caller.
 func (c *Contract) Finalise() {
-	// Return the remaining gas to the caller
-	c.caller.ReturnGas(c.Gas, c.Price)
+	// Return the remaining nrg to the caller
+	c.caller.ReturnNrg(c.Nrg, c.Price)
 }
 
-// UseGas attempts the use gas and subtracts it and returns true on success
-func (c *Contract) UseGas(gas *big.Int) (ok bool) {
-	ok = useGas(c.Gas, gas)
+// UseNrg attempts the use nrg and subtracts it and returns true on success
+func (c *Contract) UseNrg(nrg *big.Int) (ok bool) {
+	ok = useNrg(c.Nrg, nrg)
 	if ok {
-		c.UsedGas.Add(c.UsedGas, gas)
+		c.UsedNrg.Add(c.UsedNrg, nrg)
 	}
 	return
 }
 
-// ReturnGas adds the given gas back to itself.
-func (c *Contract) ReturnGas(gas, price *big.Int) {
-	// Return the gas to the context
-	c.Gas.Add(c.Gas, gas)
-	c.UsedGas.Sub(c.UsedGas, gas)
+// ReturnNrg adds the given nrg back to itself.
+func (c *Contract) ReturnNrg(nrg, price *big.Int) {
+	// Return the nrg to the context
+	c.Nrg.Add(c.Nrg, nrg)
+	c.UsedNrg.Sub(c.UsedNrg, nrg)
 }
 
 // Address returns the contracts address

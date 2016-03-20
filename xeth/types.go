@@ -80,8 +80,8 @@ type Block struct {
 	Time         *big.Int     `json:"time"`
 	Coinbase     string       `json:"shiftbase"`
 	Name         string       `json:"name"`
-	GasLimit     string       `json:"gasLimit"`
-	GasUsed      string       `json:"gasUsed"`
+	NrgLimit     string       `json:"nrgLimit"`
+	NrgUsed      string       `json:"nrgUsed"`
 	PrevHash     string       `json:"prevHash"`
 	Bloom        string       `json:"bloom"`
 	Raw          string       `json:"raw"`
@@ -111,8 +111,8 @@ func NewBlock(block *types.Block) *Block {
 
 	return &Block{
 		ref: block, Size: block.Size().String(),
-		Number: int(block.NumberU64()), GasUsed: block.GasUsed().String(),
-		GasLimit: block.GasLimit().String(), Hash: block.Hash().Hex(),
+		Number: int(block.NumberU64()), NrgUsed: block.NrgUsed().String(),
+		NrgLimit: block.NrgLimit().String(), Hash: block.Hash().Hex(),
 		Transactions: txlist, Uncles: ulist,
 		Time:     block.Time(),
 		Coinbase: block.Coinbase().Hex(),
@@ -143,8 +143,8 @@ type Transaction struct {
 	ref *types.Transaction
 
 	Value           string `json:"value"`
-	Gas             string `json:"gas"`
-	GasPrice        string `json:"gasPrice"`
+	Nrg             string `json:"nrg"`
+	NrgPrice        string `json:"nrgPrice"`
 	Hash            string `json:"hash"`
 	Address         string `json:"address"`
 	Sender          string `json:"sender"`
@@ -178,7 +178,7 @@ func NewTx(tx *types.Transaction) *Transaction {
 		data = common.ToHex(tx.Data())
 	}
 
-	return &Transaction{ref: tx, Hash: hash, Value: common.CurrencyToString(tx.Value()), Address: receiver, Contract: createsContract, Gas: tx.Gas().String(), GasPrice: tx.GasPrice().String(), Data: data, Sender: sender.Hex(), CreatesContract: createsContract, RawData: common.ToHex(tx.Data())}
+	return &Transaction{ref: tx, Hash: hash, Value: common.CurrencyToString(tx.Value()), Address: receiver, Contract: createsContract, Nrg: tx.Nrg().String(), NrgPrice: tx.NrgPrice().String(), Data: data, Sender: sender.Hex(), CreatesContract: createsContract, RawData: common.ToHex(tx.Data())}
 }
 
 func (self *Transaction) ToString() string {

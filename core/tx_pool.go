@@ -36,12 +36,12 @@ var (
 	// Transaction Pool Errors
 	ErrInvalidSender      = errors.New("Invalid sender")
 	ErrNonce              = errors.New("Nonce too low")
-	ErrCheap              = errors.New("Gas price too low for acceptance")
+	ErrCheap              = errors.New("Nrg price too low for acceptance")
 	ErrBalance            = errors.New("Insufficient balance")
 	ErrNonExistentAccount = errors.New("Account does not exist or account balance too low")
-	ErrInsufficientFunds  = errors.New("Insufficient funds for gas * price + value")
-	ErrIntrinsicGas       = errors.New("Intrinsic gas too low")
-	ErrGasLimit           = errors.New("Exceeds block gas limit")
+	ErrInsufficientFunds  = errors.New("Insufficient funds for nrg * price + value")
+	ErrIntrinsicNrg       = errors.New("Intrinsic nrg too low")
+	ErrNrgLimit           = errors.New("Exceeds block nrg limit")
 	ErrNegativeValue      = errors.New("Negative value")
 )
 
@@ -62,8 +62,8 @@ type TxPool struct {
 	quit         chan bool // Quiting channel
 	currentState stateFn   // The state function which will allow us to do some pre checkes
 	pendingState *state.ManagedState
-	gasLimit     func() *big.Int // The current gas limit function callback
-	minGasPrice  *big.Int
+	nrgLimit     func() *big.Int // The current nrg limit function callback
+	minNrgPrice  *big.Int
 	eventMux     *event.TypeMux
 	events       event.Subscription
 	mu           sync.RWMutex
@@ -73,17 +73,17 @@ type TxPool struct {
 	homestead bool
 }
 
-func NewTxPool(eventMux *event.TypeMux, currentStateFn stateFn, gasLimitFn func() *big.Int) *TxPool {
+func NewTxPool(eventMux *event.TypeMux, currentStateFn stateFn, nrgLimitFn func() *big.Int) *TxPool {
 	pool := &TxPool{
 		pending:      make(map[common.Hash]*types.Transaction),
 		queue:        make(map[common.Address]map[common.Hash]*types.Transaction),
 		quit:         make(chan bool),
 		eventMux:     eventMux,
 		currentState: currentStateFn,
-		gasLimit:     gasLimitFn,
-		minGasPrice:  new(big.Int),
+		nrgLimit:     nrgLimitFn,
+		minNrgPrice:  new(big.Int),
 		pendingState: nil,
-		events:       eventMux.Subscribe(ChainHeadEvent{}, GasPriceChanged{}, RemovedTransactionEvent{}),
+		events:       eventMux.Subscribe(ChainHeadEvent{}, NrgPriceChanged{}, RemovedTransactionEvent{}),
 	}
 
 	go pool.eventLoop()
@@ -105,9 +105,9 @@ func (pool *TxPool) eventLoop() {
 
 			pool.resetState()
 			pool.mu.Unlock()
-		case GasPriceChanged:
+		case NrgPriceChanged:
 			pool.mu.Lock()
-			pool.minGasPrice = ev.Price
+			pool.minNrgPrice = ev.Price
 			pool.mu.Unlock()
 		case RemovedTransactionEvent:
 			pool.AddTransactions(ev.Txs)
@@ -131,7 +131,7 @@ func (pool *TxPool) resetState() {
 	// validate the pool of pending transactions, this will remove
 	// any transactions that have been included in the block or
 	// have been invalidated because of another transaction (e.g.
-	// higher gas price)
+	// higher nrg price)
 	pool.validatePool()
 
 	// Loop over the pending transactions and base the nonce of the new
@@ -177,8 +177,8 @@ func (pool *TxPool) Stats() (pending int, queued int) {
 // validateTx checks whether a transaction is valid according
 // to the consensus rules.
 func (pool *TxPool) validateTx(tx *types.Transaction) error {
-	// Drop transactions under our own minimal accepted gas price
-	if pool.minGasPrice.Cmp(tx.GasPrice()) > 0 {
+	// Drop transactions under our own minimal accepted nrg price
+	if pool.minNrgPrice.Cmp(tx.NrgPrice()) > 0 {
 		return ErrCheap
 	}
 
@@ -204,9 +204,9 @@ func (pool *TxPool) validateTx(tx *types.Transaction) error {
 	}
 
 	// Check the transaction doesn't exceed the current
-	// block limit gas.
-	if pool.gasLimit().Cmp(tx.Gas()) < 0 {
-		return ErrGasLimit
+	// block limit nrg.
+	if pool.nrgLimit().Cmp(tx.Nrg()) < 0 {
+		return ErrNrgLimit
 	}
 
 	// Transactions can't be negative. This may never happen
@@ -222,9 +222,9 @@ func (pool *TxPool) validateTx(tx *types.Transaction) error {
 		return ErrInsufficientFunds
 	}
 
-	intrGas := IntrinsicGas(tx.Data(), MessageCreatesContract(tx), pool.homestead)
-	if tx.Gas().Cmp(intrGas) < 0 {
-		return ErrIntrinsicGas
+	intrNrg := IntrinsicNrg(tx.Data(), MessageCreatesContract(tx), pool.homestead)
+	if tx.Nrg().Cmp(intrNrg) < 0 {
+		return ErrIntrinsicNrg
 	}
 
 	return nil

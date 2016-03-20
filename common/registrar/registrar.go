@@ -87,8 +87,8 @@ var (
 // Registrar's backend is defined as an interface (implemented by xeth, but could be remote)
 type Backend interface {
 	StorageAt(string, string) string
-	Transact(fromStr, toStr, nonceStr, valueStr, gasStr, gasPriceStr, codeStr string) (string, error)
-	Call(fromStr, toStr, valueStr, gasStr, gasPriceStr, codeStr string) (string, string, error)
+	Transact(fromStr, toStr, nonceStr, valueStr, nrgStr, nrgPriceStr, codeStr string) (string, error)
+	Call(fromStr, toStr, valueStr, nrgStr, nrgPriceStr, codeStr string) (string, string, error)
 }
 
 // TODO Registrar should also just implement The Resolver and Registry interfaces

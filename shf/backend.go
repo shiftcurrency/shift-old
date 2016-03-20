@@ -124,13 +124,13 @@ type Config struct {
 	Dial bool
 
 	Etherbase      common.Address
-	GasPrice       *big.Int
+	NrgPrice       *big.Int
 	MinerThreads   int
 	AccountManager *accounts.Manager
 	SolcPath       string
 
-	GpoMinGasPrice          *big.Int
-	GpoMaxGasPrice          *big.Int
+	GpoMinNrgPrice          *big.Int
+	GpoMaxNrgPrice          *big.Int
 	GpoFullBlockRatio       int
 	GpobaseStepDown         int
 	GpobaseStepUp           int
@@ -239,8 +239,8 @@ type Shift struct {
 	SolcPath        string
 	solc            *compiler.Solidity
 
-	GpoMinGasPrice          *big.Int
-	GpoMaxGasPrice          *big.Int
+	GpoMinNrgPrice          *big.Int
+	GpoMaxNrgPrice          *big.Int
 	GpoFullBlockRatio       int
 	GpobaseStepDown         int
 	GpobaseStepUp           int
@@ -374,8 +374,8 @@ func New(config *Config) (*Shift, error) {
 		SolcPath:                config.SolcPath,
 		AutoDAG:                 config.AutoDAG,
 		PowTest:                 config.PowTest,
-		GpoMinGasPrice:          config.GpoMinGasPrice,
-		GpoMaxGasPrice:          config.GpoMaxGasPrice,
+		GpoMinNrgPrice:          config.GpoMinNrgPrice,
+		GpoMaxNrgPrice:          config.GpoMaxNrgPrice,
 		GpoFullBlockRatio:       config.GpoFullBlockRatio,
 		GpobaseStepDown:         config.GpobaseStepDown,
 		GpobaseStepUp:           config.GpobaseStepUp,
@@ -406,14 +406,14 @@ func New(config *Config) (*Shift, error) {
 		}
 		return nil, err
 	}
-	newPool := core.NewTxPool(shf.EventMux(), shf.blockchain.State, shf.blockchain.GasLimit)
+	newPool := core.NewTxPool(shf.EventMux(), shf.blockchain.State, shf.blockchain.NrgLimit)
 	shf.txPool = newPool
 
 	if shf.protocolManager, err = NewProtocolManager(config.FastSync, config.NetworkId, shf.eventMux, shf.txPool, shf.pow, shf.blockchain, chainDb); err != nil {
 		return nil, err
 	}
 	shf.miner = miner.New(shf, shf.EventMux(), shf.pow)
-	shf.miner.SetGasPrice(config.GasPrice)
+	shf.miner.SetNrgPrice(config.NrgPrice)
 	shf.miner.SetExtra(config.ExtraData)
 
 	if config.Shh {

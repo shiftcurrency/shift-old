@@ -94,8 +94,8 @@ func (self *StateDB) Logs() vm.Logs {
 	return logs
 }
 
-func (self *StateDB) AddRefund(gas *big.Int) {
-	self.refund.Add(self.refund, gas)
+func (self *StateDB) AddRefund(nrg *big.Int) {
+	self.refund.Add(self.refund, nrg)
 }
 
 func (self *StateDB) HasAccount(addr common.Address) bool {

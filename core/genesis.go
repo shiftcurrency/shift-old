@@ -45,7 +45,7 @@ func WriteGenesisBlock(chainDb ethdb.Database, reader io.Reader) (*types.Block, 
 		Timestamp  string
 		ParentHash string
 		ExtraData  string
-		GasLimit   string
+		NrgLimit   string
 		Difficulty string
 		Mixhash    string
 		Coinbase   string
@@ -78,7 +78,7 @@ func WriteGenesisBlock(chainDb ethdb.Database, reader io.Reader) (*types.Block, 
 		Time:       common.String2Big(genesis.Timestamp),
 		ParentHash: common.HexToHash(genesis.ParentHash),
 		Extra:      common.FromHex(genesis.ExtraData),
-		GasLimit:   common.String2Big(genesis.GasLimit),
+		NrgLimit:   common.String2Big(genesis.NrgLimit),
 		Difficulty: difficulty,
 		MixDigest:  common.HexToHash(genesis.Mixhash),
 		Coinbase:   common.HexToAddress(genesis.Coinbase),
@@ -127,7 +127,7 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 	}
 	block := types.NewBlock(&types.Header{
 		Difficulty: params.GenesisDifficulty,
-		GasLimit:   params.GenesisGasLimit,
+		NrgLimit:   params.GenesisNrgLimit,
 		Root:       root,
 	}, nil, nil, nil)
 	return block
@@ -150,10 +150,10 @@ func WriteGenesisBlockForTesting(db ethdb.Database, accounts ...GenesisAccount) 
 
 	testGenesis := fmt.Sprintf(`{
 	"nonce":"0x%x",
-	"gasLimit":"0x%x",
+	"nrgLimit":"0x%x",
 	"difficulty":"0x%x",
 	"alloc": %s
-}`, types.EncodeNonce(0), params.GenesisGasLimit.Bytes(), params.GenesisDifficulty.Bytes(), accountJson)
+}`, types.EncodeNonce(0), params.GenesisNrgLimit.Bytes(), params.GenesisDifficulty.Bytes(), accountJson)
 	block, _ := WriteGenesisBlock(db, strings.NewReader(testGenesis))
 	return block
 }
@@ -167,7 +167,7 @@ func WriteTestNetGenesisBlock(chainDb ethdb.Database, nonce uint64) (*types.Bloc
         "timestamp": "0x00",
         "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
         "extraData": "0x",
-        "gasLimit": "0x2FEFD8",
+        "nrgLimit": "0x2FEFD8",
         "alloc": {
                 "0000000000000000000000000000000000000001": { "balance": "1" },
                 "0000000000000000000000000000000000000002": { "balance": "1" },
@@ -182,7 +182,7 @@ func WriteTestNetGenesisBlock(chainDb ethdb.Database, nonce uint64) (*types.Bloc
 func WriteOlympicGenesisBlock(chainDb ethdb.Database, nonce uint64) (*types.Block, error) {
 	testGenesis := fmt.Sprintf(`{
 	"nonce":"0x%x",
-	"gasLimit":"0x%x",
+	"nrgLimit":"0x%x",
 	"difficulty":"0x%x",
 	"alloc": {
 		"0000000000000000000000000000000000000001": {"balance": "1"},
@@ -198,6 +198,6 @@ func WriteOlympicGenesisBlock(chainDb ethdb.Database, nonce uint64) (*types.Bloc
 		"e6716f9544a56c530d868e4bfbacb172315bdead": {"balance": "1606938044258990275541962092341162602522202993782792835301376"},
 		"1a26338f0d905e295fccb71fa9ea849ffa12aaf4": {"balance": "1606938044258990275541962092341162602522202993782792835301376"}
 	}
-}`, types.EncodeNonce(nonce), params.GenesisGasLimit.Bytes(), params.GenesisDifficulty.Bytes())
+}`, types.EncodeNonce(nonce), params.GenesisNrgLimit.Bytes(), params.GenesisDifficulty.Bytes())
 	return WriteGenesisBlock(chainDb, strings.NewReader(testGenesis))
 }
