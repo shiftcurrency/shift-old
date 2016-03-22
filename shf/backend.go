@@ -71,8 +71,12 @@ var (
 	portInUseErrRE     = regexp.MustCompile("address already in use")
 
 	defaultBootNodes = []*discover.Node{
-        discover.MustParseNode("enode://6aec96af8621a0e00abf356f0dd6b03156caa47f10f04c8d75ec30a27f71c99599888b9a416dc22d407e1c70de7991db4e00fbd44b1f3158e6a8d91ee7b54fb5@104.238.172.196:53900"),
-        discover.MustParseNode("enode://945ba92241df19e50c5cf125806406c1cc253966b589de7aba71234ffe186efc00ad49e2a2b865512da3e18c2bfdda7dd78ee3757cba5ebb58a66e8b75eaee8b@45.32.158.90:53900"),
+        discover.MustParseNode("enode://b37ce1af934f4b0e948d9a7102baa16afd1fc46a11b2153e9c380b1df8b505c98f19263889abe36250bc064242ac6bd1b9bbb1885bbf807c4ae1ecb6e5774d26@45.32.149.118:53900"),
+        discover.MustParseNode("enode://3ad482f5ca4bf91e144465b9ed3290b2695885d68aa3aa52be8c43dcaccc989d599d9a03d6a15ae4d1b12ff6d751e9746ee4e44debd1086eb37ca7dd7aa9a886@108.61.204.10:53900"),
+        discover.MustParseNode("enode://527168467b7f740ed60e5a0e219dfddd763ed7edb8d4b73704ab9938d8a96dd36127129008ae301d56e66e48dff83406d6998d83e0e1123fb6b208b7efe89610@45.32.53.184:53900"),
+        discover.MustParseNode("enode://5b91b2c9b0607aacff2029c74ffccbeed336a9479c6fe09c948df5cc016880dd76de133931602f1a42e6a83b5dc5a557f09babb792034b00cae12de960e1efaf@108.61.191.141:53900"),
+        discover.MustParseNode("enode://da1984080ab002df32658cd733a1a336f22449894b4136ac8b785901c2ff8cab3e903ce81b46ff79d2c97f18ebdb4eaaebf351915a80a7b67acf4842b86c2237@45.32.80.160:53900"),
+        discover.MustParseNode("enode://bcfd9a8259c31da9939caa61d755ca747273e0b1b7c16f16413cf67c1bf790b13e21fc77e5d5713692caf96eb5b2102e805402608026fb07d902ba95e77bc8fc@104.238.177.33:53900"),
 	}
 
 	defaultTestNetBootNodes = []*discover.Node{
