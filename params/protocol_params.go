@@ -27,8 +27,8 @@ var (
 	SloadNrg               = big.NewInt(50)     // Multiplied by the number of 32-byte words that are copied (round up) for any *COPY operation and added.
 	CallValueTransferNrg   = big.NewInt(9000)   // Paid for CALL when the value transfer is non-zero.
 	CallNewAccountNrg      = big.NewInt(25000)  // Paid for CALL when the destination address didn't exist prior.
-	TxNrg                  = big.NewInt(15000)  // Per transaction not creating a contract. NOTE: Not payable on data of calls between transactions.
-	TxNrgContractCreation  = big.NewInt(35000)  // Per transaction that creates a contract. NOTE: Not payable on data of calls between transactions.
+	TxNrg                  = big.NewInt(21000)  // Per transaction not creating a contract. NOTE: Not payable on data of calls between transactions.
+	TxNrgContractCreation  = big.NewInt(53000)  // Per transaction that creates a contract. NOTE: Not payable on data of calls between transactions.
 	TxDataZeroNrg          = big.NewInt(4)      // Per byte of data attached to a transaction that equals zero. NOTE: Not payable on data of calls between transactions.
 	DifficultyBoundDivisor = big.NewInt(256)    // The bound divisor of the difficulty, used in the update calculations.
 	QuadCoeffDiv           = big.NewInt(512)    // Divisor for the quadratic particle of the memory cost equation.
@@ -39,8 +39,8 @@ var (
 	CallStipend            = big.NewInt(2300)   // Free nrg given at beginning of call.
 	EcrecoverNrg           = big.NewInt(3000)   //
 	Sha256WordNrg          = big.NewInt(12)     //
-	MinNrgLimit            = big.NewInt(3000)    // Minimum the nrg limit may ever be.
-	GenesisNrgLimit        = big.NewInt(314159260) // Nrg limit of the Genesis block.
+	MinNrgLimit            = big.NewInt(5000)    // Minimum the nrg limit may ever be.
+	GenesisNrgLimit        = big.NewInt(31415926) // Nrg limit of the Genesis block.
 	Sha3Nrg              = big.NewInt(30)     // Once per SHA3 operation.
 	Sha256Nrg            = big.NewInt(60)     //
 	IdentityWordNrg      = big.NewInt(3)      //
