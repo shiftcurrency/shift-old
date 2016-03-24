@@ -601,7 +601,7 @@ func (env *Work) commitTransactions(transactions types.Transactions, gasPrice *b
 			// no point
 			env.lowGasTransactors.Add(from)
 
-			glog.V(logger.Info).Infof("transaction(%x) below gas price (tx=%v ask=%v). All sequential txs from this address(%x) will be ignored\n", tx.Hash().Bytes()[:4], common.CurrencyToString(tx.GasPrice()), common.CurrencyToString(gasPrice), from[:4])
+			glog.V(logger.Info).Infof("transaction(%x) below nrg price (tx=%v ask=%v). All sequential txs from this address(%x) will be ignored\n", tx.Hash().Bytes()[:4], common.CurrencyToString(tx.GasPrice()), common.CurrencyToString(gasPrice), from[:4])
 		}
 
 		// Continue with the next transaction if the transaction sender is included in
@@ -634,7 +634,7 @@ func (env *Work) commitTransactions(transactions types.Transactions, gasPrice *b
 			// next time the worker is run, they'll be picked up again.
 			env.ignoredTransactors.Add(from)
 
-			glog.V(logger.Detail).Infof("Gas limit reached for (%x) in this block. Continue to try smaller txs\n", from[:4])
+			glog.V(logger.Detail).Infof("Nrg limit reached for (%x) in this block. Continue to try smaller txs\n", from[:4])
 		case err != nil:
 			env.remove.Add(tx.Hash())
 

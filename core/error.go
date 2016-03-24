@@ -199,5 +199,5 @@ func IsGasLimitErr(err error) bool {
 }
 
 func (err *GasLimitErr) Error() string {
-	return fmt.Sprintf("GasLimit reached. Have %d gas, transaction requires %d", err.Have, err.Want)
+	return fmt.Sprintf("NrgLimit reached. Have %d nrg, transaction requires %d", err.Have, err.Want)
 }

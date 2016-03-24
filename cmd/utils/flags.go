@@ -176,13 +176,13 @@ var (
 		Usage: "Enable automatic DAG pregeneration",
 	}
 	EtherbaseFlag = cli.StringFlag{
-		Name:  "etherbase",
+		Name:  "shiftbase",
 		Usage: "Public address for block mining rewards (default = first account created)",
 		Value: "0",
 	}
 	GasPriceFlag = cli.StringFlag{
-		Name:  "gasprice",
-		Usage: "Minimal gas price to accept for mining a transactions",
+		Name:  "nrgprice",
+		Usage: "Minimal Nrg price to accept for mining a transactions",
 		Value: new(big.Int).Mul(big.NewInt(20), common.Shannon).String(),
 	}
 	ExtraDataFlag = cli.StringFlag{
@@ -355,32 +355,32 @@ var (
 	// Gas price oracle settings
 	GpoMinGasPriceFlag = cli.StringFlag{
 		Name:  "gpomin",
-		Usage: "Minimum suggested gas price",
+		Usage: "Minimum suggested nrg price",
 		Value: new(big.Int).Mul(big.NewInt(20), common.Shannon).String(),
 	}
 	GpoMaxGasPriceFlag = cli.StringFlag{
 		Name:  "gpomax",
-		Usage: "Maximum suggested gas price",
+		Usage: "Maximum suggested nrg price",
 		Value: new(big.Int).Mul(big.NewInt(500), common.Shannon).String(),
 	}
 	GpoFullBlockRatioFlag = cli.IntFlag{
 		Name:  "gpofull",
-		Usage: "Full block threshold for gas price calculation (%)",
+		Usage: "Full block threshold for nrg price calculation (%)",
 		Value: 80,
 	}
 	GpobaseStepDownFlag = cli.IntFlag{
 		Name:  "gpobasedown",
-		Usage: "Suggested gas price base step down ratio (1/1000)",
+		Usage: "Suggested nrg price base step down ratio (1/1000)",
 		Value: 10,
 	}
 	GpobaseStepUpFlag = cli.IntFlag{
 		Name:  "gpobaseup",
-		Usage: "Suggested gas price base step up ratio (1/1000)",
+		Usage: "Suggested nrg price base step up ratio (1/1000)",
 		Value: 100,
 	}
 	GpobaseCorrectionFactorFlag = cli.IntFlag{
 		Name:  "gpobasecf",
-		Usage: "Suggested gas price base correction factor (%)",
+		Usage: "Suggested nrg price base correction factor (%)",
 		Value: 110,
 	}
 )

@@ -19,8 +19,8 @@ package params
 import "math/big"
 
 var (
-	TestNetHomesteadBlock = big.NewInt(1000)    // testnet homestead block
-	MainNetHomesteadBlock = big.NewInt(200000)   // mainnet homestead block
+	TestNetHomesteadBlock = big.NewInt(100)    // testnet homestead block
+	MainNetHomesteadBlock = big.NewInt(100)   // mainnet homestead block
 	HomesteadBlock        = MainNetHomesteadBlock // homestead block used to check against
 )
 

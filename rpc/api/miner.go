@@ -34,7 +34,7 @@ var (
 		"miner_hashrate":     (*minerApi).Hashrate,
 		"miner_makeDAG":      (*minerApi).MakeDAG,
 		"miner_setExtra":     (*minerApi).SetExtra,
-		"miner_setGasPrice":  (*minerApi).SetGasPrice,
+		"miner_setNrgPrice":  (*minerApi).SetGasPrice,
 		"miner_setEtherbase": (*minerApi).SetEtherbase,
 		"miner_startAutoDAG": (*minerApi).StartAutoDAG,
 		"miner_start":        (*minerApi).StartMiner,

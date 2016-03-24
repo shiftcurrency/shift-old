@@ -35,5 +35,5 @@ func (err *GasLimitErr) Error() string {
 	return err.Message
 }
 func GasLimitError(is, max *big.Int) *GasLimitErr {
-	return &GasLimitErr{Message: fmt.Sprintf("GasLimit error. Max %s, transaction would take it to %s", max, is), Is: is, Max: max}
+	return &GasLimitErr{Message: fmt.Sprintf("NrgLimit error. Max %s, transaction would take it to %s", max, is), Is: is, Max: max}
 }

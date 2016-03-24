@@ -5173,7 +5173,7 @@ var call = new Method({
 
 var estimateGas = new Method({
     name: 'estimateGas',
-    call: 'shf_estimateGas',
+    call: 'shf_estimateNrg',
     params: 1,
     inputFormatter: [formatters.inputCallFormatter],
     outputFormatter: utils.toDecimal

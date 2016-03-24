@@ -282,8 +282,8 @@ func (tx *Transaction) String() string {
 	From:     %s
 	To:       %s
 	Nonce:    %v
-	GasPrice: %v
-	GasLimit  %v
+	NrgPrice: %v
+	NrgLimit  %v
 	Value:    %v
 	Data:     0x%x
 	V:        0x%x

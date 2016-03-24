@@ -36,12 +36,12 @@ var (
 	// Transaction Pool Errors
 	ErrInvalidSender      = errors.New("Invalid sender")
 	ErrNonce              = errors.New("Nonce too low")
-	ErrCheap              = errors.New("Gas price too low for acceptance")
+	ErrCheap              = errors.New("Nrg price too low for acceptance")
 	ErrBalance            = errors.New("Insufficient balance")
 	ErrNonExistentAccount = errors.New("Account does not exist or account balance too low")
-	ErrInsufficientFunds  = errors.New("Insufficient funds for gas * price + value")
-	ErrIntrinsicGas       = errors.New("Intrinsic gas too low")
-	ErrGasLimit           = errors.New("Exceeds block gas limit")
+	ErrInsufficientFunds  = errors.New("Insufficient funds for nrg * price + value")
+	ErrIntrinsicGas       = errors.New("Intrinsic nrg too low")
+	ErrGasLimit           = errors.New("Exceeds block nrg limit")
 	ErrNegativeValue      = errors.New("Negative value")
 )
 
