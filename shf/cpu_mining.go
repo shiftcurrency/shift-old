@@ -31,7 +31,7 @@ const disabledInfo = "Set GO_OPENCL and re-build to enable."
 func (s *Shift) StartMining(threads int, gpus string) error {
 	eb, err := s.Etherbase()
 	if err != nil {
-		err = fmt.Errorf("Cannot start mining without etherbase address: %v", err)
+		err = fmt.Errorf("Cannot start mining without shiftbase address: %v", err)
 		glog.V(logger.Error).Infoln(err)
 		return err
 	}

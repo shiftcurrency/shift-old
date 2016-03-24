@@ -261,7 +261,7 @@ type Shift struct {
 	AutoDAG       bool
 	PowTest       bool
 	autodagquit   chan bool
-	etherbase     common.Address
+	shiftbase     common.Address
 	clientVersion string
 	netVersionId  int
 	shhVersionId  int
@@ -366,7 +366,7 @@ func New(config *Config) (*Shift, error) {
 		eventMux:                &event.TypeMux{},
 		accountManager:          config.AccountManager,
 		DataDir:                 config.DataDir,
-		etherbase:               config.Etherbase,
+		shiftbase:               config.Etherbase,
 		clientVersion:           config.Name, // TODO should separate from Name
 		netVersionId:            config.NetworkId,
 		NatSpec:                 config.NatSpec,
@@ -464,11 +464,11 @@ func (s *Shift) ResetWithGenesisBlock(gb *types.Block) {
 }
 
 func (s *Shift) Etherbase() (eb common.Address, err error) {
-	eb = s.etherbase
+	eb = s.shiftbase
 	if (eb == common.Address{}) {
 		addr, e := s.AccountManager().AddressByIndex(0)
 		if e != nil {
-			err = fmt.Errorf("etherbase address must be explicitly specified")
+			err = fmt.Errorf("shiftbase address must be explicitly specified")
 		}
 		eb = common.HexToAddress(addr)
 	}
@@ -476,9 +476,9 @@ func (s *Shift) Etherbase() (eb common.Address, err error) {
 }
 
 // set in js console via admin interface or wrapper from cli flags
-func (self *Shift) SetEtherbase(etherbase common.Address) {
-	self.etherbase = etherbase
-	self.miner.SetEtherbase(etherbase)
+func (self *Shift) SetEtherbase(shiftbase common.Address) {
+	self.shiftbase = shiftbase
+	self.miner.SetEtherbase(shiftbase)
 }
 
 

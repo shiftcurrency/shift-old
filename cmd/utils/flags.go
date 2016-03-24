@@ -420,9 +420,9 @@ func MakeEthConfig(clientID, version string, ctx *cli.Context) *shf.Config {
 		clientID += "/" + customName
 	}
 	am := MakeAccountManager(ctx)
-	etherbase, err := ParamToAddress(ctx.GlobalString(EtherbaseFlag.Name), am)
+	shiftbase, err := ParamToAddress(ctx.GlobalString(EtherbaseFlag.Name), am)
 	if err != nil {
-		glog.V(logger.Error).Infoln("WARNING: No etherbase set and no accounts found as default")
+		glog.V(logger.Error).Infoln("WARNING: No shiftbase set and no accounts found as default")
 	}
 
 	// Assemble the entire shf configuration and return
@@ -437,7 +437,7 @@ func MakeEthConfig(clientID, version string, ctx *cli.Context) *shf.Config {
 		NetworkId:               ctx.GlobalInt(NetworkIdFlag.Name),
 		LogFile:                 ctx.GlobalString(LogFileFlag.Name),
 		Verbosity:               ctx.GlobalInt(VerbosityFlag.Name),
-		Etherbase:               common.HexToAddress(etherbase),
+		Etherbase:               common.HexToAddress(shiftbase),
 		MinerThreads:            ctx.GlobalInt(MinerThreadsFlag.Name),
 		AccountManager:          am,
 		VmDebug:                 ctx.GlobalBool(VMDebugFlag.Name),
