@@ -19,8 +19,9 @@ def fetch_accounts():
         print exception
         sys.exit(0)
 
+    account_list = []
+
     if len(accounts) > 0:
-        account_list = []
         for i in accounts:
             account_list.append(i[0])
     
@@ -47,15 +48,20 @@ def get_balances(accounts):
         if 'result' in jsondata:
             ''' Use str to remove trailing L '''
             account_balance[account] = str(int(jsondata['result'], 16))
+    
+    if not len(account_balance) > 0:
+        print "Could not find any accounts with funds on it. Exiting."
+        sys.exit(0)
 
     return account_balance
 
 
 def create_genesis_json(account_balances):
 
-    if os.path.isfile("shift_2.0.0.json"):
+
+    if os.path.isfile("shift_balances.json"):
         try:
-            os.remove("shift_2.0.0.json")
+            os.remove("shift_balances.json")
             print "Removed old json file."
 
         except Exception as e:
@@ -90,5 +96,5 @@ if __name__ == "__main__":
 
     ''' write the final .json file '''
     if create_genesis_json(account_balances):
-        print "Done. See the created file shift_2.0.0.json."
+        print "Done. See the created file shift_balances.json."
         
