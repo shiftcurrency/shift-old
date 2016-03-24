@@ -61,14 +61,14 @@ func TestDist(t *testing.T) {
 		Vector{big.NewInt(42198), big.NewInt(1987)},
 	}
 
-	VectorsBy(NrgSort).Sort(vectors)
+	VectorsBy(GasSort).Sort(vectors)
 	fmt.Println(vectors)
 
 	BP := big.NewInt(15)
 	GL := big.NewInt(1000000)
 	EP := big.NewInt(100)
 	fmt.Println("BP", BP, "GL", GL, "EP", EP)
-	GP := NrgPrice(BP, GL, EP)
+	GP := GasPrice(BP, GL, EP)
 	fmt.Println("GP =", GP, "Wei per GU")
 
 	S := len(vectors) / 4
@@ -77,6 +77,6 @@ func TestDist(t *testing.T) {
 		fmt.Printf("T%d = %v\n", i, vectors[i])
 	}
 
-	g := VectorSum(NrgSum).Sum(vectors)
+	g := VectorSum(GasSum).Sum(vectors)
 	fmt.Printf("G = ∑g* (%v)\n", g)
 }

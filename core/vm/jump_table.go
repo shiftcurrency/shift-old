@@ -61,13 +61,13 @@ func init() {
 	jumpTable[EXTCODESIZE] = jumpPtr{opExtCodeSize, true}
 	jumpTable[CODECOPY] = jumpPtr{opCodeCopy, true}
 	jumpTable[EXTCODECOPY] = jumpPtr{opExtCodeCopy, true}
-	jumpTable[GASPRICE] = jumpPtr{opNrgprice, true}
+	jumpTable[GASPRICE] = jumpPtr{opGasprice, true}
 	jumpTable[BLOCKHASH] = jumpPtr{opBlockhash, true}
 	jumpTable[COINBASE] = jumpPtr{opCoinbase, true}
 	jumpTable[TIMESTAMP] = jumpPtr{opTimestamp, true}
 	jumpTable[NUMBER] = jumpPtr{opNumber, true}
 	jumpTable[DIFFICULTY] = jumpPtr{opDifficulty, true}
-	jumpTable[GASLIMIT] = jumpPtr{opNrgLimit, true}
+	jumpTable[GASLIMIT] = jumpPtr{opGasLimit, true}
 	jumpTable[POP] = jumpPtr{opPop, true}
 	jumpTable[MLOAD] = jumpPtr{opMload, true}
 	jumpTable[MSTORE] = jumpPtr{opMstore, true}
@@ -77,7 +77,7 @@ func init() {
 	jumpTable[JUMPDEST] = jumpPtr{opJumpdest, true}
 	jumpTable[PC] = jumpPtr{nil, true}
 	jumpTable[MSIZE] = jumpPtr{opMsize, true}
-	jumpTable[GAS] = jumpPtr{opNrg, true}
+	jumpTable[GAS] = jumpPtr{opGas, true}
 	jumpTable[CREATE] = jumpPtr{opCreate, true}
 	jumpTable[CALL] = jumpPtr{opCall, true}
 	jumpTable[CALLCODE] = jumpPtr{opCallCode, true}

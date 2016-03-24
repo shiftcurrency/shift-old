@@ -47,8 +47,8 @@ web3._extend({
 			inputFormatter: [null]
 		}),
 		new web3._extend.Method({
-			name: 'setNrgPrice',
-			call: 'miner_setNrgPrice',
+			name: 'setGasPrice',
+			call: 'miner_setGasPrice',
 			params: 1,
 			inputFormatter: [web3._extend.utils.fromDecial]
 		}),

@@ -71,12 +71,8 @@ var (
 	portInUseErrRE     = regexp.MustCompile("address already in use")
 
 	defaultBootNodes = []*discover.Node{
-        discover.MustParseNode("enode://09f19a67f97d8e53179f5da458e4e484c6bb4364f5480516147d9fbced32eada46204fad1ae22452f4abe1223be9a5a6c41c12975f622a958e3201396969bf80@45.32.149.118:53900"),
-        discover.MustParseNode("enode://a556c5913333ff2f1b853f80883abc35ec185761bf7ab1c627b8606e4148448d670fe4a1edfa9577eb9c045e515ac400c46dabdd509b8c272db80c3e585d260b@108.61.204.10:53900"),
-        discover.MustParseNode("enode://82474668f7f04b36782a259609305be104a412566fc58d22af82f525ef1cc40910d2f4fb922370f02e85bad763dd7e87c49035eabc0168c15e5caa6fe10a1bd6@104.238.177.33:53900"),
-        discover.MustParseNode("enode://7e793a3af4a07a1d172b788c92e6d884ede3f953849bdee79991287bb64e893feba184df55fd42e6cd8f1c85652e8e4ece3a60537c4216ee7f54ef4f99ac75b0@45.32.80.160:53900"),
-        discover.MustParseNode("enode://e58d3016c67d259ac75944a88972a9a1e48cf50c93c5ee1c195d1b52aba04cbe7cd44cb685a5333a9ca990ff5d72fc6f4fc34256738f4df761e70f57fa4da3f8@108.61.191.141:53900"),
-        discover.MustParseNode("enode://0a75d4bd9c6a71ba871e29dad7d0a958f0b48cdc03aaeb5bcef014e8475b1a24ba24acdff9ba81280210bbad94f1675dcd8681b0949f7392f5e698d24043be3f@45.32.53.184:53900"),
+        discover.MustParseNode("enode://6aec96af8621a0e00abf356f0dd6b03156caa47f10f04c8d75ec30a27f71c99599888b9a416dc22d407e1c70de7991db4e00fbd44b1f3158e6a8d91ee7b54fb5@104.238.172.196:53900"),
+        discover.MustParseNode("enode://945ba92241df19e50c5cf125806406c1cc253966b589de7aba71234ffe186efc00ad49e2a2b865512da3e18c2bfdda7dd78ee3757cba5ebb58a66e8b75eaee8b@45.32.158.90:53900"),
 	}
 
 	defaultTestNetBootNodes = []*discover.Node{
@@ -128,13 +124,13 @@ type Config struct {
 	Dial bool
 
 	Etherbase      common.Address
-	NrgPrice       *big.Int
+	GasPrice       *big.Int
 	MinerThreads   int
 	AccountManager *accounts.Manager
 	SolcPath       string
 
-	GpoMinNrgPrice          *big.Int
-	GpoMaxNrgPrice          *big.Int
+	GpoMinGasPrice          *big.Int
+	GpoMaxGasPrice          *big.Int
 	GpoFullBlockRatio       int
 	GpobaseStepDown         int
 	GpobaseStepUp           int
@@ -243,8 +239,8 @@ type Shift struct {
 	SolcPath        string
 	solc            *compiler.Solidity
 
-	GpoMinNrgPrice          *big.Int
-	GpoMaxNrgPrice          *big.Int
+	GpoMinGasPrice          *big.Int
+	GpoMaxGasPrice          *big.Int
 	GpoFullBlockRatio       int
 	GpobaseStepDown         int
 	GpobaseStepUp           int
@@ -378,8 +374,8 @@ func New(config *Config) (*Shift, error) {
 		SolcPath:                config.SolcPath,
 		AutoDAG:                 config.AutoDAG,
 		PowTest:                 config.PowTest,
-		GpoMinNrgPrice:          config.GpoMinNrgPrice,
-		GpoMaxNrgPrice:          config.GpoMaxNrgPrice,
+		GpoMinGasPrice:          config.GpoMinGasPrice,
+		GpoMaxGasPrice:          config.GpoMaxGasPrice,
 		GpoFullBlockRatio:       config.GpoFullBlockRatio,
 		GpobaseStepDown:         config.GpobaseStepDown,
 		GpobaseStepUp:           config.GpobaseStepUp,
@@ -410,14 +406,14 @@ func New(config *Config) (*Shift, error) {
 		}
 		return nil, err
 	}
-	newPool := core.NewTxPool(shf.EventMux(), shf.blockchain.State, shf.blockchain.NrgLimit)
+	newPool := core.NewTxPool(shf.EventMux(), shf.blockchain.State, shf.blockchain.GasLimit)
 	shf.txPool = newPool
 
 	if shf.protocolManager, err = NewProtocolManager(config.FastSync, config.NetworkId, shf.eventMux, shf.txPool, shf.pow, shf.blockchain, chainDb); err != nil {
 		return nil, err
 	}
 	shf.miner = miner.New(shf, shf.EventMux(), shf.pow)
-	shf.miner.SetNrgPrice(config.NrgPrice)
+	shf.miner.SetGasPrice(config.GasPrice)
 	shf.miner.SetExtra(config.ExtraData)
 
 	if config.Shh {

@@ -45,7 +45,7 @@ type Transaction struct {
 
 type txdata struct {
 	AccountNonce    uint64
-	Price, NrgLimit *big.Int
+	Price, GasLimit *big.Int
 	Recipient       *common.Address `rlp:"nil"` // nil means contract creation
 	Amount          *big.Int
 	Payload         []byte
@@ -53,7 +53,7 @@ type txdata struct {
 	R, S            *big.Int // signature
 }
 
-func NewContractCreation(nonce uint64, amount, nrgLimit, nrgPrice *big.Int, data []byte) *Transaction {
+func NewContractCreation(nonce uint64, amount, gasLimit, gasPrice *big.Int, data []byte) *Transaction {
 	if len(data) > 0 {
 		data = common.CopyBytes(data)
 	}
@@ -61,15 +61,15 @@ func NewContractCreation(nonce uint64, amount, nrgLimit, nrgPrice *big.Int, data
 		AccountNonce: nonce,
 		Recipient:    nil,
 		Amount:       new(big.Int).Set(amount),
-		NrgLimit:     new(big.Int).Set(nrgLimit),
-		Price:        new(big.Int).Set(nrgPrice),
+		GasLimit:     new(big.Int).Set(gasLimit),
+		Price:        new(big.Int).Set(gasPrice),
 		Payload:      data,
 		R:            new(big.Int),
 		S:            new(big.Int),
 	}}
 }
 
-func NewTransaction(nonce uint64, to common.Address, amount, nrgLimit, nrgPrice *big.Int, data []byte) *Transaction {
+func NewTransaction(nonce uint64, to common.Address, amount, gasLimit, gasPrice *big.Int, data []byte) *Transaction {
 	if len(data) > 0 {
 		data = common.CopyBytes(data)
 	}
@@ -78,7 +78,7 @@ func NewTransaction(nonce uint64, to common.Address, amount, nrgLimit, nrgPrice 
 		Recipient:    &to,
 		Payload:      data,
 		Amount:       new(big.Int),
-		NrgLimit:     new(big.Int),
+		GasLimit:     new(big.Int),
 		Price:        new(big.Int),
 		R:            new(big.Int),
 		S:            new(big.Int),
@@ -86,11 +86,11 @@ func NewTransaction(nonce uint64, to common.Address, amount, nrgLimit, nrgPrice 
 	if amount != nil {
 		d.Amount.Set(amount)
 	}
-	if nrgLimit != nil {
-		d.NrgLimit.Set(nrgLimit)
+	if gasLimit != nil {
+		d.GasLimit.Set(gasLimit)
 	}
-	if nrgPrice != nil {
-		d.Price.Set(nrgPrice)
+	if gasPrice != nil {
+		d.Price.Set(gasPrice)
 	}
 	return &Transaction{data: d}
 }
@@ -109,8 +109,8 @@ func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 }
 
 func (tx *Transaction) Data() []byte       { return common.CopyBytes(tx.data.Payload) }
-func (tx *Transaction) Nrg() *big.Int      { return new(big.Int).Set(tx.data.NrgLimit) }
-func (tx *Transaction) NrgPrice() *big.Int { return new(big.Int).Set(tx.data.Price) }
+func (tx *Transaction) Gas() *big.Int      { return new(big.Int).Set(tx.data.GasLimit) }
+func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.data.Price) }
 func (tx *Transaction) Value() *big.Int    { return new(big.Int).Set(tx.data.Amount) }
 func (tx *Transaction) Nonce() uint64      { return tx.data.AccountNonce }
 
@@ -140,7 +140,7 @@ func (tx *Transaction) SigHash() common.Hash {
 	return rlpHash([]interface{}{
 		tx.data.AccountNonce,
 		tx.data.Price,
-		tx.data.NrgLimit,
+		tx.data.GasLimit,
 		tx.data.Recipient,
 		tx.data.Amount,
 		tx.data.Payload,
@@ -207,9 +207,9 @@ func doFrom(tx *Transaction, homestead bool) (common.Address, error) {
 	return addr, nil
 }
 
-// Cost returns amount + nrgprice * nrglimit.
+// Cost returns amount + gasprice * gaslimit.
 func (tx *Transaction) Cost() *big.Int {
-	total := new(big.Int).Mul(tx.data.Price, tx.data.NrgLimit)
+	total := new(big.Int).Mul(tx.data.Price, tx.data.GasLimit)
 	total.Add(total, tx.data.Amount)
 	return total
 }
@@ -282,8 +282,8 @@ func (tx *Transaction) String() string {
 	From:     %s
 	To:       %s
 	Nonce:    %v
-	NrgPrice: %v
-	NrgLimit  %v
+	GasPrice: %v
+	GasLimit  %v
 	Value:    %v
 	Data:     0x%x
 	V:        0x%x
@@ -297,7 +297,7 @@ func (tx *Transaction) String() string {
 		to,
 		tx.data.AccountNonce,
 		tx.data.Price,
-		tx.data.NrgLimit,
+		tx.data.GasLimit,
 		tx.data.Amount,
 		tx.data.Payload,
 		tx.data.V,

@@ -105,7 +105,7 @@ func StateObjectFromAccount(db ethdb.Database, addr string, account Account) *st
 type VmEnv struct {
 	CurrentCoinbase   string
 	CurrentDifficulty string
-	CurrentNrgLimit   string
+	CurrentGasLimit   string
 	CurrentNumber     string
 	CurrentTimestamp  interface{}
 	PreviousHash      string
@@ -118,7 +118,7 @@ type VmTest struct {
 	Exec          map[string]string
 	Transaction   map[string]string
 	Logs          []Log
-	Nrg           string
+	Gas           string
 	Out           string
 	Post          map[string]Account
 	Pre           map[string]Account
@@ -130,7 +130,7 @@ type Env struct {
 	state        *state.StateDB
 	skipTransfer bool
 	initial      bool
-	Nrg          *big.Int
+	Gas          *big.Int
 
 	origin   common.Address
 	parent   common.Hash
@@ -139,7 +139,7 @@ type Env struct {
 	number     *big.Int
 	time       *big.Int
 	difficulty *big.Int
-	nrgLimit   *big.Int
+	gasLimit   *big.Int
 
 	logs []vm.StructLog
 
@@ -169,8 +169,8 @@ func NewEnvFromMap(state *state.StateDB, envValues map[string]string, exeValues 
 	env.number = common.Big(envValues["currentNumber"])
 	env.time = common.Big(envValues["currentTimestamp"])
 	env.difficulty = common.Big(envValues["currentDifficulty"])
-	env.nrgLimit = common.Big(envValues["currentNrgLimit"])
-	env.Nrg = new(big.Int)
+	env.gasLimit = common.Big(envValues["currentGasLimit"])
+	env.Gas = new(big.Int)
 
 	return env
 }
@@ -181,7 +181,7 @@ func (self *Env) Coinbase() common.Address { return self.shiftbase }
 func (self *Env) Time() *big.Int           { return self.time }
 func (self *Env) Difficulty() *big.Int     { return self.difficulty }
 func (self *Env) Db() vm.Database          { return self.state }
-func (self *Env) NrgLimit() *big.Int       { return self.nrgLimit }
+func (self *Env) GasLimit() *big.Int       { return self.gasLimit }
 func (self *Env) VmType() vm.Type          { return vm.StdVmTy }
 func (self *Env) GetHash(n uint64) common.Hash {
 	return common.BytesToHash(crypto.Sha3([]byte(big.NewInt(int64(n)).String())))
@@ -215,67 +215,67 @@ func (self *Env) Transfer(from, to vm.Account, amount *big.Int) {
 	core.Transfer(from, to, amount)
 }
 
-func (self *Env) Call(caller vm.ContractRef, addr common.Address, data []byte, nrg, price, value *big.Int) ([]byte, error) {
+func (self *Env) Call(caller vm.ContractRef, addr common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
 	if self.vmTest && self.depth > 0 {
-		caller.ReturnNrg(nrg, price)
+		caller.ReturnGas(gas, price)
 
 		return nil, nil
 	}
-	ret, err := core.Call(self, caller, addr, data, nrg, price, value)
-	self.Nrg = nrg
+	ret, err := core.Call(self, caller, addr, data, gas, price, value)
+	self.Gas = gas
 
 	return ret, err
 
 }
-func (self *Env) CallCode(caller vm.ContractRef, addr common.Address, data []byte, nrg, price, value *big.Int) ([]byte, error) {
+func (self *Env) CallCode(caller vm.ContractRef, addr common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
 	if self.vmTest && self.depth > 0 {
-		caller.ReturnNrg(nrg, price)
+		caller.ReturnGas(gas, price)
 
 		return nil, nil
 	}
-	return core.CallCode(self, caller, addr, data, nrg, price, value)
+	return core.CallCode(self, caller, addr, data, gas, price, value)
 }
 
-func (self *Env) DelegateCall(caller vm.ContractRef, addr common.Address, data []byte, nrg, price *big.Int) ([]byte, error) {
+func (self *Env) DelegateCall(caller vm.ContractRef, addr common.Address, data []byte, gas, price *big.Int) ([]byte, error) {
 	if self.vmTest && self.depth > 0 {
-		caller.ReturnNrg(nrg, price)
+		caller.ReturnGas(gas, price)
 
 		return nil, nil
 	}
-	return core.DelegateCall(self, caller, addr, data, nrg, price)
+	return core.DelegateCall(self, caller, addr, data, gas, price)
 }
 
-func (self *Env) Create(caller vm.ContractRef, data []byte, nrg, price, value *big.Int) ([]byte, common.Address, error) {
+func (self *Env) Create(caller vm.ContractRef, data []byte, gas, price, value *big.Int) ([]byte, common.Address, error) {
 	if self.vmTest {
-		caller.ReturnNrg(nrg, price)
+		caller.ReturnGas(gas, price)
 
 		nonce := self.state.GetNonce(caller.Address())
 		obj := self.state.GetOrNewStateObject(crypto.CreateAddress(caller.Address(), nonce))
 
 		return nil, obj.Address(), nil
 	} else {
-		return core.Create(self, caller, data, nrg, price, value)
+		return core.Create(self, caller, data, gas, price, value)
 	}
 }
 
 type Message struct {
 	from              common.Address
 	to                *common.Address
-	value, nrg, price *big.Int
+	value, gas, price *big.Int
 	data              []byte
 	nonce             uint64
 }
 
-func NewMessage(from common.Address, to *common.Address, data []byte, value, nrg, price *big.Int, nonce uint64) Message {
-	return Message{from, to, value, nrg, price, data, nonce}
+func NewMessage(from common.Address, to *common.Address, data []byte, value, gas, price *big.Int, nonce uint64) Message {
+	return Message{from, to, value, gas, price, data, nonce}
 }
 
 func (self Message) Hash() []byte                          { return nil }
 func (self Message) From() (common.Address, error)         { return self.from, nil }
 func (self Message) FromFrontier() (common.Address, error) { return self.from, nil }
 func (self Message) To() *common.Address                   { return self.to }
-func (self Message) NrgPrice() *big.Int                    { return self.price }
-func (self Message) Nrg() *big.Int                         { return self.nrg }
+func (self Message) GasPrice() *big.Int                    { return self.price }
+func (self Message) Gas() *big.Int                         { return self.gas }
 func (self Message) Value() *big.Int                       { return self.value }
 func (self Message) Nonce() uint64                         { return self.nonce }
 func (self Message) Data() []byte                          { return self.data }

@@ -133,7 +133,7 @@ func (account) SetBalance(*big.Int)                    {}
 func (account) SetNonce(uint64)                        {}
 func (account) Balance() *big.Int                      { return nil }
 func (account) Address() common.Address                { return common.Address{} }
-func (account) ReturnNrg(*big.Int, *big.Int)           {}
+func (account) ReturnGas(*big.Int, *big.Int)           {}
 func (account) SetCode([]byte)                         {}
 func (account) EachStorage(cb func(key, value []byte)) {}
 
@@ -163,7 +163,7 @@ func runVmBench(test vmBench, b *testing.B) {
 }
 
 type Env struct {
-	nrgLimit *big.Int
+	gasLimit *big.Int
 	depth    int
 }
 
@@ -186,7 +186,7 @@ func (self *Env) SetSnapshot(Database)     {}
 func (self *Env) Time() *big.Int           { return big.NewInt(time.Now().Unix()) }
 func (self *Env) Difficulty() *big.Int     { return big.NewInt(0) }
 func (self *Env) Db() Database             { return nil }
-func (self *Env) NrgLimit() *big.Int       { return self.nrgLimit }
+func (self *Env) GasLimit() *big.Int       { return self.gasLimit }
 func (self *Env) VmType() Type             { return StdVmTy }
 func (self *Env) GetHash(n uint64) common.Hash {
 	return common.BytesToHash(crypto.Sha3([]byte(big.NewInt(int64(n)).String())))
@@ -199,15 +199,15 @@ func (self *Env) CanTransfer(from common.Address, balance *big.Int) bool {
 	return true
 }
 func (self *Env) Transfer(from, to Account, amount *big.Int) {}
-func (self *Env) Call(caller ContractRef, addr common.Address, data []byte, nrg, price, value *big.Int) ([]byte, error) {
+func (self *Env) Call(caller ContractRef, addr common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
 	return nil, nil
 }
-func (self *Env) CallCode(caller ContractRef, addr common.Address, data []byte, nrg, price, value *big.Int) ([]byte, error) {
+func (self *Env) CallCode(caller ContractRef, addr common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
 	return nil, nil
 }
-func (self *Env) Create(caller ContractRef, data []byte, nrg, price, value *big.Int) ([]byte, common.Address, error) {
+func (self *Env) Create(caller ContractRef, data []byte, gas, price, value *big.Int) ([]byte, common.Address, error) {
 	return nil, common.Address{}, nil
 }
-func (self *Env) DelegateCall(me ContractRef, addr common.Address, data []byte, nrg, price *big.Int) ([]byte, error) {
+func (self *Env) DelegateCall(me ContractRef, addr common.Address, data []byte, gas, price *big.Int) ([]byte, error) {
 	return nil, nil
 }

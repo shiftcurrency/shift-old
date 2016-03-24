@@ -31,16 +31,16 @@ const (
 
 	// for testing
 	gpoDefaultBaseCorrectionFactor = 110
-	gpoDefaultMinNrgPrice          = 10000000000000
+	gpoDefaultMinGasPrice          = 10000000000000
 )
 
 type blockPriceInfo struct {
-	baseNrgPrice *big.Int
+	baseGasPrice *big.Int
 }
 
-// NrgPriceOracle recommends nrg prices based on the content of recent
+// GasPriceOracle recommends gas prices based on the content of recent
 // blocks.
-type NrgPriceOracle struct {
+type GasPriceOracle struct {
 	shf           *Shift
 	initOnce      sync.Once
 	minPrice      *big.Int
@@ -53,17 +53,17 @@ type NrgPriceOracle struct {
 	minBase                       *big.Int
 }
 
-// NewNrgPriceOracle returns a new oracle.
-func NewNrgPriceOracle(shf *Shift) *NrgPriceOracle {
-	minprice := shf.GpoMinNrgPrice
+// NewGasPriceOracle returns a new oracle.
+func NewGasPriceOracle(shf *Shift) *GasPriceOracle {
+	minprice := shf.GpoMinGasPrice
 	if minprice == nil {
-		minprice = big.NewInt(gpoDefaultMinNrgPrice)
+		minprice = big.NewInt(gpoDefaultMinGasPrice)
 	}
 	minbase := new(big.Int).Mul(minprice, big.NewInt(100))
 	if shf.GpobaseCorrectionFactor > 0 {
 		minbase = minbase.Div(minbase, big.NewInt(int64(shf.GpobaseCorrectionFactor)))
 	}
-	return &NrgPriceOracle{
+	return &GasPriceOracle{
 		shf:      shf,
 		blocks:   make(map[uint64]*blockPriceInfo),
 		minBase:  minbase,
@@ -72,14 +72,14 @@ func NewNrgPriceOracle(shf *Shift) *NrgPriceOracle {
 	}
 }
 
-func (gpo *NrgPriceOracle) init() {
+func (gpo *GasPriceOracle) init() {
 	gpo.initOnce.Do(func() {
 		gpo.processPastBlocks(gpo.shf.BlockChain())
 		go gpo.listenLoop()
 	})
 }
 
-func (self *NrgPriceOracle) processPastBlocks(chain *core.BlockChain) {
+func (self *GasPriceOracle) processPastBlocks(chain *core.BlockChain) {
 	last := int64(-1)
 	cblock := chain.CurrentBlock()
 	if cblock != nil {
@@ -99,7 +99,7 @@ func (self *NrgPriceOracle) processPastBlocks(chain *core.BlockChain) {
 
 }
 
-func (self *NrgPriceOracle) listenLoop() {
+func (self *GasPriceOracle) listenLoop() {
 	events := self.shf.EventMux().Subscribe(core.ChainEvent{}, core.ChainSplitEvent{})
 	defer events.Unsubscribe()
 
@@ -113,7 +113,7 @@ func (self *NrgPriceOracle) listenLoop() {
 	}
 }
 
-func (self *NrgPriceOracle) processBlock(block *types.Block) {
+func (self *GasPriceOracle) processBlock(block *types.Block) {
 	i := block.NumberU64()
 	if i > self.lastProcessed {
 		self.lastProcessed = i
@@ -122,7 +122,7 @@ func (self *NrgPriceOracle) processBlock(block *types.Block) {
 	lastBase := self.minPrice
 	bpl := self.blocks[i-1]
 	if bpl != nil {
-		lastBase = bpl.baseNrgPrice
+		lastBase = bpl.baseGasPrice
 	}
 	if lastBase == nil {
 		return
@@ -153,7 +153,7 @@ func (self *NrgPriceOracle) processBlock(block *types.Block) {
 		bpi = &blockPriceInfo{}
 		self.blocks[i] = bpi
 	}
-	bpi.baseNrgPrice = newBase
+	bpi.baseGasPrice = newBase
 	self.lastBaseMutex.Lock()
 	self.lastBase = newBase
 	self.lastBaseMutex.Unlock()
@@ -162,19 +162,19 @@ func (self *NrgPriceOracle) processBlock(block *types.Block) {
 }
 
 // returns the lowers possible price with which a tx was or could have been included
-func (self *NrgPriceOracle) lowestPrice(block *types.Block) *big.Int {
-	nrgUsed := big.NewInt(0)
+func (self *GasPriceOracle) lowestPrice(block *types.Block) *big.Int {
+	gasUsed := big.NewInt(0)
 
 	receipts := core.GetBlockReceipts(self.shf.ChainDb(), block.Hash())
 	if len(receipts) > 0 {
-		if cgu := receipts[len(receipts)-1].CumulativeNrgUsed; cgu != nil {
-			nrgUsed = receipts[len(receipts)-1].CumulativeNrgUsed
+		if cgu := receipts[len(receipts)-1].CumulativeGasUsed; cgu != nil {
+			gasUsed = receipts[len(receipts)-1].CumulativeGasUsed
 		}
 	}
 
-	if new(big.Int).Mul(nrgUsed, big.NewInt(100)).Cmp(new(big.Int).Mul(block.NrgLimit(),
+	if new(big.Int).Mul(gasUsed, big.NewInt(100)).Cmp(new(big.Int).Mul(block.GasLimit(),
 		big.NewInt(int64(self.shf.GpoFullBlockRatio)))) < 0 {
-		// block is not full, could have posted a tx with MinNrgPrice
+		// block is not full, could have posted a tx with MinGasPrice
 		return big.NewInt(0)
 	}
 
@@ -182,10 +182,10 @@ func (self *NrgPriceOracle) lowestPrice(block *types.Block) *big.Int {
 	if len(txs) == 0 {
 		return big.NewInt(0)
 	}
-	// block is full, find smallest nrgPrice
-	minPrice := txs[0].NrgPrice()
+	// block is full, find smallest gasPrice
+	minPrice := txs[0].GasPrice()
 	for i := 1; i < len(txs); i++ {
-		price := txs[i].NrgPrice()
+		price := txs[i].GasPrice()
 		if price.Cmp(minPrice) < 0 {
 			minPrice = price
 		}
@@ -193,8 +193,8 @@ func (self *NrgPriceOracle) lowestPrice(block *types.Block) *big.Int {
 	return minPrice
 }
 
-// SuggestPrice returns the recommended nrg price.
-func (self *NrgPriceOracle) SuggestPrice() *big.Int {
+// SuggestPrice returns the recommended gas price.
+func (self *GasPriceOracle) SuggestPrice() *big.Int {
 	self.init()
 	self.lastBaseMutex.Lock()
 	price := new(big.Int).Set(self.lastBase)
@@ -204,8 +204,8 @@ func (self *NrgPriceOracle) SuggestPrice() *big.Int {
 	price.Div(price, big.NewInt(100))
 	if price.Cmp(self.minPrice) < 0 {
 		price.Set(self.minPrice)
-	} else if self.shf.GpoMaxNrgPrice != nil && price.Cmp(self.shf.GpoMaxNrgPrice) > 0 {
-		price.Set(self.shf.GpoMaxNrgPrice)
+	} else if self.shf.GpoMaxGasPrice != nil && price.Cmp(self.shf.GpoMaxGasPrice) > 0 {
+		price.Set(self.shf.GpoMaxGasPrice)
 	}
 	return price
 }

@@ -350,8 +350,8 @@ type NewTxArgs struct {
 	To       string
 	Nonce    *big.Int
 	Value    *big.Int
-	Nrg      *big.Int
-	NrgPrice *big.Int
+	Gas      *big.Int
+	GasPrice *big.Int
 	Data     string
 
 	BlockNumber int64
@@ -364,8 +364,8 @@ func (args *NewTxArgs) UnmarshalJSON(b []byte) (err error) {
 		To       string
 		Nonce    interface{}
 		Value    interface{}
-		Nrg      interface{}
-		NrgPrice interface{}
+		Gas      interface{}
+		GasPrice interface{}
 		Data     string
 	}
 
@@ -412,20 +412,20 @@ func (args *NewTxArgs) UnmarshalJSON(b []byte) (err error) {
 	args.Value = num
 
 	num = nil
-	if ext.Nrg != nil {
-		if num, err = numString(ext.Nrg); err != nil {
+	if ext.Gas != nil {
+		if num, err = numString(ext.Gas); err != nil {
 			return err
 		}
 	}
-	args.Nrg = num
+	args.Gas = num
 
 	num = nil
-	if ext.NrgPrice != nil {
-		if num, err = numString(ext.NrgPrice); err != nil {
+	if ext.GasPrice != nil {
+		if num, err = numString(ext.GasPrice); err != nil {
 			return err
 		}
 	}
-	args.NrgPrice = num
+	args.GasPrice = num
 
 	// Check for optional BlockNumber param
 	if len(obj) > 1 {
@@ -466,8 +466,8 @@ type CallArgs struct {
 	From     string
 	To       string
 	Value    *big.Int
-	Nrg      *big.Int
-	NrgPrice *big.Int
+	Gas      *big.Int
+	GasPrice *big.Int
 	Data     string
 
 	BlockNumber int64
@@ -479,8 +479,8 @@ func (args *CallArgs) UnmarshalJSON(b []byte) (err error) {
 		From     string
 		To       string
 		Value    interface{}
-		Nrg      interface{}
-		NrgPrice interface{}
+		Gas      interface{}
+		GasPrice interface{}
 		Data     string
 	}
 
@@ -512,23 +512,23 @@ func (args *CallArgs) UnmarshalJSON(b []byte) (err error) {
 	}
 	args.Value = num
 
-	if ext.Nrg != nil {
-		if num, err = numString(ext.Nrg); err != nil {
+	if ext.Gas != nil {
+		if num, err = numString(ext.Gas); err != nil {
 			return err
 		}
 	} else {
 		num = nil
 	}
-	args.Nrg = num
+	args.Gas = num
 
-	if ext.NrgPrice != nil {
-		if num, err = numString(ext.NrgPrice); err != nil {
+	if ext.GasPrice != nil {
+		if num, err = numString(ext.GasPrice); err != nil {
 			return err
 		}
 	} else {
 		num = nil
 	}
-	args.NrgPrice = num
+	args.GasPrice = num
 
 	args.Data = ext.Data
 
@@ -928,8 +928,8 @@ type tx struct {
 	Nonce    string `json:"nonce"`
 	Value    string `json:"value"`
 	Data     string `json:"data"`
-	NrgLimit string `json:"nrg"`
-	NrgPrice string `json:"nrgPrice"`
+	GasLimit string `json:"gas"`
+	GasPrice string `json:"gasPrice"`
 	Hash     string `json:"hash"`
 }
 
@@ -947,16 +947,16 @@ func newTx(t *types.Transaction) *tx {
 		Value:    t.Value().String(),
 		Nonce:    strconv.Itoa(int(t.Nonce())),
 		Data:     "0x" + common.Bytes2Hex(t.Data()),
-		NrgLimit: t.Nrg().String(),
-		NrgPrice: t.NrgPrice().String(),
+		GasLimit: t.Gas().String(),
+		GasPrice: t.GasPrice().String(),
 		Hash:     t.Hash().Hex(),
 	}
 }
 
 type ResendArgs struct {
 	Tx       *tx
-	NrgPrice string
-	NrgLimit string
+	GasPrice string
+	GasLimit string
 }
 
 func (tx *tx) UnmarshalJSON(b []byte) (err error) {
@@ -969,8 +969,8 @@ func (tx *tx) UnmarshalJSON(b []byte) (err error) {
 		nonce            uint64
 		to               common.Address
 		amount           = new(big.Int).Set(common.Big0)
-		nrgLimit         = new(big.Int).Set(common.Big0)
-		nrgPrice         = new(big.Int).Set(common.Big0)
+		gasLimit         = new(big.Int).Set(common.Big0)
+		gasPrice         = new(big.Int).Set(common.Big0)
 		data             []byte
 		contractCreation = true
 	)
@@ -1027,28 +1027,28 @@ func (tx *tx) UnmarshalJSON(b []byte) (err error) {
 		}
 	}
 
-	if val, found := fields["NrgLimit"]; found {
+	if val, found := fields["GasLimit"]; found {
 		if strVal, ok := val.(string); ok {
-			tx.NrgLimit = strVal
-			if _, parseOk = nrgLimit.SetString(strVal, 0); !parseOk {
-				return shared.NewDecodeParamError(fmt.Sprintf("Unable to decode tx.NrgLimit - %v", err))
+			tx.GasLimit = strVal
+			if _, parseOk = gasLimit.SetString(strVal, 0); !parseOk {
+				return shared.NewDecodeParamError(fmt.Sprintf("Unable to decode tx.GasLimit - %v", err))
 			}
 		}
 	}
 
-	if val, found := fields["NrgPrice"]; found {
+	if val, found := fields["GasPrice"]; found {
 		if strVal, ok := val.(string); ok {
-			tx.NrgPrice = strVal
-			if _, parseOk = nrgPrice.SetString(strVal, 0); !parseOk {
-				return shared.NewDecodeParamError(fmt.Sprintf("Unable to decode tx.NrgPrice - %v", err))
+			tx.GasPrice = strVal
+			if _, parseOk = gasPrice.SetString(strVal, 0); !parseOk {
+				return shared.NewDecodeParamError(fmt.Sprintf("Unable to decode tx.GasPrice - %v", err))
 			}
 		}
 	}
 
 	if contractCreation {
-		tx.tx = types.NewContractCreation(nonce, amount, nrgLimit, nrgPrice, data)
+		tx.tx = types.NewContractCreation(nonce, amount, gasLimit, gasPrice, data)
 	} else {
-		tx.tx = types.NewTransaction(nonce, to, amount, nrgLimit, nrgPrice, data)
+		tx.tx = types.NewTransaction(nonce, to, amount, gasLimit, gasPrice, data)
 	}
 
 	return nil
@@ -1079,26 +1079,26 @@ func (args *ResendArgs) UnmarshalJSON(b []byte) (err error) {
 		return shared.NewDecodeParamError("Unable to parse transaction object")
 	}
 
-	nrgLimit, nrgPrice := trans.NrgLimit, trans.NrgPrice
+	gasLimit, gasPrice := trans.GasLimit, trans.GasPrice
 
 	if len(obj) > 1 && obj[1] != nil {
 		if gp, ok := obj[1].(string); ok {
-			nrgPrice = gp
+			gasPrice = gp
 		} else {
-			return shared.NewInvalidTypeError("nrgPrice", "not a string")
+			return shared.NewInvalidTypeError("gasPrice", "not a string")
 		}
 	}
 	if len(obj) > 2 && obj[2] != nil {
 		if gl, ok := obj[2].(string); ok {
-			nrgLimit = gl
+			gasLimit = gl
 		} else {
-			return shared.NewInvalidTypeError("nrgLimit", "not a string")
+			return shared.NewInvalidTypeError("gasLimit", "not a string")
 		}
 	}
 
 	args.Tx = trans
-	args.NrgPrice = nrgPrice
-	args.NrgLimit = nrgLimit
+	args.GasPrice = gasPrice
+	args.GasLimit = gasLimit
 
 	return nil
 }

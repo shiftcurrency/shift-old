@@ -24,7 +24,7 @@ invokes the JIT VM in a seperate goroutine and compiles the byte code in JIT
 instructions.
 
 The JIT VM, when invoked, loops around a set of pre-defined instructions until
-it either runs of nrg, causes an internal error, returns or stops.
+it either runs of gas, causes an internal error, returns or stops.
 
 The JIT optimiser attempts to pre-compile instructions in to chunks or segments
 such as multiple PUSH operations and static JUMPs. It does this by analysing the

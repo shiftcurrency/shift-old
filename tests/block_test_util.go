@@ -89,15 +89,15 @@ type btHeader struct {
 
 	ExtraData  string
 	Difficulty string
-	NrgLimit   string
-	NrgUsed    string
+	GasLimit   string
+	GasUsed    string
 	Timestamp  string
 }
 
 type btTransaction struct {
 	Data     string
-	NrgLimit string
-	NrgPrice string
+	GasLimit string
+	GasPrice string
 	Nonce    string
 	R        string
 	S        string
@@ -377,13 +377,13 @@ func validateHeader(h *btHeader, h2 *types.Header) error {
 		return fmt.Errorf("Difficulty: want: %v have: %v", expectedDifficulty, h2.Difficulty)
 	}
 
-	expectedNrgLimit := mustConvertBigInt(h.NrgLimit, 16)
-	if expectedNrgLimit.Cmp(h2.NrgLimit) != 0 {
-		return fmt.Errorf("NrgLimit: want: %v have: %v", expectedNrgLimit, h2.NrgLimit)
+	expectedGasLimit := mustConvertBigInt(h.GasLimit, 16)
+	if expectedGasLimit.Cmp(h2.GasLimit) != 0 {
+		return fmt.Errorf("GasLimit: want: %v have: %v", expectedGasLimit, h2.GasLimit)
 	}
-	expectedNrgUsed := mustConvertBigInt(h.NrgUsed, 16)
-	if expectedNrgUsed.Cmp(h2.NrgUsed) != 0 {
-		return fmt.Errorf("NrgUsed: want: %v have: %v", expectedNrgUsed, h2.NrgUsed)
+	expectedGasUsed := mustConvertBigInt(h.GasUsed, 16)
+	if expectedGasUsed.Cmp(h2.GasUsed) != 0 {
+		return fmt.Errorf("GasUsed: want: %v have: %v", expectedGasUsed, h2.GasUsed)
 	}
 
 	expectedTimestamp := mustConvertBigInt(h.Timestamp, 16)
@@ -501,8 +501,8 @@ func mustConvertHeader(in btHeader) *types.Header {
 		UncleHash:   mustConvertHash(in.UncleHash),
 		ParentHash:  mustConvertHash(in.ParentHash),
 		Extra:       mustConvertBytes(in.ExtraData),
-		NrgUsed:     mustConvertBigInt(in.NrgUsed, 16),
-		NrgLimit:    mustConvertBigInt(in.NrgLimit, 16),
+		GasUsed:     mustConvertBigInt(in.GasUsed, 16),
+		GasLimit:    mustConvertBigInt(in.GasLimit, 16),
 		Difficulty:  mustConvertBigInt(in.Difficulty, 16),
 		Time:        mustConvertBigInt(in.Timestamp, 16),
 		Nonce:       types.EncodeNonce(mustConvertUint(in.Nonce, 16)),

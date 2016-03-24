@@ -46,8 +46,8 @@ import (
 
 var (
 	filterTickerTime = 5 * time.Minute
-	defaultNrgPrice  = big.NewInt(10000000000000) //150000000000
-	defaultNrg       = big.NewInt(90000)          //500000
+	defaultGasPrice  = big.NewInt(10000000000000) //150000000000
+	defaultGas       = big.NewInt(90000)          //500000
 	dappStorePre     = []byte("dapp-")
 	addrReg          = regexp.MustCompile(`^(0x)?[a-fA-F0-9]{40}$`)
 )
@@ -81,7 +81,7 @@ type XEth struct {
 	backend       *shf.Shift
 	frontend      Frontend
 	agent         *miner.RemoteAgent
-	gpo           *shf.NrgPriceOracle
+	gpo           *shf.GasPriceOracle
 	state         *State
 	whisper       *Whisper
 	filterManager *filters.FilterSystem
@@ -105,7 +105,7 @@ func New(shift *shf.Shift, frontend Frontend) *XEth {
 		transactionQueue: make(map[int]*hashQueue),
 		messages:         make(map[int]*whisperFilter),
 		agent:            miner.NewRemoteAgent(),
-		gpo:              shf.NewNrgPriceOracle(shift),
+		gpo:              shf.NewGasPriceOracle(shift),
 	}
 	if shift.Whisper() != nil {
 		xeth.whisper = NewWhisper(shift.Whisper())
@@ -195,9 +195,9 @@ func cTopics(t [][]string) [][]common.Hash {
 	return topics
 }
 
-func DefaultNrg() *big.Int { return new(big.Int).Set(defaultNrg) }
+func DefaultGas() *big.Int { return new(big.Int).Set(defaultGas) }
 
-func (self *XEth) DefaultNrgPrice() *big.Int {
+func (self *XEth) DefaultGasPrice() *big.Int {
 	return self.gpo.SuggestPrice()
 }
 
@@ -354,8 +354,8 @@ func (self *XEth) GetTxReceipt(txhash common.Hash) *types.Receipt {
 	return core.GetReceipt(self.backend.ChainDb(), txhash)
 }
 
-func (self *XEth) NrgLimit() *big.Int {
-	return self.backend.BlockChain().NrgLimit()
+func (self *XEth) GasLimit() *big.Int {
+	return self.backend.BlockChain().GasLimit()
 }
 
 func (self *XEth) Block(v interface{}) *Block {
@@ -807,7 +807,7 @@ func (self *XEth) PushTx(encodedTx string) (string, error) {
 	return tx.Hash().Hex(), nil
 }
 
-func (self *XEth) Call(fromStr, toStr, valueStr, nrgStr, nrgPriceStr, dataStr string) (string, string, error) {
+func (self *XEth) Call(fromStr, toStr, valueStr, gasStr, gasPriceStr, dataStr string) (string, string, error) {
 	statedb := self.State().State().Copy()
 	var from *state.StateObject
 	if len(fromStr) == 0 {
@@ -825,8 +825,8 @@ func (self *XEth) Call(fromStr, toStr, valueStr, nrgStr, nrgPriceStr, dataStr st
 
 	msg := callmsg{
 		from:     from,
-		nrg:      common.Big(nrgStr),
-		nrgPrice: common.Big(nrgPriceStr),
+		gas:      common.Big(gasStr),
+		gasPrice: common.Big(gasPriceStr),
 		value:    common.Big(valueStr),
 		data:     common.FromHex(dataStr),
 	}
@@ -835,19 +835,19 @@ func (self *XEth) Call(fromStr, toStr, valueStr, nrgStr, nrgPriceStr, dataStr st
 		msg.to = &addr
 	}
 
-	if msg.nrg.Cmp(big.NewInt(0)) == 0 {
-		msg.nrg = big.NewInt(50000000)
+	if msg.gas.Cmp(big.NewInt(0)) == 0 {
+		msg.gas = big.NewInt(50000000)
 	}
 
-	if msg.nrgPrice.Cmp(big.NewInt(0)) == 0 {
-		msg.nrgPrice = self.DefaultNrgPrice()
+	if msg.gasPrice.Cmp(big.NewInt(0)) == 0 {
+		msg.gasPrice = self.DefaultGasPrice()
 	}
 
 	header := self.CurrentBlock().Header()
 	vmenv := core.NewEnv(statedb, self.backend.BlockChain(), msg, header)
-	gp := new(core.NrgPool).AddNrg(common.MaxBig)
-	res, nrg, err := core.ApplyMessage(vmenv, msg, gp)
-	return common.ToHex(res), nrg.String(), err
+	gp := new(core.GasPool).AddGas(common.MaxBig)
+	res, gas, err := core.ApplyMessage(vmenv, msg, gp)
+	return common.ToHex(res), gas.String(), err
 }
 
 func (self *XEth) ConfirmTransaction(tx string) bool {
@@ -891,7 +891,7 @@ func (self *XEth) Frontend() Frontend {
 	return self.frontend
 }
 
-func (self *XEth) SignTransaction(fromStr, toStr, nonceStr, valueStr, nrgStr, nrgPriceStr, codeStr string) (*types.Transaction, error) {
+func (self *XEth) SignTransaction(fromStr, toStr, nonceStr, valueStr, gasStr, gasPriceStr, codeStr string) (*types.Transaction, error) {
 	if len(toStr) > 0 && toStr != "0x" && !isAddress(toStr) {
 		return nil, errors.New("Invalid address")
 	}
@@ -900,22 +900,22 @@ func (self *XEth) SignTransaction(fromStr, toStr, nonceStr, valueStr, nrgStr, nr
 		from             = common.HexToAddress(fromStr)
 		to               = common.HexToAddress(toStr)
 		value            = common.Big(valueStr)
-		nrg              *big.Int
+		gas              *big.Int
 		price            *big.Int
 		data             []byte
 		contractCreation bool
 	)
 
-	if len(nrgStr) == 0 {
-		nrg = DefaultNrg()
+	if len(gasStr) == 0 {
+		gas = DefaultGas()
 	} else {
-		nrg = common.Big(nrgStr)
+		gas = common.Big(gasStr)
 	}
 
-	if len(nrgPriceStr) == 0 {
-		price = self.DefaultNrgPrice()
+	if len(gasPriceStr) == 0 {
+		price = self.DefaultGasPrice()
 	} else {
-		price = common.Big(nrgPriceStr)
+		price = common.Big(gasPriceStr)
 	}
 
 	data = common.FromHex(codeStr)
@@ -932,9 +932,9 @@ func (self *XEth) SignTransaction(fromStr, toStr, nonceStr, valueStr, nrgStr, nr
 	}
 	var tx *types.Transaction
 	if contractCreation {
-		tx = types.NewContractCreation(nonce, value, nrg, price, data)
+		tx = types.NewContractCreation(nonce, value, gas, price, data)
 	} else {
-		tx = types.NewTransaction(nonce, to, value, nrg, price, data)
+		tx = types.NewTransaction(nonce, to, value, gas, price, data)
 	}
 
 	signed, err := self.sign(tx, from, false)
@@ -945,7 +945,7 @@ func (self *XEth) SignTransaction(fromStr, toStr, nonceStr, valueStr, nrgStr, nr
 	return signed, nil
 }
 
-func (self *XEth) Transact(fromStr, toStr, nonceStr, valueStr, nrgStr, nrgPriceStr, codeStr string) (string, error) {
+func (self *XEth) Transact(fromStr, toStr, nonceStr, valueStr, gasStr, gasPriceStr, codeStr string) (string, error) {
 
 	// this minimalistic recoding is enough (works for natspec.js)
 	var jsontx = fmt.Sprintf(`{"params":[{"to":"%s","data": "%s"}]}`, toStr, codeStr)
@@ -962,22 +962,22 @@ func (self *XEth) Transact(fromStr, toStr, nonceStr, valueStr, nrgStr, nrgPriceS
 		from             = common.HexToAddress(fromStr)
 		to               = common.HexToAddress(toStr)
 		value            = common.Big(valueStr)
-		nrg              *big.Int
+		gas              *big.Int
 		price            *big.Int
 		data             []byte
 		contractCreation bool
 	)
 
-	if len(nrgStr) == 0 {
-		nrg = DefaultNrg()
+	if len(gasStr) == 0 {
+		gas = DefaultGas()
 	} else {
-		nrg = common.Big(nrgStr)
+		gas = common.Big(gasStr)
 	}
 
-	if len(nrgPriceStr) == 0 {
-		price = self.DefaultNrgPrice()
+	if len(gasPriceStr) == 0 {
+		price = self.DefaultGasPrice()
 	} else {
-		price = common.Big(nrgPriceStr)
+		price = common.Big(gasPriceStr)
 	}
 
 	data = common.FromHex(codeStr)
@@ -999,7 +999,7 @@ func (self *XEth) Transact(fromStr, toStr, nonceStr, valueStr, nrgStr, nrgPriceS
 				}
 			}
 
-			result, _ := account.Transact(common.FromHex(args.To), common.FromHex(args.Value), common.FromHex(args.Nrg), common.FromHex(args.NrgPrice), common.FromHex(args.Data))
+			result, _ := account.Transact(common.FromHex(args.To), common.FromHex(args.Value), common.FromHex(args.Gas), common.FromHex(args.GasPrice), common.FromHex(args.Data))
 			if len(result) > 0 {
 				*reply = common.ToHex(result)
 			}
@@ -1020,9 +1020,9 @@ func (self *XEth) Transact(fromStr, toStr, nonceStr, valueStr, nrgStr, nrgPriceS
 	}
 	var tx *types.Transaction
 	if contractCreation {
-		tx = types.NewContractCreation(nonce, value, nrg, price, data)
+		tx = types.NewContractCreation(nonce, value, gas, price, data)
 	} else {
-		tx = types.NewTransaction(nonce, to, value, nrg, price, data)
+		tx = types.NewTransaction(nonce, to, value, gas, price, data)
 	}
 
 	signed, err := self.sign(tx, from, false)
@@ -1056,7 +1056,7 @@ func (self *XEth) sign(tx *types.Transaction, from common.Address, didUnlock boo
 type callmsg struct {
 	from          *state.StateObject
 	to            *common.Address
-	nrg, nrgPrice *big.Int
+	gas, gasPrice *big.Int
 	value         *big.Int
 	data          []byte
 }
@@ -1066,8 +1066,8 @@ func (m callmsg) From() (common.Address, error)         { return m.from.Address(
 func (m callmsg) FromFrontier() (common.Address, error) { return m.from.Address(), nil }
 func (m callmsg) Nonce() uint64                         { return m.from.Nonce() }
 func (m callmsg) To() *common.Address                   { return m.to }
-func (m callmsg) NrgPrice() *big.Int                    { return m.nrgPrice }
-func (m callmsg) Nrg() *big.Int                         { return m.nrg }
+func (m callmsg) GasPrice() *big.Int                    { return m.gasPrice }
+func (m callmsg) Gas() *big.Int                         { return m.gas }
 func (m callmsg) Value() *big.Int                       { return m.value }
 func (m callmsg) Data() []byte                          { return m.data }
 

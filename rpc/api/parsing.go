@@ -175,8 +175,8 @@ type BlockRes struct {
 	TotalDifficulty *hexnum           `json:"totalDifficulty"`
 	Size            *hexnum           `json:"size"`
 	ExtraData       *hexdata          `json:"extraData"`
-	NrgLimit        *hexnum           `json:"nrgLimit"`
-	NrgUsed         *hexnum           `json:"nrgUsed"`
+	GasLimit        *hexnum           `json:"gasLimit"`
+	GasUsed         *hexnum           `json:"gasUsed"`
 	UnixTimestamp   *hexnum           `json:"timestamp"`
 	Transactions    []*TransactionRes `json:"transactions"`
 	Uncles          []*UncleRes       `json:"uncles"`
@@ -199,8 +199,8 @@ func (b *BlockRes) MarshalJSON() ([]byte, error) {
 			TotalDifficulty *hexnum           `json:"totalDifficulty"`
 			Size            *hexnum           `json:"size"`
 			ExtraData       *hexdata          `json:"extraData"`
-			NrgLimit        *hexnum           `json:"nrgLimit"`
-			NrgUsed         *hexnum           `json:"nrgUsed"`
+			GasLimit        *hexnum           `json:"gasLimit"`
+			GasUsed         *hexnum           `json:"gasUsed"`
 			UnixTimestamp   *hexnum           `json:"timestamp"`
 			Transactions    []*TransactionRes `json:"transactions"`
 			Uncles          []*hexdata        `json:"uncles"`
@@ -220,8 +220,8 @@ func (b *BlockRes) MarshalJSON() ([]byte, error) {
 		ext.TotalDifficulty = b.TotalDifficulty
 		ext.Size = b.Size
 		ext.ExtraData = b.ExtraData
-		ext.NrgLimit = b.NrgLimit
-		ext.NrgUsed = b.NrgUsed
+		ext.GasLimit = b.GasLimit
+		ext.GasUsed = b.GasUsed
 		ext.UnixTimestamp = b.UnixTimestamp
 		ext.Transactions = b.Transactions
 		ext.Uncles = make([]*hexdata, len(b.Uncles))
@@ -245,8 +245,8 @@ func (b *BlockRes) MarshalJSON() ([]byte, error) {
 			TotalDifficulty *hexnum    `json:"totalDifficulty"`
 			Size            *hexnum    `json:"size"`
 			ExtraData       *hexdata   `json:"extraData"`
-			NrgLimit        *hexnum    `json:"nrgLimit"`
-			NrgUsed         *hexnum    `json:"nrgUsed"`
+			GasLimit        *hexnum    `json:"gasLimit"`
+			GasUsed         *hexnum    `json:"gasUsed"`
 			UnixTimestamp   *hexnum    `json:"timestamp"`
 			Transactions    []*hexdata `json:"transactions"`
 			Uncles          []*hexdata `json:"uncles"`
@@ -266,8 +266,8 @@ func (b *BlockRes) MarshalJSON() ([]byte, error) {
 		ext.TotalDifficulty = b.TotalDifficulty
 		ext.Size = b.Size
 		ext.ExtraData = b.ExtraData
-		ext.NrgLimit = b.NrgLimit
-		ext.NrgUsed = b.NrgUsed
+		ext.GasLimit = b.GasLimit
+		ext.GasUsed = b.GasUsed
 		ext.UnixTimestamp = b.UnixTimestamp
 		ext.Transactions = make([]*hexdata, len(b.Transactions))
 		for i, tx := range b.Transactions {
@@ -302,8 +302,8 @@ func NewBlockRes(block *types.Block, td *big.Int, fullTx bool) *BlockRes {
 	res.TotalDifficulty = newHexNum(td)
 	res.Size = newHexNum(block.Size().Int64())
 	res.ExtraData = newHexData(block.Extra())
-	res.NrgLimit = newHexNum(block.NrgLimit())
-	res.NrgUsed = newHexNum(block.NrgUsed())
+	res.GasLimit = newHexNum(block.GasLimit())
+	res.GasUsed = newHexNum(block.GasUsed())
 	res.UnixTimestamp = newHexNum(block.Time())
 
 	txs := block.Transactions()
@@ -333,8 +333,8 @@ type TransactionRes struct {
 	From        *hexdata `json:"from"`
 	To          *hexdata `json:"to"`
 	Value       *hexnum  `json:"value"`
-	Nrg         *hexnum  `json:"nrg"`
-	NrgPrice    *hexnum  `json:"nrgPrice"`
+	Gas         *hexnum  `json:"gas"`
+	GasPrice    *hexnum  `json:"gasPrice"`
 	Input       *hexdata `json:"input"`
 }
 
@@ -353,8 +353,8 @@ func NewTransactionRes(tx *types.Transaction) *TransactionRes {
 	v.From = newHexData(from)
 	v.To = newHexData(tx.To())
 	v.Value = newHexNum(tx.Value())
-	v.Nrg = newHexNum(tx.Nrg())
-	v.NrgPrice = newHexNum(tx.NrgPrice())
+	v.Gas = newHexNum(tx.Gas())
+	v.GasPrice = newHexNum(tx.GasPrice())
 	v.Input = newHexData(tx.Data())
 	return v
 }
@@ -372,8 +372,8 @@ type UncleRes struct {
 	Miner           *hexdata `json:"miner"`
 	Difficulty      *hexnum  `json:"difficulty"`
 	ExtraData       *hexdata `json:"extraData"`
-	NrgLimit        *hexnum  `json:"nrgLimit"`
-	NrgUsed         *hexnum  `json:"nrgUsed"`
+	GasLimit        *hexnum  `json:"gasLimit"`
+	GasUsed         *hexnum  `json:"gasUsed"`
 	UnixTimestamp   *hexnum  `json:"timestamp"`
 }
 
@@ -394,8 +394,8 @@ func NewUncleRes(h *types.Header) *UncleRes {
 	v.Miner = newHexData(h.Coinbase)
 	v.Difficulty = newHexNum(h.Difficulty)
 	v.ExtraData = newHexData(h.Extra)
-	v.NrgLimit = newHexNum(h.NrgLimit)
-	v.NrgUsed = newHexNum(h.NrgUsed)
+	v.GasLimit = newHexNum(h.GasLimit)
+	v.GasUsed = newHexNum(h.GasUsed)
 	v.UnixTimestamp = newHexNum(h.Time)
 	v.ReceiptHash = newHexData(h.ReceiptHash)
 
@@ -430,8 +430,8 @@ type ReceiptRes struct {
 	TransactionIndex  *hexnum        `json:"transactionIndex"`
 	BlockNumber       *hexnum        `json:"blockNumber"`
 	BlockHash         *hexdata       `json:"blockHash"`
-	CumulativeNrgUsed *hexnum        `json:"cumulativeNrgUsed"`
-	NrgUsed           *hexnum        `json:"nrgUsed"`
+	CumulativeGasUsed *hexnum        `json:"cumulativeGasUsed"`
+	GasUsed           *hexnum        `json:"gasUsed"`
 	ContractAddress   *hexdata       `json:"contractAddress"`
 	Logs              *[]interface{} `json:"logs"`
 }
@@ -443,10 +443,10 @@ func NewReceiptRes(rec *types.Receipt) *ReceiptRes {
 
 	var v = new(ReceiptRes)
 	v.TransactionHash = newHexData(rec.TxHash)
-	if rec.NrgUsed != nil {
-		v.NrgUsed = newHexNum(rec.NrgUsed.Bytes())
+	if rec.GasUsed != nil {
+		v.GasUsed = newHexNum(rec.GasUsed.Bytes())
 	}
-	v.CumulativeNrgUsed = newHexNum(rec.CumulativeNrgUsed)
+	v.CumulativeGasUsed = newHexNum(rec.CumulativeGasUsed)
 
 	// If the ContractAddress is 20 0x0 bytes, assume it is not a contract creation
 	if bytes.Compare(rec.ContractAddress.Bytes(), bytes.Repeat([]byte{0}, 20)) != 0 {

@@ -30,25 +30,25 @@ import (
 type Receipt struct {
 	// Consensus fields
 	PostState         []byte
-	CumulativeNrgUsed *big.Int
+	CumulativeGasUsed *big.Int
 	Bloom             Bloom
 	Logs              vm.Logs
 
 	// Implementation fields
 	TxHash          common.Hash
 	ContractAddress common.Address
-	NrgUsed         *big.Int
+	GasUsed         *big.Int
 }
 
 // NewReceipt creates a barebone transaction receipt, copying the init fields.
-func NewReceipt(root []byte, cumulativeNrgUsed *big.Int) *Receipt {
-	return &Receipt{PostState: common.CopyBytes(root), CumulativeNrgUsed: new(big.Int).Set(cumulativeNrgUsed)}
+func NewReceipt(root []byte, cumulativeGasUsed *big.Int) *Receipt {
+	return &Receipt{PostState: common.CopyBytes(root), CumulativeGasUsed: new(big.Int).Set(cumulativeGasUsed)}
 }
 
 // EncodeRLP implements rlp.Encoder, and flattens the consensus fields of a receipt
 // into an RLP stream.
 func (r *Receipt) EncodeRLP(w io.Writer) error {
-	return rlp.Encode(w, []interface{}{r.PostState, r.CumulativeNrgUsed, r.Bloom, r.Logs})
+	return rlp.Encode(w, []interface{}{r.PostState, r.CumulativeGasUsed, r.Bloom, r.Logs})
 }
 
 // DecodeRLP implements rlp.Decoder, and loads the consensus fields of a receipt
@@ -56,14 +56,14 @@ func (r *Receipt) EncodeRLP(w io.Writer) error {
 func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
 	var receipt struct {
 		PostState         []byte
-		CumulativeNrgUsed *big.Int
+		CumulativeGasUsed *big.Int
 		Bloom             Bloom
 		Logs              vm.Logs
 	}
 	if err := s.Decode(&receipt); err != nil {
 		return err
 	}
-	r.PostState, r.CumulativeNrgUsed, r.Bloom, r.Logs = receipt.PostState, receipt.CumulativeNrgUsed, receipt.Bloom, receipt.Logs
+	r.PostState, r.CumulativeGasUsed, r.Bloom, r.Logs = receipt.PostState, receipt.CumulativeGasUsed, receipt.Bloom, receipt.Logs
 	return nil
 }
 
@@ -78,7 +78,7 @@ func (r *Receipt) RlpEncode() []byte {
 
 // String implements the Stringer interface.
 func (r *Receipt) String() string {
-	return fmt.Sprintf("receipt{med=%x cnrg=%v bloom=%x logs=%v}", r.PostState, r.CumulativeNrgUsed, r.Bloom, r.Logs)
+	return fmt.Sprintf("receipt{med=%x cgas=%v bloom=%x logs=%v}", r.PostState, r.CumulativeGasUsed, r.Bloom, r.Logs)
 }
 
 // ReceiptForStorage is a wrapper around a Receipt that flattens and parses the
@@ -92,7 +92,7 @@ func (r *ReceiptForStorage) EncodeRLP(w io.Writer) error {
 	for i, log := range r.Logs {
 		logs[i] = (*vm.LogForStorage)(log)
 	}
-	return rlp.Encode(w, []interface{}{r.PostState, r.CumulativeNrgUsed, r.Bloom, r.TxHash, r.ContractAddress, logs, r.NrgUsed})
+	return rlp.Encode(w, []interface{}{r.PostState, r.CumulativeGasUsed, r.Bloom, r.TxHash, r.ContractAddress, logs, r.GasUsed})
 }
 
 // DecodeRLP implements rlp.Decoder, and loads both consensus and implementation
@@ -100,24 +100,24 @@ func (r *ReceiptForStorage) EncodeRLP(w io.Writer) error {
 func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
 	var receipt struct {
 		PostState         []byte
-		CumulativeNrgUsed *big.Int
+		CumulativeGasUsed *big.Int
 		Bloom             Bloom
 		TxHash            common.Hash
 		ContractAddress   common.Address
 		Logs              []*vm.LogForStorage
-		NrgUsed           *big.Int
+		GasUsed           *big.Int
 	}
 	if err := s.Decode(&receipt); err != nil {
 		return err
 	}
 	// Assign the consensus fields
-	r.PostState, r.CumulativeNrgUsed, r.Bloom = receipt.PostState, receipt.CumulativeNrgUsed, receipt.Bloom
+	r.PostState, r.CumulativeGasUsed, r.Bloom = receipt.PostState, receipt.CumulativeGasUsed, receipt.Bloom
 	r.Logs = make(vm.Logs, len(receipt.Logs))
 	for i, log := range receipt.Logs {
 		r.Logs[i] = (*vm.Log)(log)
 	}
 	// Assign the implementation fields
-	r.TxHash, r.ContractAddress, r.NrgUsed = receipt.TxHash, receipt.ContractAddress, receipt.NrgUsed
+	r.TxHash, r.ContractAddress, r.GasUsed = receipt.TxHash, receipt.ContractAddress, receipt.GasUsed
 
 	return nil
 }

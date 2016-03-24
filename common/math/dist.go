@@ -38,7 +38,7 @@ func Sum(slice Summer) (sum *big.Int) {
 }
 
 type Vector struct {
-	Nrg, Price *big.Int
+	Gas, Price *big.Int
 }
 
 type VectorsBy func(v1, v2 Vector) bool
@@ -61,7 +61,7 @@ func (v vectorSorter) Less(i, j int) bool { return v.by(v.vectors[i], v.vectors[
 func (v vectorSorter) Swap(i, j int)      { v.vectors[i], v.vectors[j] = v.vectors[j], v.vectors[i] }
 
 func PriceSort(v1, v2 Vector) bool { return v1.Price.Cmp(v2.Price) < 0 }
-func NrgSort(v1, v2 Vector) bool   { return v1.Nrg.Cmp(v2.Nrg) < 0 }
+func GasSort(v1, v2 Vector) bool   { return v1.Gas.Cmp(v2.Gas) < 0 }
 
 type vectorSummer struct {
 	vectors []Vector
@@ -81,11 +81,11 @@ func (v VectorSum) Sum(vectors []Vector) *big.Int {
 func (v vectorSummer) Len() int           { return len(v.vectors) }
 func (v vectorSummer) Sum(i int) *big.Int { return v.by(v.vectors[i]) }
 
-func NrgSum(v Vector) *big.Int { return v.Nrg }
+func GasSum(v Vector) *big.Int { return v.Gas }
 
 var etherInWei = new(big.Rat).SetInt(common.String2Big("1000000000000000000"))
 
-func NrgPrice(bp, gl, ep *big.Int) *big.Int {
+func GasPrice(bp, gl, ep *big.Int) *big.Int {
 	BP := new(big.Rat).SetInt(bp)
 	GL := new(big.Rat).SetInt(gl)
 	EP := new(big.Rat).SetInt(ep)

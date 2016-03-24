@@ -140,12 +140,12 @@ func testBlockChainImport(chain types.Blocks, blockchain *BlockChain) error {
 		if err != nil {
 			return err
 		}
-		receipts, _, usedNrg, err := blockchain.Processor().Process(block, statedb)
+		receipts, _, usedGas, err := blockchain.Processor().Process(block, statedb)
 		if err != nil {
 			reportBlock(block, err)
 			return err
 		}
-		err = blockchain.Validator().ValidateState(block, blockchain.GetBlock(block.ParentHash()), statedb, receipts, usedNrg)
+		err = blockchain.Validator().ValidateState(block, blockchain.GetBlock(block.ParentHash()), statedb, receipts, usedGas)
 		if err != nil {
 			reportBlock(block, err)
 			return err
@@ -431,7 +431,7 @@ type bproc struct{}
 
 func (bproc) ValidateBlock(*types.Block) error                        { return nil }
 func (bproc) ValidateHeader(*types.Header, *types.Header, bool) error { return nil }
-func (bproc) ValidateState(block, parent *types.Block, state *state.StateDB, receipts types.Receipts, usedNrg *big.Int) error {
+func (bproc) ValidateState(block, parent *types.Block, state *state.StateDB, receipts types.Receipts, usedGas *big.Int) error {
 	return nil
 }
 func (bproc) Process(block *types.Block, statedb *state.StateDB) (types.Receipts, vm.Logs, *big.Int, error) {
@@ -615,8 +615,8 @@ func testReorgBadHashes(t *testing.T, full bool) {
 		if ncm.CurrentBlock().Hash() != blocks[2].Header().Hash() {
 			t.Errorf("last block hash mismatch: have: %x, want %x", ncm.CurrentBlock().Hash(), blocks[2].Header().Hash())
 		}
-		if blocks[2].Header().NrgLimit.Cmp(ncm.NrgLimit()) != 0 {
-			t.Errorf("last  block nrgLimit mismatch: have: %x, want %x", ncm.NrgLimit(), blocks[2].Header().NrgLimit)
+		if blocks[2].Header().GasLimit.Cmp(ncm.GasLimit()) != 0 {
+			t.Errorf("last  block gasLimit mismatch: have: %x, want %x", ncm.GasLimit(), blocks[2].Header().GasLimit)
 		}
 	} else {
 		if ncm.CurrentHeader().Hash() != headers[2].Hash() {
@@ -711,7 +711,7 @@ func TestFastVsFullChains(t *testing.T) {
 		// If the block number is multiple of 3, send a few bonus transactions to the miner
 		if i%3 == 2 {
 			for j := 0; j < i%4+1; j++ {
-				tx, err := types.NewTransaction(block.TxNonce(address), common.Address{0x00}, big.NewInt(1000), params.TxNrg, nil, nil).SignECDSA(key)
+				tx, err := types.NewTransaction(block.TxNonce(address), common.Address{0x00}, big.NewInt(1000), params.TxGas, nil, nil).SignECDSA(key)
 				if err != nil {
 					panic(err)
 				}
@@ -854,8 +854,8 @@ func TestLightVsFastVsFullChainHeads(t *testing.T) {
 
 // Tests that chain reorganizations handle transaction removals and reinsertions.
 func TestChainTxReorgs(t *testing.T) {
-	params.MinNrgLimit = big.NewInt(125000)      // Minimum the nrg limit may ever be.
-	params.GenesisNrgLimit = big.NewInt(3141592) // Nrg limit of the Genesis block.
+	params.MinGasLimit = big.NewInt(125000)      // Minimum the gas limit may ever be.
+	params.GenesisGasLimit = big.NewInt(3141592) // Gas limit of the Genesis block.
 
 	var (
 		key1, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
@@ -874,8 +874,8 @@ func TestChainTxReorgs(t *testing.T) {
 	// Create two transactions shared between the chains:
 	//  - postponed: transaction included at a later block in the forked chain
 	//  - swapped: transaction included at the same block number in the forked chain
-	postponed, _ := types.NewTransaction(0, addr1, big.NewInt(1000), params.TxNrg, nil, nil).SignECDSA(key1)
-	swapped, _ := types.NewTransaction(1, addr1, big.NewInt(1000), params.TxNrg, nil, nil).SignECDSA(key1)
+	postponed, _ := types.NewTransaction(0, addr1, big.NewInt(1000), params.TxGas, nil, nil).SignECDSA(key1)
+	swapped, _ := types.NewTransaction(1, addr1, big.NewInt(1000), params.TxGas, nil, nil).SignECDSA(key1)
 
 	// Create two transactions that will be dropped by the forked chain:
 	//  - pastDrop: transaction dropped retroactively from a past block
@@ -891,13 +891,13 @@ func TestChainTxReorgs(t *testing.T) {
 	chain, _ := GenerateChain(genesis, db, 3, func(i int, gen *BlockGen) {
 		switch i {
 		case 0:
-			pastDrop, _ = types.NewTransaction(gen.TxNonce(addr2), addr2, big.NewInt(1000), params.TxNrg, nil, nil).SignECDSA(key2)
+			pastDrop, _ = types.NewTransaction(gen.TxNonce(addr2), addr2, big.NewInt(1000), params.TxGas, nil, nil).SignECDSA(key2)
 
 			gen.AddTx(pastDrop)  // This transaction will be dropped in the fork from below the split point
 			gen.AddTx(postponed) // This transaction will be postponed till block #3 in the fork
 
 		case 2:
-			freshDrop, _ = types.NewTransaction(gen.TxNonce(addr2), addr2, big.NewInt(1000), params.TxNrg, nil, nil).SignECDSA(key2)
+			freshDrop, _ = types.NewTransaction(gen.TxNonce(addr2), addr2, big.NewInt(1000), params.TxGas, nil, nil).SignECDSA(key2)
 
 			gen.AddTx(freshDrop) // This transaction will be dropped in the fork from exactly at the split point
 			gen.AddTx(swapped)   // This transaction will be swapped out at the exact height
@@ -916,18 +916,18 @@ func TestChainTxReorgs(t *testing.T) {
 	chain, _ = GenerateChain(genesis, db, 5, func(i int, gen *BlockGen) {
 		switch i {
 		case 0:
-			pastAdd, _ = types.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), params.TxNrg, nil, nil).SignECDSA(key3)
+			pastAdd, _ = types.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), params.TxGas, nil, nil).SignECDSA(key3)
 			gen.AddTx(pastAdd) // This transaction needs to be injected during reorg
 
 		case 2:
 			gen.AddTx(postponed) // This transaction was postponed from block #1 in the original chain
 			gen.AddTx(swapped)   // This transaction was swapped from the exact current spot in the original chain
 
-			freshAdd, _ = types.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), params.TxNrg, nil, nil).SignECDSA(key3)
+			freshAdd, _ = types.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), params.TxGas, nil, nil).SignECDSA(key3)
 			gen.AddTx(freshAdd) // This transaction will be added exactly at reorg time
 
 		case 3:
-			futureAdd, _ = types.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), params.TxNrg, nil, nil).SignECDSA(key3)
+			futureAdd, _ = types.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), params.TxGas, nil, nil).SignECDSA(key3)
 			gen.AddTx(futureAdd) // This transaction will be added after a full reorg
 		}
 	})

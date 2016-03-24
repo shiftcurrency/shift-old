@@ -390,25 +390,25 @@ func TestReceiptStorage(t *testing.T) {
 
 	receipt1 := &types.Receipt{
 		PostState:         []byte{0x01},
-		CumulativeNrgUsed: big.NewInt(1),
+		CumulativeGasUsed: big.NewInt(1),
 		Logs: vm.Logs{
 			&vm.Log{Address: common.BytesToAddress([]byte{0x11})},
 			&vm.Log{Address: common.BytesToAddress([]byte{0x01, 0x11})},
 		},
 		TxHash:          common.BytesToHash([]byte{0x11, 0x11}),
 		ContractAddress: common.BytesToAddress([]byte{0x01, 0x11, 0x11}),
-		NrgUsed:         big.NewInt(111111),
+		GasUsed:         big.NewInt(111111),
 	}
 	receipt2 := &types.Receipt{
 		PostState:         []byte{0x02},
-		CumulativeNrgUsed: big.NewInt(2),
+		CumulativeGasUsed: big.NewInt(2),
 		Logs: vm.Logs{
 			&vm.Log{Address: common.BytesToAddress([]byte{0x22})},
 			&vm.Log{Address: common.BytesToAddress([]byte{0x02, 0x22})},
 		},
 		TxHash:          common.BytesToHash([]byte{0x22, 0x22}),
 		ContractAddress: common.BytesToAddress([]byte{0x02, 0x22, 0x22}),
-		NrgUsed:         big.NewInt(222222),
+		GasUsed:         big.NewInt(222222),
 	}
 	receipts := []*types.Receipt{receipt1, receipt2}
 
@@ -449,25 +449,25 @@ func TestBlockReceiptStorage(t *testing.T) {
 
 	receipt1 := &types.Receipt{
 		PostState:         []byte{0x01},
-		CumulativeNrgUsed: big.NewInt(1),
+		CumulativeGasUsed: big.NewInt(1),
 		Logs: vm.Logs{
 			&vm.Log{Address: common.BytesToAddress([]byte{0x11})},
 			&vm.Log{Address: common.BytesToAddress([]byte{0x01, 0x11})},
 		},
 		TxHash:          common.BytesToHash([]byte{0x11, 0x11}),
 		ContractAddress: common.BytesToAddress([]byte{0x01, 0x11, 0x11}),
-		NrgUsed:         big.NewInt(111111),
+		GasUsed:         big.NewInt(111111),
 	}
 	receipt2 := &types.Receipt{
 		PostState:         []byte{0x02},
-		CumulativeNrgUsed: big.NewInt(2),
+		CumulativeGasUsed: big.NewInt(2),
 		Logs: vm.Logs{
 			&vm.Log{Address: common.BytesToAddress([]byte{0x22})},
 			&vm.Log{Address: common.BytesToAddress([]byte{0x02, 0x22})},
 		},
 		TxHash:          common.BytesToHash([]byte{0x22, 0x22}),
 		ContractAddress: common.BytesToAddress([]byte{0x02, 0x22, 0x22}),
-		NrgUsed:         big.NewInt(222222),
+		GasUsed:         big.NewInt(222222),
 	}
 	receipts := []*types.Receipt{receipt1, receipt2}
 

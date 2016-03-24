@@ -71,11 +71,11 @@ func (args *SetExtraArgs) UnmarshalJSON(b []byte) (err error) {
 	return nil
 }
 
-type NrgPriceArgs struct {
+type GasPriceArgs struct {
 	Price string
 }
 
-func (args *NrgPriceArgs) UnmarshalJSON(b []byte) (err error) {
+func (args *GasPriceArgs) UnmarshalJSON(b []byte) (err error) {
 	var obj []interface{}
 	if err := json.Unmarshal(b, &obj); err != nil {
 		return shared.NewDecodeParamError(err.Error())

@@ -435,16 +435,16 @@ func TestGetBlockByNumberBlockObject(t *testing.T) {
 func TestNewTxArgs(t *testing.T) {
 	input := `[{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": "0x76c0",
-  "nrgPrice": "0x9184e72a000",
+  "gas": "0x76c0",
+  "gasPrice": "0x9184e72a000",
   "value": "0x9184e72a000",
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"},
   "0x10"]`
 	expected := new(NewTxArgs)
 	expected.From = "0xb60e8dd61c5d32be8058bb8eb970870f07233155"
 	expected.To = "0xd46e8dd67c5d32be8058bb8eb970870f072445675"
-	expected.Nrg = big.NewInt(30400)
-	expected.NrgPrice = big.NewInt(10000000000000)
+	expected.Gas = big.NewInt(30400)
+	expected.GasPrice = big.NewInt(10000000000000)
 	expected.Value = big.NewInt(10000000000000)
 	expected.Data = "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
 	expected.BlockNumber = big.NewInt(16).Int64()
@@ -462,12 +462,12 @@ func TestNewTxArgs(t *testing.T) {
 		t.Errorf("To shoud be %#v but is %#v", expected.To, args.To)
 	}
 
-	if bytes.Compare(expected.Nrg.Bytes(), args.Nrg.Bytes()) != 0 {
-		t.Errorf("Nrg shoud be %#v but is %#v", expected.Nrg.Bytes(), args.Nrg.Bytes())
+	if bytes.Compare(expected.Gas.Bytes(), args.Gas.Bytes()) != 0 {
+		t.Errorf("Gas shoud be %#v but is %#v", expected.Gas.Bytes(), args.Gas.Bytes())
 	}
 
-	if bytes.Compare(expected.NrgPrice.Bytes(), args.NrgPrice.Bytes()) != 0 {
-		t.Errorf("NrgPrice shoud be %#v but is %#v", expected.NrgPrice, args.NrgPrice)
+	if bytes.Compare(expected.GasPrice.Bytes(), args.GasPrice.Bytes()) != 0 {
+		t.Errorf("GasPrice shoud be %#v but is %#v", expected.GasPrice, args.GasPrice)
 	}
 
 	if bytes.Compare(expected.Value.Bytes(), args.Value.Bytes()) != 0 {
@@ -486,14 +486,14 @@ func TestNewTxArgs(t *testing.T) {
 func TestNewTxArgsInt(t *testing.T) {
 	input := `[{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": 100,
-  "nrgPrice": 50,
+  "gas": 100,
+  "gasPrice": 50,
   "value": 8765456789,
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"},
   5]`
 	expected := new(NewTxArgs)
-	expected.Nrg = big.NewInt(100)
-	expected.NrgPrice = big.NewInt(50)
+	expected.Gas = big.NewInt(100)
+	expected.GasPrice = big.NewInt(50)
 	expected.Value = big.NewInt(8765456789)
 	expected.BlockNumber = int64(5)
 
@@ -502,12 +502,12 @@ func TestNewTxArgsInt(t *testing.T) {
 		t.Error(err)
 	}
 
-	if bytes.Compare(expected.Nrg.Bytes(), args.Nrg.Bytes()) != 0 {
-		t.Errorf("Nrg shoud be %v but is %v", expected.Nrg, args.Nrg)
+	if bytes.Compare(expected.Gas.Bytes(), args.Gas.Bytes()) != 0 {
+		t.Errorf("Gas shoud be %v but is %v", expected.Gas, args.Gas)
 	}
 
-	if bytes.Compare(expected.NrgPrice.Bytes(), args.NrgPrice.Bytes()) != 0 {
-		t.Errorf("NrgPrice shoud be %v but is %v", expected.NrgPrice, args.NrgPrice)
+	if bytes.Compare(expected.GasPrice.Bytes(), args.GasPrice.Bytes()) != 0 {
+		t.Errorf("GasPrice shoud be %v but is %v", expected.GasPrice, args.GasPrice)
 	}
 
 	if bytes.Compare(expected.Value.Bytes(), args.Value.Bytes()) != 0 {
@@ -522,8 +522,8 @@ func TestNewTxArgsInt(t *testing.T) {
 func TestNewTxArgsBlockBool(t *testing.T) {
 	input := `[{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": "0x76c0",
-  "nrgPrice": "0x9184e72a000",
+  "gas": "0x76c0",
+  "gasPrice": "0x9184e72a000",
   "value": "0x9184e72a000",
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"},
   false]`
@@ -535,11 +535,11 @@ func TestNewTxArgsBlockBool(t *testing.T) {
 	}
 }
 
-func TestNewTxArgsNrgInvalid(t *testing.T) {
+func TestNewTxArgsGasInvalid(t *testing.T) {
 	input := `[{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": false,
-  "nrgPrice": "0x9184e72a000",
+  "gas": false,
+  "gasPrice": "0x9184e72a000",
   "value": "0x9184e72a000",
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
   }]`
@@ -551,11 +551,11 @@ func TestNewTxArgsNrgInvalid(t *testing.T) {
 	}
 }
 
-func TestNewTxArgsNrgpriceInvalid(t *testing.T) {
+func TestNewTxArgsGaspriceInvalid(t *testing.T) {
 	input := `[{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": "0x76c0",
-  "nrgPrice": false,
+  "gas": "0x76c0",
+  "gasPrice": false,
   "value": "0x9184e72a000",
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
   }]`
@@ -570,8 +570,8 @@ func TestNewTxArgsNrgpriceInvalid(t *testing.T) {
 func TestNewTxArgsValueInvalid(t *testing.T) {
 	input := `[{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": "0x76c0",
-  "nrgPrice": "0x9184e72a000",
+  "gas": "0x76c0",
+  "gasPrice": "0x9184e72a000",
   "value": false,
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
 	}]`
@@ -583,46 +583,46 @@ func TestNewTxArgsValueInvalid(t *testing.T) {
 	}
 }
 
-func TestNewTxArgsNrgMissing(t *testing.T) {
+func TestNewTxArgsGasMissing(t *testing.T) {
 	input := `[{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrgPrice": "0x9184e72a000",
+  "gasPrice": "0x9184e72a000",
   "value": "0x9184e72a000",
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
   }]`
 	expected := new(NewTxArgs)
-	expected.Nrg = nil
+	expected.Gas = nil
 
 	args := new(NewTxArgs)
 	if err := json.Unmarshal([]byte(input), &args); err != nil {
 		t.Error(err)
 	}
 
-	if args.Nrg != expected.Nrg {
-		// if bytes.Compare(expected.Nrg.Bytes(), args.Nrg.Bytes()) != 0 {
-		t.Errorf("Nrg shoud be %v but is %v", expected.Nrg, args.Nrg)
+	if args.Gas != expected.Gas {
+		// if bytes.Compare(expected.Gas.Bytes(), args.Gas.Bytes()) != 0 {
+		t.Errorf("Gas shoud be %v but is %v", expected.Gas, args.Gas)
 	}
 }
 
-func TestNewTxArgsBlockNrgpriceMissing(t *testing.T) {
+func TestNewTxArgsBlockGaspriceMissing(t *testing.T) {
 	input := `[{
 	"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": "0x76c0",
+  "gas": "0x76c0",
   "value": "0x9184e72a000",
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
   }]`
 	expected := new(NewTxArgs)
-	expected.NrgPrice = nil
+	expected.GasPrice = nil
 
 	args := new(NewTxArgs)
 	if err := json.Unmarshal([]byte(input), &args); err != nil {
 		t.Error(err)
 	}
 
-	if args.NrgPrice != expected.NrgPrice {
-		// if bytes.Compare(expected.NrgPrice.Bytes(), args.NrgPrice.Bytes()) != 0 {
-		t.Errorf("NrgPrice shoud be %v but is %v", expected.NrgPrice, args.NrgPrice)
+	if args.GasPrice != expected.GasPrice {
+		// if bytes.Compare(expected.GasPrice.Bytes(), args.GasPrice.Bytes()) != 0 {
+		t.Errorf("GasPrice shoud be %v but is %v", expected.GasPrice, args.GasPrice)
 	}
 
 }
@@ -631,8 +631,8 @@ func TestNewTxArgsValueMissing(t *testing.T) {
 	input := `[{
 	"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": "0x76c0",
-  "nrgPrice": "0x9184e72a000",
+  "gas": "0x76c0",
+  "gasPrice": "0x9184e72a000",
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
 	}]`
 	expected := new(NewTxArgs)
@@ -691,16 +691,16 @@ func TestNewTxArgsFromEmpty(t *testing.T) {
 func TestCallArgs(t *testing.T) {
 	input := `[{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": "0x76c0",
-  "nrgPrice": "0x9184e72a000",
+  "gas": "0x76c0",
+  "gasPrice": "0x9184e72a000",
   "value": "0x9184e72a000",
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"},
   "0x10"]`
 	expected := new(CallArgs)
 	expected.From = "0xb60e8dd61c5d32be8058bb8eb970870f07233155"
 	expected.To = "0xd46e8dd67c5d32be8058bb8eb970870f072445675"
-	expected.Nrg = big.NewInt(30400)
-	expected.NrgPrice = big.NewInt(10000000000000)
+	expected.Gas = big.NewInt(30400)
+	expected.GasPrice = big.NewInt(10000000000000)
 	expected.Value = big.NewInt(10000000000000)
 	expected.Data = "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
 	expected.BlockNumber = big.NewInt(16).Int64()
@@ -714,12 +714,12 @@ func TestCallArgs(t *testing.T) {
 		t.Errorf("To shoud be %#v but is %#v", expected.To, args.To)
 	}
 
-	if bytes.Compare(expected.Nrg.Bytes(), args.Nrg.Bytes()) != 0 {
-		t.Errorf("Nrg shoud be %#v but is %#v", expected.Nrg.Bytes(), args.Nrg.Bytes())
+	if bytes.Compare(expected.Gas.Bytes(), args.Gas.Bytes()) != 0 {
+		t.Errorf("Gas shoud be %#v but is %#v", expected.Gas.Bytes(), args.Gas.Bytes())
 	}
 
-	if bytes.Compare(expected.NrgPrice.Bytes(), args.NrgPrice.Bytes()) != 0 {
-		t.Errorf("NrgPrice shoud be %#v but is %#v", expected.NrgPrice, args.NrgPrice)
+	if bytes.Compare(expected.GasPrice.Bytes(), args.GasPrice.Bytes()) != 0 {
+		t.Errorf("GasPrice shoud be %#v but is %#v", expected.GasPrice, args.GasPrice)
 	}
 
 	if bytes.Compare(expected.Value.Bytes(), args.Value.Bytes()) != 0 {
@@ -738,14 +738,14 @@ func TestCallArgs(t *testing.T) {
 func TestCallArgsInt(t *testing.T) {
 	input := `[{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": 100,
-  "nrgPrice": 50,
+  "gas": 100,
+  "gasPrice": 50,
   "value": 8765456789,
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"},
   5]`
 	expected := new(CallArgs)
-	expected.Nrg = big.NewInt(100)
-	expected.NrgPrice = big.NewInt(50)
+	expected.Gas = big.NewInt(100)
+	expected.GasPrice = big.NewInt(50)
 	expected.Value = big.NewInt(8765456789)
 	expected.BlockNumber = int64(5)
 
@@ -754,12 +754,12 @@ func TestCallArgsInt(t *testing.T) {
 		t.Error(err)
 	}
 
-	if bytes.Compare(expected.Nrg.Bytes(), args.Nrg.Bytes()) != 0 {
-		t.Errorf("Nrg shoud be %v but is %v", expected.Nrg, args.Nrg)
+	if bytes.Compare(expected.Gas.Bytes(), args.Gas.Bytes()) != 0 {
+		t.Errorf("Gas shoud be %v but is %v", expected.Gas, args.Gas)
 	}
 
-	if bytes.Compare(expected.NrgPrice.Bytes(), args.NrgPrice.Bytes()) != 0 {
-		t.Errorf("NrgPrice shoud be %v but is %v", expected.NrgPrice, args.NrgPrice)
+	if bytes.Compare(expected.GasPrice.Bytes(), args.GasPrice.Bytes()) != 0 {
+		t.Errorf("GasPrice shoud be %v but is %v", expected.GasPrice, args.GasPrice)
 	}
 
 	if bytes.Compare(expected.Value.Bytes(), args.Value.Bytes()) != 0 {
@@ -774,8 +774,8 @@ func TestCallArgsInt(t *testing.T) {
 func TestCallArgsBlockBool(t *testing.T) {
 	input := `[{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": "0x76c0",
-  "nrgPrice": "0x9184e72a000",
+  "gas": "0x76c0",
+  "gasPrice": "0x9184e72a000",
   "value": "0x9184e72a000",
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"},
   false]`
@@ -787,11 +787,11 @@ func TestCallArgsBlockBool(t *testing.T) {
 	}
 }
 
-func TestCallArgsNrgInvalid(t *testing.T) {
+func TestCallArgsGasInvalid(t *testing.T) {
 	input := `[{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": false,
-  "nrgPrice": "0x9184e72a000",
+  "gas": false,
+  "gasPrice": "0x9184e72a000",
   "value": "0x9184e72a000",
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
   }]`
@@ -803,11 +803,11 @@ func TestCallArgsNrgInvalid(t *testing.T) {
 	}
 }
 
-func TestCallArgsNrgpriceInvalid(t *testing.T) {
+func TestCallArgsGaspriceInvalid(t *testing.T) {
 	input := `[{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": "0x76c0",
-  "nrgPrice": false,
+  "gas": "0x76c0",
+  "gasPrice": false,
   "value": "0x9184e72a000",
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
   }]`
@@ -822,8 +822,8 @@ func TestCallArgsNrgpriceInvalid(t *testing.T) {
 func TestCallArgsValueInvalid(t *testing.T) {
 	input := `[{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": "0x76c0",
-  "nrgPrice": "0x9184e72a000",
+  "gas": "0x76c0",
+  "gasPrice": "0x9184e72a000",
   "value": false,
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
 	}]`
@@ -835,10 +835,10 @@ func TestCallArgsValueInvalid(t *testing.T) {
 	}
 }
 
-func TestCallArgsNrgMissing(t *testing.T) {
+func TestCallArgsGasMissing(t *testing.T) {
 	input := `[{"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrgPrice": "0x9184e72a000",
+  "gasPrice": "0x9184e72a000",
   "value": "0x9184e72a000",
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
   }]`
@@ -849,20 +849,20 @@ func TestCallArgsNrgMissing(t *testing.T) {
 	}
 
 	expected := new(CallArgs)
-	expected.Nrg = nil
+	expected.Gas = nil
 
-	if args.Nrg != expected.Nrg {
-		// if bytes.Compare(expected.Nrg.Bytes(), args.Nrg.Bytes()) != 0 {
-		t.Errorf("Nrg shoud be %v but is %v", expected.Nrg, args.Nrg)
+	if args.Gas != expected.Gas {
+		// if bytes.Compare(expected.Gas.Bytes(), args.Gas.Bytes()) != 0 {
+		t.Errorf("Gas shoud be %v but is %v", expected.Gas, args.Gas)
 	}
 
 }
 
-func TestCallArgsBlockNrgpriceMissing(t *testing.T) {
+func TestCallArgsBlockGaspriceMissing(t *testing.T) {
 	input := `[{
 	"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": "0x76c0",
+  "gas": "0x76c0",
   "value": "0x9184e72a000",
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
   }]`
@@ -873,11 +873,11 @@ func TestCallArgsBlockNrgpriceMissing(t *testing.T) {
 	}
 
 	expected := new(CallArgs)
-	expected.NrgPrice = nil
+	expected.GasPrice = nil
 
-	if args.NrgPrice != expected.NrgPrice {
-		// if bytes.Compare(expected.NrgPrice.Bytes(), args.NrgPrice.Bytes()) != 0 {
-		t.Errorf("NrgPrice shoud be %v but is %v", expected.NrgPrice, args.NrgPrice)
+	if args.GasPrice != expected.GasPrice {
+		// if bytes.Compare(expected.GasPrice.Bytes(), args.GasPrice.Bytes()) != 0 {
+		t.Errorf("GasPrice shoud be %v but is %v", expected.GasPrice, args.GasPrice)
 	}
 }
 
@@ -885,8 +885,8 @@ func TestCallArgsValueMissing(t *testing.T) {
 	input := `[{
 	"from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
   "to": "0xd46e8dd67c5d32be8058bb8eb970870f072445675",
-  "nrg": "0x76c0",
-  "nrgPrice": "0x9184e72a000",
+  "gas": "0x76c0",
+  "gasPrice": "0x9184e72a000",
   "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
 	}]`
 
@@ -899,7 +899,7 @@ func TestCallArgsValueMissing(t *testing.T) {
 	expected.Value = big.NewInt(int64(0))
 
 	if bytes.Compare(expected.Value.Bytes(), args.Value.Bytes()) != 0 {
-		t.Errorf("NrgPrice shoud be %v but is %v", expected.Value, args.Value)
+		t.Errorf("GasPrice shoud be %v but is %v", expected.Value, args.Value)
 	}
 }
 

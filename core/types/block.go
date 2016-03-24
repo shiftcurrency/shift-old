@@ -58,8 +58,8 @@ type Header struct {
 	Bloom       Bloom          // Bloom
 	Difficulty  *big.Int       // Difficulty for the current block
 	Number      *big.Int       // The block number
-	NrgLimit    *big.Int       // Nrg limit
-	NrgUsed     *big.Int       // Nrg used
+	GasLimit    *big.Int       // Gas limit
+	GasUsed     *big.Int       // Gas used
 	Time        *big.Int       // Creation time
 	Extra       []byte         // Extra data
 	MixDigest   common.Hash    // for quick difficulty verification
@@ -81,8 +81,8 @@ func (h *Header) HashNoNonce() common.Hash {
 		h.Bloom,
 		h.Difficulty,
 		h.Number,
-		h.NrgLimit,
-		h.NrgUsed,
+		h.GasLimit,
+		h.GasUsed,
 		h.Time,
 		h.Extra,
 	})
@@ -93,7 +93,7 @@ func (h *Header) UnmarshalJSON(data []byte) error {
 		ParentHash string
 		Coinbase   string
 		Difficulty string
-		NrgLimit   string
+		GasLimit   string
 		Time       *big.Int
 		Extra      string
 	}
@@ -241,11 +241,11 @@ func CopyHeader(h *Header) *Header {
 	if cpy.Number = new(big.Int); h.Number != nil {
 		cpy.Number.Set(h.Number)
 	}
-	if cpy.NrgLimit = new(big.Int); h.NrgLimit != nil {
-		cpy.NrgLimit.Set(h.NrgLimit)
+	if cpy.GasLimit = new(big.Int); h.GasLimit != nil {
+		cpy.GasLimit.Set(h.GasLimit)
 	}
-	if cpy.NrgUsed = new(big.Int); h.NrgUsed != nil {
-		cpy.NrgUsed.Set(h.NrgUsed)
+	if cpy.GasUsed = new(big.Int); h.GasUsed != nil {
+		cpy.GasUsed.Set(h.GasUsed)
 	}
 	if len(h.Extra) > 0 {
 		cpy.Extra = make([]byte, len(h.Extra))
@@ -314,8 +314,8 @@ func (b *Block) Transaction(hash common.Hash) *Transaction {
 }
 
 func (b *Block) Number() *big.Int     { return new(big.Int).Set(b.header.Number) }
-func (b *Block) NrgLimit() *big.Int   { return new(big.Int).Set(b.header.NrgLimit) }
-func (b *Block) NrgUsed() *big.Int    { return new(big.Int).Set(b.header.NrgUsed) }
+func (b *Block) GasLimit() *big.Int   { return new(big.Int).Set(b.header.GasLimit) }
+func (b *Block) GasUsed() *big.Int    { return new(big.Int).Set(b.header.GasUsed) }
 func (b *Block) Difficulty() *big.Int { return new(big.Int).Set(b.header.Difficulty) }
 func (b *Block) Time() *big.Int       { return new(big.Int).Set(b.header.Time) }
 
@@ -421,13 +421,13 @@ func (h *Header) String() string {
 	Bloom:		    %x
 	Difficulty:	    %v
 	Number:		    %v
-	NrgLimit:	    %v
-	NrgUsed:	    %v
+	GasLimit:	    %v
+	GasUsed:	    %v
 	Time:		    %v
 	Extra:		    %s
 	MixDigest:      %x
 	Nonce:		    %x
-]`, h.Hash(), h.ParentHash, h.UncleHash, h.Coinbase, h.Root, h.TxHash, h.ReceiptHash, h.Bloom, h.Difficulty, h.Number, h.NrgLimit, h.NrgUsed, h.Time, h.Extra, h.MixDigest, h.Nonce)
+]`, h.Hash(), h.ParentHash, h.UncleHash, h.Coinbase, h.Root, h.TxHash, h.ReceiptHash, h.Bloom, h.Difficulty, h.Number, h.GasLimit, h.GasUsed, h.Time, h.Extra, h.MixDigest, h.Nonce)
 }
 
 type Blocks []*Block

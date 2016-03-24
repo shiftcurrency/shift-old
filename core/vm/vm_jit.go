@@ -54,8 +54,8 @@ type JitVm struct {
 type i256 [32]byte
 
 type RuntimeData struct {
-	nrg          int64
-	nrgPrice     int64
+	gas          int64
+	gasPrice     int64
 	callData     *byte
 	callDataSize uint64
 	address      i256
@@ -64,7 +64,7 @@ type RuntimeData struct {
 	callValue    i256
 	coinBase     i256
 	difficulty   i256
-	nrgLimit     i256
+	gasLimit     i256
 	number       uint64
 	timestamp    int64
 	code         *byte
@@ -165,7 +165,7 @@ func NewJitVm(env Environment) *JitVm {
 	return &JitVm{env: env}
 }
 
-func (self *JitVm) Run(me, caller ContextRef, code []byte, value, nrg, price *big.Int, callData []byte) (ret []byte, err error) {
+func (self *JitVm) Run(me, caller ContextRef, code []byte, value, gas, price *big.Int, callData []byte) (ret []byte, err error) {
 	// TODO: depth is increased but never checked by VM. VM should not know about it at all.
 	self.env.SetDepth(self.env.Depth() + 1)
 
@@ -174,7 +174,7 @@ func (self *JitVm) Run(me, caller ContextRef, code []byte, value, nrg, price *bi
 		// if it's address of precopiled contract
 		// fallback to standard VM
 		stdVm := New(self.env)
-		return stdVm.Run(me, caller, code, value, nrg, price, callData)
+		return stdVm.Run(me, caller, code, value, gas, price, callData)
 	}
 
 	if self.me != nil {
@@ -185,8 +185,8 @@ func (self *JitVm) Run(me, caller ContextRef, code []byte, value, nrg, price *bi
 	self.callerAddr = caller.Address()
 	self.price = price
 
-	self.data.nrg = nrg.Int64()
-	self.data.nrgPrice = price.Int64()
+	self.data.gas = gas.Int64()
+	self.data.gasPrice = price.Int64()
 	self.data.callData = getDataPtr(callData)
 	self.data.callDataSize = uint64(len(callData))
 	self.data.address = address2llvm(self.me.Address())
@@ -195,7 +195,7 @@ func (self *JitVm) Run(me, caller ContextRef, code []byte, value, nrg, price *bi
 	self.data.callValue = big2llvm(value)
 	self.data.coinBase = address2llvm(self.env.Coinbase())
 	self.data.difficulty = big2llvm(self.env.Difficulty())
-	self.data.nrgLimit = big2llvm(self.env.NrgLimit())
+	self.data.gasLimit = big2llvm(self.env.GasLimit())
 	self.data.number = self.env.BlockNumber().Uint64()
 	self.data.timestamp = self.env.Time()
 	self.data.code = getDataPtr(code)
@@ -207,9 +207,9 @@ func (self *JitVm) Run(me, caller ContextRef, code []byte, value, nrg, price *bi
 
 	if retCode < 0 {
 		err = errors.New("OOG from JIT")
-		nrg.SetInt64(0) // Set nrg to 0, JIT does not bother
+		gas.SetInt64(0) // Set gas to 0, JIT does not bother
 	} else {
-		nrg.SetInt64(self.data.nrg)
+		gas.SetInt64(self.data.gas)
 		if retCode == 1 { // RETURN
 			ret = C.GoBytes(unsafe.Pointer(self.data.callData), C.int(self.data.callDataSize))
 		} else if retCode == 2 { // SUICIDE
@@ -256,7 +256,7 @@ func env_sstore(vmPtr unsafe.Pointer, indexPtr unsafe.Pointer, valuePtr unsafe.P
 	if len(value) == 0 {
 		prevValue := vm.env.State().GetState(vm.me.Address(), index)
 		if len(prevValue) != 0 {
-			vm.Env().State().Refund(vm.callerAddr, NrgSStoreRefund)
+			vm.Env().State().Refund(vm.callerAddr, GasSStoreRefund)
 		}
 	}
 
@@ -299,7 +299,7 @@ func env_blockhash(_vm unsafe.Pointer, _number unsafe.Pointer, _result unsafe.Po
 }
 
 //export env_call
-func env_call(_vm unsafe.Pointer, _nrg *int64, _receiveAddr unsafe.Pointer, _value unsafe.Pointer, inDataPtr unsafe.Pointer, inDataLen uint64, outDataPtr *byte, outDataLen uint64, _codeAddr unsafe.Pointer) bool {
+func env_call(_vm unsafe.Pointer, _gas *int64, _receiveAddr unsafe.Pointer, _value unsafe.Pointer, inDataPtr unsafe.Pointer, inDataLen uint64, outDataPtr *byte, outDataLen uint64, _codeAddr unsafe.Pointer) bool {
 	vm := (*JitVm)(_vm)
 
 	//fmt.Printf("env_call (depth %d)\n", vm.Env().Depth())
@@ -318,15 +318,15 @@ func env_call(_vm unsafe.Pointer, _nrg *int64, _receiveAddr unsafe.Pointer, _val
 		inData := C.GoBytes(inDataPtr, C.int(inDataLen))
 		outData := llvm2bytesRef(outDataPtr, outDataLen)
 		codeAddr := llvm2hash((*i256)(_codeAddr))
-		nrg := big.NewInt(*_nrg)
+		gas := big.NewInt(*_gas)
 		var out []byte
 		var err error
 		if bytes.Equal(codeAddr, receiveAddr) {
-			out, err = vm.env.Call(vm.me, codeAddr, inData, nrg, vm.price, value)
+			out, err = vm.env.Call(vm.me, codeAddr, inData, gas, vm.price, value)
 		} else {
-			out, err = vm.env.CallCode(vm.me, codeAddr, inData, nrg, vm.price, value)
+			out, err = vm.env.CallCode(vm.me, codeAddr, inData, gas, vm.price, value)
 		}
-		*_nrg = nrg.Int64()
+		*_gas = gas.Int64()
 		if err == nil {
 			copy(outData, out)
 			return true
@@ -337,7 +337,7 @@ func env_call(_vm unsafe.Pointer, _nrg *int64, _receiveAddr unsafe.Pointer, _val
 }
 
 //export env_create
-func env_create(_vm unsafe.Pointer, _nrg *int64, _value unsafe.Pointer, initDataPtr unsafe.Pointer, initDataLen uint64, _result unsafe.Pointer) {
+func env_create(_vm unsafe.Pointer, _gas *int64, _value unsafe.Pointer, initDataPtr unsafe.Pointer, initDataLen uint64, _result unsafe.Pointer) {
 	vm := (*JitVm)(_vm)
 
 	value := llvm2big((*i256)(_value))
@@ -345,15 +345,15 @@ func env_create(_vm unsafe.Pointer, _nrg *int64, _value unsafe.Pointer, initData
 	result := (*i256)(_result)
 	*result = i256{}
 
-	nrg := big.NewInt(*_nrg)
-	ret, suberr, ref := vm.env.Create(vm.me, nil, initData, nrg, vm.price, value)
+	gas := big.NewInt(*_gas)
+	ret, suberr, ref := vm.env.Create(vm.me, nil, initData, gas, vm.price, value)
 	if suberr == nil {
-		dataNrg := big.NewInt(int64(len(ret))) // TODO: Nto the best design. env.Create can do it, it has the reference to nrg counter
-		dataNrg.Mul(dataNrg, params.CreateDataNrg)
-		nrg.Sub(nrg, dataNrg)
+		dataGas := big.NewInt(int64(len(ret))) // TODO: Nto the best design. env.Create can do it, it has the reference to gas counter
+		dataGas.Mul(dataGas, params.CreateDataGas)
+		gas.Sub(gas, dataGas)
 		*result = hash2llvm(ref.Address())
 	}
-	*_nrg = nrg.Int64()
+	*_gas = gas.Int64()
 }
 
 //export env_log

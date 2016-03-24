@@ -53,9 +53,9 @@ var (
 		Name:  "code",
 		Usage: "EVM code",
 	}
-	NrgFlag = cli.StringFlag{
-		Name:  "nrg",
-		Usage: "nrg limit for the evm",
+	GasFlag = cli.StringFlag{
+		Name:  "gas",
+		Usage: "gas limit for the evm",
 		Value: "10000000000",
 	}
 	PriceFlag = cli.StringFlag{
@@ -95,7 +95,7 @@ func init() {
 		DisableJitFlag,
 		SysStatFlag,
 		CodeFlag,
-		NrgFlag,
+		GasFlag,
 		PriceFlag,
 		ValueFlag,
 		DumpFlag,
@@ -125,7 +125,7 @@ func run(ctx *cli.Context) {
 		sender,
 		receiver.Address(),
 		common.Hex2Bytes(ctx.GlobalString(InputFlag.Name)),
-		common.Big(ctx.GlobalString(NrgFlag.Name)),
+		common.Big(ctx.GlobalString(GasFlag.Name)),
 		common.Big(ctx.GlobalString(PriceFlag.Name)),
 		common.Big(ctx.GlobalString(ValueFlag.Name)),
 	)
@@ -171,7 +171,7 @@ type VMEnv struct {
 	value      *big.Int
 
 	depth int
-	Nrg   *big.Int
+	Gas   *big.Int
 	time  *big.Int
 	logs  []vm.StructLog
 }
@@ -195,7 +195,7 @@ func (self *VMEnv) Time() *big.Int             { return self.time }
 func (self *VMEnv) Difficulty() *big.Int       { return common.Big1 }
 func (self *VMEnv) BlockHash() []byte          { return make([]byte, 32) }
 func (self *VMEnv) Value() *big.Int            { return self.value }
-func (self *VMEnv) NrgLimit() *big.Int         { return big.NewInt(1000000000) }
+func (self *VMEnv) GasLimit() *big.Int         { return big.NewInt(1000000000) }
 func (self *VMEnv) VmType() vm.Type            { return vm.StdVmTy }
 func (self *VMEnv) Depth() int                 { return 0 }
 func (self *VMEnv) SetDepth(i int)             { self.depth = i }
@@ -221,19 +221,19 @@ func (self *VMEnv) Transfer(from, to vm.Account, amount *big.Int) {
 	core.Transfer(from, to, amount)
 }
 
-func (self *VMEnv) Call(caller vm.ContractRef, addr common.Address, data []byte, nrg, price, value *big.Int) ([]byte, error) {
-	self.Nrg = nrg
-	return core.Call(self, caller, addr, data, nrg, price, value)
+func (self *VMEnv) Call(caller vm.ContractRef, addr common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
+	self.Gas = gas
+	return core.Call(self, caller, addr, data, gas, price, value)
 }
 
-func (self *VMEnv) CallCode(caller vm.ContractRef, addr common.Address, data []byte, nrg, price, value *big.Int) ([]byte, error) {
-	return core.CallCode(self, caller, addr, data, nrg, price, value)
+func (self *VMEnv) CallCode(caller vm.ContractRef, addr common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
+	return core.CallCode(self, caller, addr, data, gas, price, value)
 }
 
-func (self *VMEnv) DelegateCall(caller vm.ContractRef, addr common.Address, data []byte, nrg, price *big.Int) ([]byte, error) {
-	return core.DelegateCall(self, caller, addr, data, nrg, price)
+func (self *VMEnv) DelegateCall(caller vm.ContractRef, addr common.Address, data []byte, gas, price *big.Int) ([]byte, error) {
+	return core.DelegateCall(self, caller, addr, data, gas, price)
 }
 
-func (self *VMEnv) Create(caller vm.ContractRef, data []byte, nrg, price, value *big.Int) ([]byte, common.Address, error) {
-	return core.Create(self, caller, data, nrg, price, value)
+func (self *VMEnv) Create(caller vm.ContractRef, data []byte, gas, price, value *big.Int) ([]byte, common.Address, error) {
+	return core.Create(self, caller, data, gas, price, value)
 }

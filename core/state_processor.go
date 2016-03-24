@@ -29,30 +29,30 @@ func NewStateProcessor(bc *BlockChain) *StateProcessor {
 // the processor (shiftbase) and any included uncles.
 //
 // Process returns the receipts and logs accumulated during the process and
-// returns the amount of nrg that was used in the process. If any of the
-// transactions failed to execute due to insufficient nrg it will return an error.
+// returns the amount of gas that was used in the process. If any of the
+// transactions failed to execute due to insufficient gas it will return an error.
 func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (types.Receipts, vm.Logs, *big.Int, error) {
 	var (
 		receipts     types.Receipts
-		totalUsedNrg = big.NewInt(0)
+		totalUsedGas = big.NewInt(0)
 		err          error
 		header       = block.Header()
 		allLogs      vm.Logs
-		gp           = new(NrgPool).AddNrg(block.NrgLimit())
+		gp           = new(GasPool).AddGas(block.GasLimit())
 	)
 
 	for i, tx := range block.Transactions() {
 		statedb.StartRecord(tx.Hash(), block.Hash(), i)
-		receipt, logs, _, err := ApplyTransaction(p.bc, gp, statedb, header, tx, totalUsedNrg)
+		receipt, logs, _, err := ApplyTransaction(p.bc, gp, statedb, header, tx, totalUsedGas)
 		if err != nil {
-			return nil, nil, totalUsedNrg, err
+			return nil, nil, totalUsedGas, err
 		}
 		receipts = append(receipts, receipt)
 		allLogs = append(allLogs, logs...)
 	}
 	AccumulateRewards(statedb, header, block.Uncles(), block)
 
-	return receipts, allLogs, totalUsedNrg, err
+	return receipts, allLogs, totalUsedGas, err
 }
 
 // ApplyTransaction attemps to apply a transaction to the given state database
@@ -60,17 +60,17 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (ty
 //
 // ApplyTransactions returns the generated receipts and vm logs during the
 // execution of the state transition phase.
-func ApplyTransaction(bc *BlockChain, gp *NrgPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedNrg *big.Int) (*types.Receipt, vm.Logs, *big.Int, error) {
-	_, nrg, err := ApplyMessage(NewEnv(statedb, bc, tx, header), tx, gp)
+func ApplyTransaction(bc *BlockChain, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *big.Int) (*types.Receipt, vm.Logs, *big.Int, error) {
+	_, gas, err := ApplyMessage(NewEnv(statedb, bc, tx, header), tx, gp)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	// Update the state with pending changes
-	usedNrg.Add(usedNrg, nrg)
-	receipt := types.NewReceipt(statedb.IntermediateRoot().Bytes(), usedNrg)
+	usedGas.Add(usedGas, gas)
+	receipt := types.NewReceipt(statedb.IntermediateRoot().Bytes(), usedGas)
 	receipt.TxHash = tx.Hash()
-	receipt.NrgUsed = new(big.Int).Set(nrg)
+	receipt.GasUsed = new(big.Int).Set(gas)
 	if MessageCreatesContract(tx) {
 		from, _ := tx.From()
 		receipt.ContractAddress = crypto.CreateAddress(from, tx.Nonce())
@@ -82,7 +82,7 @@ func ApplyTransaction(bc *BlockChain, gp *NrgPool, statedb *state.StateDB, heade
 
 	glog.V(logger.Debug).Infoln(receipt)
 
-	return receipt, logs, nrg, err
+	return receipt, logs, gas, err
 }
 
 // AccumulateRewards credits the shiftbase of the given block with the

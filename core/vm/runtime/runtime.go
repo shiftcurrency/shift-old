@@ -35,8 +35,8 @@ type Config struct {
 	Coinbase    common.Address
 	BlockNumber *big.Int
 	Time        *big.Int
-	NrgLimit    *big.Int
-	NrgPrice    *big.Int
+	GasLimit    *big.Int
+	GasPrice    *big.Int
 	Value       *big.Int
 	DisableJit  bool // "disable" so it's enabled by default
 	Debug       bool
@@ -52,11 +52,11 @@ func setDefaults(cfg *Config) {
 	if cfg.Time == nil {
 		cfg.Time = big.NewInt(time.Now().Unix())
 	}
-	if cfg.NrgLimit == nil {
-		cfg.NrgLimit = new(big.Int).Set(common.MaxBig)
+	if cfg.GasLimit == nil {
+		cfg.GasLimit = new(big.Int).Set(common.MaxBig)
 	}
-	if cfg.NrgPrice == nil {
-		cfg.NrgPrice = new(big.Int)
+	if cfg.GasPrice == nil {
+		cfg.GasPrice = new(big.Int)
 	}
 	if cfg.Value == nil {
 		cfg.Value = new(big.Int)
@@ -109,8 +109,8 @@ func Execute(code, input []byte, cfg *Config) ([]byte, *state.StateDB, error) {
 		sender,
 		receiver.Address(),
 		input,
-		cfg.NrgLimit,
-		cfg.NrgPrice,
+		cfg.GasLimit,
+		cfg.GasPrice,
 		cfg.Value,
 	)
 

@@ -68,9 +68,9 @@ type Work struct {
 	remove             *set.Set       // tx which will be removed
 	tcount             int            // tx count in cycle
 	ignoredTransactors *set.Set
-	lowNrgTransactors  *set.Set
+	lowGasTransactors  *set.Set
 	ownedAccounts      *set.Set
-	lowNrgTxs          types.Transactions
+	lowGasTxs          types.Transactions
 	localMinedBlocks   *uint64RingBuffer // the most recent block numbers that were mined locally (used to check block inclusion)
 
 	Block *types.Block // the new block
@@ -103,7 +103,7 @@ type worker struct {
 	chainDb ethdb.Database
 
 	shiftbase common.Address
-	nrgPrice *big.Int
+	gasPrice *big.Int
 	extra    []byte
 
 	currentMu sync.Mutex
@@ -128,7 +128,7 @@ func newWorker(shiftbase common.Address, shf core.Backend) *worker {
 		mux:            shf.EventMux(),
 		chainDb:        shf.ChainDb(),
 		recv:           make(chan *Result, resultQueueSize),
-		nrgPrice:       new(big.Int),
+		gasPrice:       new(big.Int),
 		chain:          shf.BlockChain(),
 		proc:           shf.BlockChain().Validator(),
 		possibleUncles: make(map[common.Hash]*types.Block),
@@ -243,7 +243,7 @@ func (self *worker) update() {
 				// Apply transaction to the pending state if we're not mining
 				if atomic.LoadInt32(&self.mining) == 0 {
 					self.currentMu.Lock()
-					self.current.commitTransactions(types.Transactions{ev.Tx}, self.nrgPrice, self.chain)
+					self.current.commitTransactions(types.Transactions{ev.Tx}, self.gasPrice, self.chain)
 					self.currentMu.Unlock()
 				}
 			}
@@ -398,7 +398,7 @@ func (self *worker) makeCurrent(parent *types.Block, header *types.Header) error
 	work.remove = set.New()
 	work.tcount = 0
 	work.ignoredTransactors = set.New()
-	work.lowNrgTransactors = set.New()
+	work.lowGasTransactors = set.New()
 	work.ownedAccounts = accountAddressesSet(accounts)
 	if self.current != nil {
 		work.localMinedBlocks = self.current.localMinedBlocks
@@ -407,15 +407,15 @@ func (self *worker) makeCurrent(parent *types.Block, header *types.Header) error
 	return nil
 }
 
-func (w *worker) setNrgPrice(p *big.Int) {
+func (w *worker) setGasPrice(p *big.Int) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	// calculate the minimal nrg price the miner accepts when sorting out transactions.
+	// calculate the minimal gas price the miner accepts when sorting out transactions.
 	const pct = int64(90)
-	w.nrgPrice = nrgprice(p, pct)
+	w.gasPrice = gasprice(p, pct)
 
-	w.mux.Post(core.NrgPriceChanged{w.nrgPrice})
+	w.mux.Post(core.GasPriceChanged{w.gasPrice})
 }
 
 func (self *worker) isBlockLocallyMined(current *Work, deepBlockNum uint64) bool {
@@ -476,8 +476,8 @@ func (self *worker) commitNewWork() {
 		ParentHash: parent.Hash(),
 		Number:     num.Add(num, common.Big1),
 		Difficulty: core.CalcDifficulty(uint64(tstamp), parent.Time().Uint64(), parent.Number(), parent.Difficulty()),
-		NrgLimit:   core.CalcNrgLimit(parent),
-		NrgUsed:    new(big.Int),
+		GasLimit:   core.CalcGasLimit(parent),
+		GasUsed:    new(big.Int),
 		Coinbase:   self.shiftbase,
 		Extra:      self.extra,
 		Time:       big.NewInt(tstamp),
@@ -528,8 +528,8 @@ func (self *worker) commitNewWork() {
 	transactions := append(singleTxOwner, multiTxOwner...)
 	*/
 
-	work.commitTransactions(transactions, self.nrgPrice, self.chain)
-	self.shf.TxPool().RemoveTransactions(work.lowNrgTxs)
+	work.commitTransactions(transactions, self.gasPrice, self.chain)
+	self.shf.TxPool().RemoveTransactions(work.lowGasTxs)
 
 	// compute uncles for the new block.
 	var (
@@ -587,37 +587,37 @@ func (self *worker) commitUncle(work *Work, uncle *types.Header) error {
 	return nil
 }
 
-func (env *Work) commitTransactions(transactions types.Transactions, nrgPrice *big.Int, bc *core.BlockChain) {
-	gp := new(core.NrgPool).AddNrg(env.header.NrgLimit)
+func (env *Work) commitTransactions(transactions types.Transactions, gasPrice *big.Int, bc *core.BlockChain) {
+	gp := new(core.GasPool).AddGas(env.header.GasLimit)
 	for _, tx := range transactions {
 		// Error may be ignored here. The error has already been checked
 		// during transaction acceptance is the transaction pool.
 		from, _ := tx.From()
 
 		// Check if it falls within margin. Txs from owned accounts are always processed.
-		if tx.NrgPrice().Cmp(nrgPrice) < 0 && !env.ownedAccounts.Has(from) {
+		if tx.GasPrice().Cmp(gasPrice) < 0 && !env.ownedAccounts.Has(from) {
 			// ignore the transaction and transactor. We ignore the transactor
 			// because nonce will fail after ignoring this transaction so there's
 			// no point
-			env.lowNrgTransactors.Add(from)
+			env.lowGasTransactors.Add(from)
 
-			glog.V(logger.Info).Infof("transaction(%x) below nrg price (tx=%v ask=%v). All sequential txs from this address(%x) will be ignored\n", tx.Hash().Bytes()[:4], common.CurrencyToString(tx.NrgPrice()), common.CurrencyToString(nrgPrice), from[:4])
+			glog.V(logger.Info).Infof("transaction(%x) below gas price (tx=%v ask=%v). All sequential txs from this address(%x) will be ignored\n", tx.Hash().Bytes()[:4], common.CurrencyToString(tx.GasPrice()), common.CurrencyToString(gasPrice), from[:4])
 		}
 
 		// Continue with the next transaction if the transaction sender is included in
-		// the low nrg tx set. This will also remove the tx and all sequential transaction
+		// the low gas tx set. This will also remove the tx and all sequential transaction
 		// from this transactor
-		if env.lowNrgTransactors.Has(from) {
-			// add tx to the low nrg set. This will be removed at the end of the run
+		if env.lowGasTransactors.Has(from) {
+			// add tx to the low gas set. This will be removed at the end of the run
 			// owned accounts are ignored
 			if !env.ownedAccounts.Has(from) {
-				env.lowNrgTxs = append(env.lowNrgTxs, tx)
+				env.lowGasTxs = append(env.lowGasTxs, tx)
 			}
 			continue
 		}
 
 		// Move on to the next transaction when the transactor is in ignored transactions set
-		// This may occur when a transaction hits the nrg limit. When a nrg limit is hit and
+		// This may occur when a transaction hits the gas limit. When a gas limit is hit and
 		// the transaction is processed (that could potentially be included in the block) it
 		// will throw a nonce error because the previous transaction hasn't been processed.
 		// Therefor we need to ignore any transaction after the ignored one.
@@ -629,12 +629,12 @@ func (env *Work) commitTransactions(transactions types.Transactions, nrgPrice *b
 
 		err := env.commitTransaction(tx, bc, gp)
 		switch {
-		case core.IsNrgLimitErr(err):
+		case core.IsGasLimitErr(err):
 			// ignore the transactor so no nonce errors will be thrown for this account
 			// next time the worker is run, they'll be picked up again.
 			env.ignoredTransactors.Add(from)
 
-			glog.V(logger.Detail).Infof("Nrg limit reached for (%x) in this block. Continue to try smaller txs\n", from[:4])
+			glog.V(logger.Detail).Infof("Gas limit reached for (%x) in this block. Continue to try smaller txs\n", from[:4])
 		case err != nil:
 			env.remove.Add(tx.Hash())
 
@@ -647,9 +647,9 @@ func (env *Work) commitTransactions(transactions types.Transactions, nrgPrice *b
 	}
 }
 
-func (env *Work) commitTransaction(tx *types.Transaction, bc *core.BlockChain, gp *core.NrgPool) error {
+func (env *Work) commitTransaction(tx *types.Transaction, bc *core.BlockChain, gp *core.GasPool) error {
 	snap := env.state.Copy()
-	receipt, _, _, err := core.ApplyTransaction(bc, gp, env.state, env.header, tx, env.header.NrgUsed)
+	receipt, _, _, err := core.ApplyTransaction(bc, gp, env.state, env.header, tx, env.header.GasUsed)
 	if err != nil {
 		env.state.Set(snap)
 		return err
@@ -664,9 +664,9 @@ func (self *worker) HashRate() int64 {
 	return 0
 }
 
-// nrgprice calculates a reduced nrg price based on the pct
+// gasprice calculates a reduced gas price based on the pct
 // XXX Use big.Rat?
-func nrgprice(price *big.Int, pct int64) *big.Int {
+func gasprice(price *big.Int, pct int64) *big.Int {
 	p := new(big.Int).Set(price)
 	p.Div(p, big.NewInt(100))
 	p.Mul(p, big.NewInt(pct))

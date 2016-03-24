@@ -49,10 +49,10 @@ import (
 const (
 
 	ClientIdentifier = "Gshift"
-	Version          = "2.2.1"
+	Version          = "2.2.0"
 	VersionMajor     = 2
 	VersionMinor     = 2
-	VersionPatch     = 1
+	VersionPatch     = 0
 )
 
 var (
@@ -312,7 +312,7 @@ JavaScript API. See https://github.com/shiftcurrency/shift/wiki/Javascipt-Consol
 		utils.MaxPeersFlag,
 		utils.MaxPendingPeersFlag,
 		utils.EtherbaseFlag,
-		utils.NrgPriceFlag,
+		utils.GasPriceFlag,
 		utils.MinerThreadsFlag,
 		utils.MiningEnabledFlag,
 		utils.MiningGPUFlag,
@@ -347,8 +347,8 @@ JavaScript API. See https://github.com/shiftcurrency/shift/wiki/Javascipt-Consol
 		utils.PProfPortFlag,
 		utils.MetricsEnabledFlag,
 		utils.SolcPathFlag,
-		utils.GpoMinNrgPriceFlag,
-		utils.GpoMaxNrgPriceFlag,
+		utils.GpoMinGasPriceFlag,
+		utils.GpoMaxGasPriceFlag,
 		utils.GpoFullBlockRatioFlag,
 		utils.GpobaseStepDownFlag,
 		utils.GpobaseStepUpFlag,

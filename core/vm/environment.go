@@ -47,8 +47,8 @@ type Environment interface {
 	Time() *big.Int
 	// Difficulty set on the current block
 	Difficulty() *big.Int
-	// The nrg limit of the block
-	NrgLimit() *big.Int
+	// The gas limit of the block
+	GasLimit() *big.Int
 	// Determines whether it's possible to transact
 	CanTransfer(from common.Address, balance *big.Int) bool
 	// Transfers amount from one account to the other
@@ -68,13 +68,13 @@ type Environment interface {
 	SetDepth(i int)
 
 	// Call another contract
-	Call(me ContractRef, addr common.Address, data []byte, nrg, price, value *big.Int) ([]byte, error)
+	Call(me ContractRef, addr common.Address, data []byte, gas, price, value *big.Int) ([]byte, error)
 	// Take another's contract code and execute within our own context
-	CallCode(me ContractRef, addr common.Address, data []byte, nrg, price, value *big.Int) ([]byte, error)
+	CallCode(me ContractRef, addr common.Address, data []byte, gas, price, value *big.Int) ([]byte, error)
 	// Same as CallCode except sender and value is propagated from parent to child scope
-	DelegateCall(me ContractRef, addr common.Address, data []byte, nrg, price *big.Int) ([]byte, error)
+	DelegateCall(me ContractRef, addr common.Address, data []byte, gas, price *big.Int) ([]byte, error)
 	// Create a new contract
-	Create(me ContractRef, data []byte, nrg, price, value *big.Int) ([]byte, common.Address, error)
+	Create(me ContractRef, data []byte, gas, price, value *big.Int) ([]byte, common.Address, error)
 }
 
 // Database is a EVM database for full state querying
@@ -107,8 +107,8 @@ type Database interface {
 type StructLog struct {
 	Pc      uint64
 	Op      OpCode
-	Nrg     *big.Int
-	NrgCost *big.Int
+	Gas     *big.Int
+	GasCost *big.Int
 	Memory  []byte
 	Stack   []*big.Int
 	Storage map[common.Hash][]byte
@@ -122,7 +122,7 @@ type Account interface {
 	SetNonce(uint64)
 	Balance() *big.Int
 	Address() common.Address
-	ReturnNrg(*big.Int, *big.Int)
+	ReturnGas(*big.Int, *big.Int)
 	SetCode([]byte)
 	EachStorage(cb func(key, value []byte))
 	Value() *big.Int

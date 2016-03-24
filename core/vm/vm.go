@@ -124,10 +124,10 @@ func (self *Vm) Run(contract *Contract, input []byte) (ret []byte, err error) {
 	)
 	contract.Input = input
 
-	// User defer pattern to check for an error and, based on the error being nil or not, use all nrg and return.
+	// User defer pattern to check for an error and, based on the error being nil or not, use all gas and return.
 	defer func() {
 		if err != nil {
-			self.log(pc, op, contract.Nrg, cost, mem, stack, contract, err)
+			self.log(pc, op, contract.Gas, cost, mem, stack, contract, err)
 		}
 	}()
 
@@ -153,22 +153,22 @@ func (self *Vm) Run(contract *Contract, input []byte) (ret []byte, err error) {
 
 		// Get the memory location of pc
 		op = contract.GetOp(pc)
-		// calculate the new memory size and nrg price for the current executing opcode
-		newMemSize, cost, err = calculateNrgAndSize(self.env, contract, caller, op, statedb, mem, stack)
+		// calculate the new memory size and gas price for the current executing opcode
+		newMemSize, cost, err = calculateGasAndSize(self.env, contract, caller, op, statedb, mem, stack)
 		if err != nil {
 			return nil, err
 		}
 
-		// Use the calculated nrg. When insufficient nrg is present, use all nrg and return an
-		// Out Of Nrg error
-		if !contract.UseNrg(cost) {
-			return nil, OutOfNrgError
+		// Use the calculated gas. When insufficient gas is present, use all gas and return an
+		// Out Of Gas error
+		if !contract.UseGas(cost) {
+			return nil, OutOfGasError
 		}
 
 		// Resize the memory calculated previously
 		mem.Resize(newMemSize.Uint64())
 		// Add a log message
-		self.log(pc, op, contract.Nrg, cost, mem, stack, contract, nil)
+		self.log(pc, op, contract.Gas, cost, mem, stack, contract, nil)
 		if opPtr := jumpTable[op]; opPtr.valid {
 			if opPtr.fn != nil {
 				opPtr.fn(instruction{}, &pc, self.env, contract, mem, stack)
@@ -214,19 +214,19 @@ func (self *Vm) Run(contract *Contract, input []byte) (ret []byte, err error) {
 	}
 }
 
-// calculateNrgAndSize calculates the required given the opcode and stack items calculates the new memorysize for
-// the operation. This does not reduce nrg or resizes the memory.
-func calculateNrgAndSize(env Environment, contract *Contract, caller ContractRef, op OpCode, statedb Database, mem *Memory, stack *stack) (*big.Int, *big.Int, error) {
+// calculateGasAndSize calculates the required given the opcode and stack items calculates the new memorysize for
+// the operation. This does not reduce gas or resizes the memory.
+func calculateGasAndSize(env Environment, contract *Contract, caller ContractRef, op OpCode, statedb Database, mem *Memory, stack *stack) (*big.Int, *big.Int, error) {
 	var (
-		nrg                 = new(big.Int)
+		gas                 = new(big.Int)
 		newMemSize *big.Int = new(big.Int)
 	)
-	err := baseCheck(op, stack, nrg)
+	err := baseCheck(op, stack, gas)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// stack Check, memory resize & nrg phase
+	// stack Check, memory resize & gas phase
 	switch op {
 	case SWAP1, SWAP2, SWAP3, SWAP4, SWAP5, SWAP6, SWAP7, SWAP8, SWAP9, SWAP10, SWAP11, SWAP12, SWAP13, SWAP14, SWAP15, SWAP16:
 		n := int(op - SWAP1 + 2)
@@ -234,14 +234,14 @@ func calculateNrgAndSize(env Environment, contract *Contract, caller ContractRef
 		if err != nil {
 			return nil, nil, err
 		}
-		nrg.Set(NrgFastestStep)
+		gas.Set(GasFastestStep)
 	case DUP1, DUP2, DUP3, DUP4, DUP5, DUP6, DUP7, DUP8, DUP9, DUP10, DUP11, DUP12, DUP13, DUP14, DUP15, DUP16:
 		n := int(op - DUP1 + 1)
 		err := stack.require(n)
 		if err != nil {
 			return nil, nil, err
 		}
-		nrg.Set(NrgFastestStep)
+		gas.Set(GasFastestStep)
 	case LOG0, LOG1, LOG2, LOG3, LOG4:
 		n := int(op - LOG0)
 		err := stack.require(n + 2)
@@ -251,13 +251,13 @@ func calculateNrgAndSize(env Environment, contract *Contract, caller ContractRef
 
 		mSize, mStart := stack.data[stack.len()-2], stack.data[stack.len()-1]
 
-		nrg.Add(nrg, params.LogNrg)
-		nrg.Add(nrg, new(big.Int).Mul(big.NewInt(int64(n)), params.LogTopicNrg))
-		nrg.Add(nrg, new(big.Int).Mul(mSize, params.LogDataNrg))
+		gas.Add(gas, params.LogGas)
+		gas.Add(gas, new(big.Int).Mul(big.NewInt(int64(n)), params.LogTopicGas))
+		gas.Add(gas, new(big.Int).Mul(mSize, params.LogDataGas))
 
 		newMemSize = calcMemSize(mStart, mSize)
 	case EXP:
-		nrg.Add(nrg, new(big.Int).Mul(big.NewInt(int64(len(stack.data[stack.len()-2].Bytes()))), params.ExpByteNrg))
+		gas.Add(gas, new(big.Int).Mul(big.NewInt(int64(len(stack.data[stack.len()-2].Bytes()))), params.ExpByteGas))
 	case SSTORE:
 		err := stack.require(2)
 		if err != nil {
@@ -268,25 +268,25 @@ func calculateNrgAndSize(env Environment, contract *Contract, caller ContractRef
 		y, x := stack.data[stack.len()-2], stack.data[stack.len()-1]
 		val := statedb.GetState(contract.Address(), common.BigToHash(x))
 
-		// This checks for 3 scenario's and calculates nrg accordingly
+		// This checks for 3 scenario's and calculates gas accordingly
 		// 1. From a zero-value address to a non-zero value         (NEW VALUE)
 		// 2. From a non-zero value address to a zero-value address (DELETE)
 		// 3. From a nen-zero to a non-zero                         (CHANGE)
 		if common.EmptyHash(val) && !common.EmptyHash(common.BigToHash(y)) {
 			// 0 => non 0
-			g = params.SstoreSetNrg
+			g = params.SstoreSetGas
 		} else if !common.EmptyHash(val) && common.EmptyHash(common.BigToHash(y)) {
-			statedb.AddRefund(params.SstoreRefundNrg)
+			statedb.AddRefund(params.SstoreRefundGas)
 
-			g = params.SstoreClearNrg
+			g = params.SstoreClearGas
 		} else {
 			// non 0 => non 0 (or 0 => 0)
-			g = params.SstoreClearNrg
+			g = params.SstoreClearGas
 		}
-		nrg.Set(g)
+		gas.Set(g)
 	case SUICIDE:
 		if !statedb.IsDeleted(contract.Address()) {
-			statedb.AddRefund(params.SuicideRefundNrg)
+			statedb.AddRefund(params.SuicideRefundGas)
 		}
 	case MLOAD:
 		newMemSize = calcMemSize(stack.peek(), u256(32))
@@ -300,36 +300,36 @@ func calculateNrgAndSize(env Environment, contract *Contract, caller ContractRef
 		newMemSize = calcMemSize(stack.peek(), stack.data[stack.len()-2])
 
 		words := toWordSize(stack.data[stack.len()-2])
-		nrg.Add(nrg, words.Mul(words, params.Sha3WordNrg))
+		gas.Add(gas, words.Mul(words, params.Sha3WordGas))
 	case CALLDATACOPY:
 		newMemSize = calcMemSize(stack.peek(), stack.data[stack.len()-3])
 
 		words := toWordSize(stack.data[stack.len()-3])
-		nrg.Add(nrg, words.Mul(words, params.CopyNrg))
+		gas.Add(gas, words.Mul(words, params.CopyGas))
 	case CODECOPY:
 		newMemSize = calcMemSize(stack.peek(), stack.data[stack.len()-3])
 
 		words := toWordSize(stack.data[stack.len()-3])
-		nrg.Add(nrg, words.Mul(words, params.CopyNrg))
+		gas.Add(gas, words.Mul(words, params.CopyGas))
 	case EXTCODECOPY:
 		newMemSize = calcMemSize(stack.data[stack.len()-2], stack.data[stack.len()-4])
 
 		words := toWordSize(stack.data[stack.len()-4])
-		nrg.Add(nrg, words.Mul(words, params.CopyNrg))
+		gas.Add(gas, words.Mul(words, params.CopyGas))
 
 	case CREATE:
 		newMemSize = calcMemSize(stack.data[stack.len()-2], stack.data[stack.len()-3])
 	case CALL, CALLCODE:
-		nrg.Add(nrg, stack.data[stack.len()-1])
+		gas.Add(gas, stack.data[stack.len()-1])
 
 		if op == CALL {
 			if !env.Db().Exist(common.BigToAddress(stack.data[stack.len()-2])) {
-				nrg.Add(nrg, params.CallNewAccountNrg)
+				gas.Add(gas, params.CallNewAccountGas)
 			}
 		}
 
 		if len(stack.data[stack.len()-3].Bytes()) > 0 {
-			nrg.Add(nrg, params.CallValueTransferNrg)
+			gas.Add(gas, params.CallValueTransferGas)
 		}
 
 		x := calcMemSize(stack.data[stack.len()-6], stack.data[stack.len()-7])
@@ -337,33 +337,33 @@ func calculateNrgAndSize(env Environment, contract *Contract, caller ContractRef
 
 		newMemSize = common.BigMax(x, y)
 	case DELEGATECALL:
-		nrg.Add(nrg, stack.data[stack.len()-1])
+		gas.Add(gas, stack.data[stack.len()-1])
 
 		x := calcMemSize(stack.data[stack.len()-5], stack.data[stack.len()-6])
 		y := calcMemSize(stack.data[stack.len()-3], stack.data[stack.len()-4])
 
 		newMemSize = common.BigMax(x, y)
 	}
-	quadMemNrg(mem, newMemSize, nrg)
+	quadMemGas(mem, newMemSize, gas)
 
-	return newMemSize, nrg, nil
+	return newMemSize, gas, nil
 }
 
 // RunPrecompile runs and evaluate the output of a precompiled contract defined in contracts.go
 func (self *Vm) RunPrecompiled(p *PrecompiledAccount, input []byte, contract *Contract) (ret []byte, err error) {
-	nrg := p.Nrg(len(input))
-	if contract.UseNrg(nrg) {
+	gas := p.Gas(len(input))
+	if contract.UseGas(gas) {
 		ret = p.Call(input)
 
 		return ret, nil
 	} else {
-		return nil, OutOfNrgError
+		return nil, OutOfGasError
 	}
 }
 
 // log emits a log event to the environment for each opcode encountered. This is not to be confused with the
 // LOG* opcode.
-func (self *Vm) log(pc uint64, op OpCode, nrg, cost *big.Int, memory *Memory, stack *stack, contract *Contract, err error) {
+func (self *Vm) log(pc uint64, op OpCode, gas, cost *big.Int, memory *Memory, stack *stack, contract *Contract, err error) {
 	if Debug {
 		mem := make([]byte, len(memory.Data()))
 		copy(mem, memory.Data())
@@ -379,7 +379,7 @@ func (self *Vm) log(pc uint64, op OpCode, nrg, cost *big.Int, memory *Memory, st
 				storage[common.BytesToHash(k)] = v
 			})
 		*/
-		self.env.AddStructLog(StructLog{pc, op, new(big.Int).Set(nrg), cost, mem, stck, storage, err})
+		self.env.AddStructLog(StructLog{pc, op, new(big.Int).Set(gas), cost, mem, stck, storage, err})
 	}
 }
 

@@ -182,11 +182,11 @@ func (self *debugApi) ProcessBlock(req *shared.Request) (interface{}, error) {
 	if err != nil {
 		return false, err
 	}
-	receipts, _, usedNrg, err := processor.Process(block, statedb)
+	receipts, _, usedGas, err := processor.Process(block, statedb)
 	if err != nil {
 		return false, err
 	}
-	err = validator.ValidateState(block, blockchain.GetBlock(block.ParentHash()), statedb, receipts, usedNrg)
+	err = validator.ValidateState(block, blockchain.GetBlock(block.ParentHash()), statedb, receipts, usedGas)
 	if err != nil {
 		return false, err
 	}

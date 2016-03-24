@@ -39,11 +39,11 @@ import (
 // if it failed to do so.
 //
 // ValidateStack validates the given statedb and optionally the receipts and
-// nrg used. The implementor should decide what to do with the given input.
+// gas used. The implementor should decide what to do with the given input.
 type Validator interface {
 	ValidateBlock(block *types.Block) error
 	ValidateHeader(header, parent *types.Header, checkPow bool) error
-	ValidateState(block, parent *types.Block, state *state.StateDB, receipts types.Receipts, usedNrg *big.Int) error
+	ValidateState(block, parent *types.Block, state *state.StateDB, receipts types.Receipts, usedGas *big.Int) error
 }
 
 
@@ -51,7 +51,7 @@ type Validator interface {
 //
 // Process takes the block to be processed and the statedb upon which the
 // initial state is based. It should return the receipts generated, amount
-// of nrg used in the process and return an error if any of the internal rules
+// of gas used in the process and return an error if any of the internal rules
 // failed.
 type Processor interface {
 	Process(block *types.Block, statedb *state.StateDB) (types.Receipts, vm.Logs, *big.Int, error)

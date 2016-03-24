@@ -71,8 +71,8 @@ func calcMemSize(off, l *big.Int) *big.Int {
 	return new(big.Int).Add(off, l)
 }
 
-// calculates the quadratic nrg
-func quadMemNrg(mem *Memory, newMemSize, nrg *big.Int) {
+// calculates the quadratic gas
+func quadMemGas(mem *Memory, newMemSize, gas *big.Int) {
 	if newMemSize.Cmp(common.Big0) > 0 {
 		newMemSizeWords := toWordSize(newMemSize)
 		newMemSize.Mul(newMemSizeWords, u256(32))
@@ -82,17 +82,17 @@ func quadMemNrg(mem *Memory, newMemSize, nrg *big.Int) {
 			// The order has been optimised to reduce allocation
 			oldSize := toWordSize(big.NewInt(int64(mem.Len())))
 			pow := new(big.Int).Exp(oldSize, common.Big2, Zero)
-			linCoef := oldSize.Mul(oldSize, params.MemoryNrg)
+			linCoef := oldSize.Mul(oldSize, params.MemoryGas)
 			quadCoef := new(big.Int).Div(pow, params.QuadCoeffDiv)
 			oldTotalFee := new(big.Int).Add(linCoef, quadCoef)
 
 			pow.Exp(newMemSizeWords, common.Big2, Zero)
-			linCoef = linCoef.Mul(newMemSizeWords, params.MemoryNrg)
+			linCoef = linCoef.Mul(newMemSizeWords, params.MemoryGas)
 			quadCoef = quadCoef.Div(pow, params.QuadCoeffDiv)
 			newTotalFee := linCoef.Add(linCoef, quadCoef)
 
 			fee := newTotalFee.Sub(newTotalFee, oldTotalFee)
-			nrg.Add(nrg, fee)
+			gas.Add(gas, fee)
 		}
 	}
 }
@@ -123,14 +123,14 @@ func getData(data []byte, start, size *big.Int) []byte {
 	return common.RightPadBytes(data[s.Uint64():e.Uint64()], int(size.Uint64()))
 }
 
-// useNrg attempts to subtract the amount of nrg and returns whether it was
+// useGas attempts to subtract the amount of gas and returns whether it was
 // successful
-func useNrg(nrg, amount *big.Int) bool {
-	if nrg.Cmp(amount) < 0 {
+func useGas(gas, amount *big.Int) bool {
+	if gas.Cmp(amount) < 0 {
 		return false
 	}
 
-	// Sub the amount of nrg from the remaining
-	nrg.Sub(nrg, amount)
+	// Sub the amount of gas from the remaining
+	gas.Sub(gas, amount)
 	return true
 }

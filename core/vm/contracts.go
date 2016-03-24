@@ -28,7 +28,7 @@ import (
 
 // PrecompiledAccount represents a native ethereum contract
 type PrecompiledAccount struct {
-	Nrg func(l int) *big.Int
+	Gas func(l int) *big.Int
 	fn  func(in []byte) []byte
 }
 
@@ -46,28 +46,28 @@ func PrecompiledContracts() map[string]*PrecompiledAccount {
 	return map[string]*PrecompiledAccount{
 		// ECRECOVER
 		string(common.LeftPadBytes([]byte{1}, 20)): &PrecompiledAccount{func(l int) *big.Int {
-			return params.EcrecoverNrg
+			return params.EcrecoverGas
 		}, ecrecoverFunc},
 
 		// SHA256
 		string(common.LeftPadBytes([]byte{2}, 20)): &PrecompiledAccount{func(l int) *big.Int {
 			n := big.NewInt(int64(l+31) / 32)
-			n.Mul(n, params.Sha256WordNrg)
-			return n.Add(n, params.Sha256Nrg)
+			n.Mul(n, params.Sha256WordGas)
+			return n.Add(n, params.Sha256Gas)
 		}, sha256Func},
 
 		// RIPEMD160
 		string(common.LeftPadBytes([]byte{3}, 20)): &PrecompiledAccount{func(l int) *big.Int {
 			n := big.NewInt(int64(l+31) / 32)
-			n.Mul(n, params.Ripemd160WordNrg)
-			return n.Add(n, params.Ripemd160Nrg)
+			n.Mul(n, params.Ripemd160WordGas)
+			return n.Add(n, params.Ripemd160Gas)
 		}, ripemd160Func},
 
 		string(common.LeftPadBytes([]byte{4}, 20)): &PrecompiledAccount{func(l int) *big.Int {
 			n := big.NewInt(int64(l+31) / 32)
-			n.Mul(n, params.IdentityWordNrg)
+			n.Mul(n, params.IdentityWordGas)
 
-			return n.Add(n, params.IdentityNrg)
+			return n.Add(n, params.IdentityGas)
 		}, memCpy},
 	}
 }

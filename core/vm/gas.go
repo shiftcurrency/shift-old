@@ -24,21 +24,21 @@ import (
 )
 
 var (
-	NrgQuickStep   = big.NewInt(2)
-	NrgFastestStep = big.NewInt(3)
-	NrgFastStep    = big.NewInt(5)
-	NrgMidStep     = big.NewInt(8)
-	NrgSlowStep    = big.NewInt(10)
-	NrgExtStep     = big.NewInt(20)
+	GasQuickStep   = big.NewInt(2)
+	GasFastestStep = big.NewInt(3)
+	GasFastStep    = big.NewInt(5)
+	GasMidStep     = big.NewInt(8)
+	GasSlowStep    = big.NewInt(10)
+	GasExtStep     = big.NewInt(20)
 
-	NrgReturn = big.NewInt(0)
-	NrgStop   = big.NewInt(0)
+	GasReturn = big.NewInt(0)
+	GasStop   = big.NewInt(0)
 
-	NrgContractByte = big.NewInt(200)
+	GasContractByte = big.NewInt(200)
 )
 
 // baseCheck checks for any stack error underflows
-func baseCheck(op OpCode, stack *stack, nrg *big.Int) error {
+func baseCheck(op OpCode, stack *stack, gas *big.Int) error {
 	// PUSH and DUP are a bit special. They all cost the same but we do want to have checking on stack push limit
 	// PUSH is also allowed to calculate the same price for all PUSHes
 	// DUP requirements are handled elsewhere (except for the stack limit check)
@@ -59,7 +59,7 @@ func baseCheck(op OpCode, stack *stack, nrg *big.Int) error {
 			return fmt.Errorf("stack limit reached %d (%d)", stack.len(), params.StackLimit.Int64())
 		}
 
-		nrg.Add(nrg, r.nrg)
+		gas.Add(gas, r.gas)
 	}
 	return nil
 }
@@ -74,72 +74,72 @@ func toWordSize(size *big.Int) *big.Int {
 
 type req struct {
 	stackPop  int
-	nrg       *big.Int
+	gas       *big.Int
 	stackPush int
 }
 
 var _baseCheck = map[OpCode]req{
-	// opcode  |  stack pop | nrg price | stack push
-	ADD:          {2, NrgFastestStep, 1},
-	LT:           {2, NrgFastestStep, 1},
-	GT:           {2, NrgFastestStep, 1},
-	SLT:          {2, NrgFastestStep, 1},
-	SGT:          {2, NrgFastestStep, 1},
-	EQ:           {2, NrgFastestStep, 1},
-	ISZERO:       {1, NrgFastestStep, 1},
-	SUB:          {2, NrgFastestStep, 1},
-	AND:          {2, NrgFastestStep, 1},
-	OR:           {2, NrgFastestStep, 1},
-	XOR:          {2, NrgFastestStep, 1},
-	NOT:          {1, NrgFastestStep, 1},
-	BYTE:         {2, NrgFastestStep, 1},
-	CALLDATALOAD: {1, NrgFastestStep, 1},
-	CALLDATACOPY: {3, NrgFastestStep, 1},
-	MLOAD:        {1, NrgFastestStep, 1},
-	MSTORE:       {2, NrgFastestStep, 0},
-	MSTORE8:      {2, NrgFastestStep, 0},
-	CODECOPY:     {3, NrgFastestStep, 0},
-	MUL:          {2, NrgFastStep, 1},
-	DIV:          {2, NrgFastStep, 1},
-	SDIV:         {2, NrgFastStep, 1},
-	MOD:          {2, NrgFastStep, 1},
-	SMOD:         {2, NrgFastStep, 1},
-	SIGNEXTEND:   {2, NrgFastStep, 1},
-	ADDMOD:       {3, NrgMidStep, 1},
-	MULMOD:       {3, NrgMidStep, 1},
-	JUMP:         {1, NrgMidStep, 0},
-	JUMPI:        {2, NrgSlowStep, 0},
-	EXP:          {2, NrgSlowStep, 1},
-	ADDRESS:      {0, NrgQuickStep, 1},
-	ORIGIN:       {0, NrgQuickStep, 1},
-	CALLER:       {0, NrgQuickStep, 1},
-	CALLVALUE:    {0, NrgQuickStep, 1},
-	CODESIZE:     {0, NrgQuickStep, 1},
-	GASPRICE:     {0, NrgQuickStep, 1},
-	COINBASE:     {0, NrgQuickStep, 1},
-	TIMESTAMP:    {0, NrgQuickStep, 1},
-	NUMBER:       {0, NrgQuickStep, 1},
-	CALLDATASIZE: {0, NrgQuickStep, 1},
-	DIFFICULTY:   {0, NrgQuickStep, 1},
-	GASLIMIT:     {0, NrgQuickStep, 1},
-	POP:          {1, NrgQuickStep, 0},
-	PC:           {0, NrgQuickStep, 1},
-	MSIZE:        {0, NrgQuickStep, 1},
-	GAS:          {0, NrgQuickStep, 1},
-	BLOCKHASH:    {1, NrgExtStep, 1},
-	BALANCE:      {1, NrgExtStep, 1},
-	EXTCODESIZE:  {1, NrgExtStep, 1},
-	EXTCODECOPY:  {4, NrgExtStep, 0},
-	SLOAD:        {1, params.SloadNrg, 1},
+	// opcode  |  stack pop | gas price | stack push
+	ADD:          {2, GasFastestStep, 1},
+	LT:           {2, GasFastestStep, 1},
+	GT:           {2, GasFastestStep, 1},
+	SLT:          {2, GasFastestStep, 1},
+	SGT:          {2, GasFastestStep, 1},
+	EQ:           {2, GasFastestStep, 1},
+	ISZERO:       {1, GasFastestStep, 1},
+	SUB:          {2, GasFastestStep, 1},
+	AND:          {2, GasFastestStep, 1},
+	OR:           {2, GasFastestStep, 1},
+	XOR:          {2, GasFastestStep, 1},
+	NOT:          {1, GasFastestStep, 1},
+	BYTE:         {2, GasFastestStep, 1},
+	CALLDATALOAD: {1, GasFastestStep, 1},
+	CALLDATACOPY: {3, GasFastestStep, 1},
+	MLOAD:        {1, GasFastestStep, 1},
+	MSTORE:       {2, GasFastestStep, 0},
+	MSTORE8:      {2, GasFastestStep, 0},
+	CODECOPY:     {3, GasFastestStep, 0},
+	MUL:          {2, GasFastStep, 1},
+	DIV:          {2, GasFastStep, 1},
+	SDIV:         {2, GasFastStep, 1},
+	MOD:          {2, GasFastStep, 1},
+	SMOD:         {2, GasFastStep, 1},
+	SIGNEXTEND:   {2, GasFastStep, 1},
+	ADDMOD:       {3, GasMidStep, 1},
+	MULMOD:       {3, GasMidStep, 1},
+	JUMP:         {1, GasMidStep, 0},
+	JUMPI:        {2, GasSlowStep, 0},
+	EXP:          {2, GasSlowStep, 1},
+	ADDRESS:      {0, GasQuickStep, 1},
+	ORIGIN:       {0, GasQuickStep, 1},
+	CALLER:       {0, GasQuickStep, 1},
+	CALLVALUE:    {0, GasQuickStep, 1},
+	CODESIZE:     {0, GasQuickStep, 1},
+	GASPRICE:     {0, GasQuickStep, 1},
+	COINBASE:     {0, GasQuickStep, 1},
+	TIMESTAMP:    {0, GasQuickStep, 1},
+	NUMBER:       {0, GasQuickStep, 1},
+	CALLDATASIZE: {0, GasQuickStep, 1},
+	DIFFICULTY:   {0, GasQuickStep, 1},
+	GASLIMIT:     {0, GasQuickStep, 1},
+	POP:          {1, GasQuickStep, 0},
+	PC:           {0, GasQuickStep, 1},
+	MSIZE:        {0, GasQuickStep, 1},
+	GAS:          {0, GasQuickStep, 1},
+	BLOCKHASH:    {1, GasExtStep, 1},
+	BALANCE:      {1, GasExtStep, 1},
+	EXTCODESIZE:  {1, GasExtStep, 1},
+	EXTCODECOPY:  {4, GasExtStep, 0},
+	SLOAD:        {1, params.SloadGas, 1},
 	SSTORE:       {2, Zero, 0},
-	SHA3:         {2, params.Sha3Nrg, 1},
-	CREATE:       {3, params.CreateNrg, 1},
-	CALL:         {7, params.CallNrg, 1},
-	CALLCODE:     {7, params.CallNrg, 1},
-	DELEGATECALL: {6, params.CallNrg, 1},
-	JUMPDEST:     {0, params.JumpdestNrg, 0},
+	SHA3:         {2, params.Sha3Gas, 1},
+	CREATE:       {3, params.CreateGas, 1},
+	CALL:         {7, params.CallGas, 1},
+	CALLCODE:     {7, params.CallGas, 1},
+	DELEGATECALL: {6, params.CallGas, 1},
+	JUMPDEST:     {0, params.JumpdestGas, 0},
 	SUICIDE:      {1, Zero, 0},
 	RETURN:       {2, Zero, 0},
-	PUSH1:        {0, NrgFastestStep, 1},
+	PUSH1:        {0, GasFastestStep, 1},
 	DUP1:         {0, Zero, 1},
 }

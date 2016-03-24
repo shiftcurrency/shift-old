@@ -165,11 +165,11 @@ func TestTransactionPriceNonceSort(t *testing.T) {
 		// Make sure that in between the neighbor nonces, the transaction is correctly positioned price wise
 		for j := prev + 1; j < next; j++ {
 			fromj, _ := txs[j].From()
-			if j < i && txs[j].NrgPrice().Cmp(txi.NrgPrice()) < 0 {
-				t.Errorf("invalid nrgprice ordering: tx #%d (A=%x P=%v) < tx #%d (A=%x P=%v)", j, fromj[:4], txs[j].NrgPrice(), i, fromi[:4], txi.NrgPrice())
+			if j < i && txs[j].GasPrice().Cmp(txi.GasPrice()) < 0 {
+				t.Errorf("invalid gasprice ordering: tx #%d (A=%x P=%v) < tx #%d (A=%x P=%v)", j, fromj[:4], txs[j].GasPrice(), i, fromi[:4], txi.GasPrice())
 			}
-			if j > i && txs[j].NrgPrice().Cmp(txi.NrgPrice()) > 0 {
-				t.Errorf("invalid nrgprice ordering: tx #%d (A=%x P=%v) > tx #%d (A=%x P=%v)", j, fromj[:4], txs[j].NrgPrice(), i, fromi[:4], txi.NrgPrice())
+			if j > i && txs[j].GasPrice().Cmp(txi.GasPrice()) > 0 {
+				t.Errorf("invalid gasprice ordering: tx #%d (A=%x P=%v) > tx #%d (A=%x P=%v)", j, fromj[:4], txs[j].GasPrice(), i, fromi[:4], txi.GasPrice())
 			}
 		}
 	}

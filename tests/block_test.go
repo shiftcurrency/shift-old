@@ -116,9 +116,9 @@ func TestBcWallet(t *testing.T) {
 	}
 }
 
-func TestBcNrgPricer(t *testing.T) {
+func TestBcGasPricer(t *testing.T) {
 	params.HomesteadBlock = big.NewInt(1000000)
-	err := RunBlockTest(filepath.Join(blockTestDir, "bcNrgPricerTest.json"), BlockSkipTests)
+	err := RunBlockTest(filepath.Join(blockTestDir, "bcGasPricerTest.json"), BlockSkipTests)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,9 +217,9 @@ func TestHomesteadBcWallet(t *testing.T) {
 	}
 }
 
-func TestHomesteadBcNrgPricer(t *testing.T) {
+func TestHomesteadBcGasPricer(t *testing.T) {
 	params.HomesteadBlock = big.NewInt(0)
-	err := RunBlockTest(filepath.Join(blockTestDir, "Homestead", "bcNrgPricerTest.json"), BlockSkipTests)
+	err := RunBlockTest(filepath.Join(blockTestDir, "Homestead", "bcGasPricerTest.json"), BlockSkipTests)
 	if err != nil {
 		t.Fatal(err)
 	}

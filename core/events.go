@@ -68,7 +68,7 @@ type ChainUncleEvent struct {
 
 type ChainHeadEvent struct{ Block *types.Block }
 
-type NrgPriceChanged struct{ Price *big.Int }
+type GasPriceChanged struct{ Price *big.Int }
 
 // Mining operation events
 type StartMining struct{}
