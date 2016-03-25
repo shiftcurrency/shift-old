@@ -72,17 +72,13 @@ var (
 
 	defaultBootNodes = []*discover.Node{
         // Paris
-        discover.MustParseNode("enode://e6bf23af0c44f28ccbad0c813dd00e56f3ed462d4b9fdcc9dcf1b8dfc52f6adb72a6b517cc81b7681205c8aabb12c8de5c9992eceedf41f032617415d4ea5fd7@45.32.149.118:53900"),
+        discover.MustParseNode("enode://e67bdd6eaf1d1594c2ce6d7fa8ac0aa85fdd50b27cd95cfdc2598e7406b9128631876b622fcc123d5c1f3113bf711d4e66554424013fbeb710013774994502c3@45.32.149.118:53900"),
         // Dallas
-        discover.MustParseNode("enode://46d1cac103fc345eae3705e1637131addcf8d33021482e0e37e88dc7baf129322d3af7b4b20ad4edf55d371e7eb4a7931c52c8bcea3f022043afa08aa05db5ba@108.61.204.10:53900"),
+        discover.MustParseNode("enode://5a9433228b30d0916ead1df4a838fe75e7ea698773358b52bb17aec975a374d9211d6a373c03eac72c340cbf1dcbf49ac22a24abd4e4189542c3bedf17cbc30f@108.61.204.10:53900"),
         // Frankfurt
-        discover.MustParseNode("enode://06198406815df461ce2a8c5c22196e8b4fb2562c3ba7242d32084a4dbc05dc2b301f107f5d47bc5a966098fddf4840ce1092b98748b2aec3d39d4b2a207497a8@104.238.177.33:53900"),
-        // Los Angeles
-        discover.MustParseNode("enode://ae835b7f9e990aa2d80836c9daf30969ae6aa2e79c7d5923b00458cb2de03776fbb339214a645570f2f66bfbec13c7945209dbdf7beac386a49929616cae5b4d@45.32.80.160:53900"),
+        discover.MustParseNode("enode://ea4c4617aa3718cf1388544a6068284830129b0a03b5a22ae8d11cfe53076d1cc49a721ac762a9d826044e5049555bdff2c26491e1a32af288574edab2b3ac27@104.238.177.33:53900"),
         // New York
-        discover.MustParseNode("enode://ea39f3a31ab3a9b3ad3ac603d733c833cb7aa97142ce309412ae64ea382c284ca21c7ee546bc99fa72a144fc29059777411fee2ac42c836b450112c29059b275@108.61.191.141:53900"),
-        // Tokyo
-        discover.MustParseNode("enode://77b701c32b581348df1f7856b4159eb5a7bc8366dde9955d6b000f47baf42d86955932c18a1e3d49ff2bbb61d6ccafbca17b97c53f71d9ef83fc8880849b76f0@45.32.53.184:53900"),
+        discover.MustParseNode("enode://7465f35b873dfb40c7cc9d91785832bb26ba2d09002274b4cac4b7870ed4fe3aedc98bf4b304c780ead638e926c1a3a1b8f78c04722e768600fecf7c97738957@108.61.191.141:53900"),
 	}
 
 	defaultTestNetBootNodes = []*discover.Node{
