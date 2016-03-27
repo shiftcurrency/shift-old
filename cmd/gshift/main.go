@@ -49,9 +49,9 @@ import (
 const (
 
 	ClientIdentifier = "Gshift"
-	Version          = "2.3.0"
+	Version          = "2.4.0"
 	VersionMajor     = 2
-	VersionMinor     = 3
+	VersionMinor     = 4
 	VersionPatch     = 0
 )
 
