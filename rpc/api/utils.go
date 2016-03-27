@@ -111,7 +111,7 @@ var (
 		"miner": []string{
 			"hashrate",
 			"makeDAG",
-			"setEtherbase",
+			"setShiftbase",
 			"setExtra",
 			"setNrgPrice",
 			"startAutoDAG",

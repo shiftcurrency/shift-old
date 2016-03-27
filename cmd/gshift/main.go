@@ -49,10 +49,10 @@ import (
 const (
 
 	ClientIdentifier = "Gshift"
-	Version          = "2.2.4"
+	Version          = "2.3.0"
 	VersionMajor     = 2
-	VersionMinor     = 2
-	VersionPatch     = 4
+	VersionMinor     = 3
+	VersionPatch     = 0
 )
 
 var (
@@ -311,7 +311,7 @@ JavaScript API. See https://github.com/shiftcurrency/shift/wiki/Javascipt-Consol
 		utils.ListenPortFlag,
 		utils.MaxPeersFlag,
 		utils.MaxPendingPeersFlag,
-		utils.EtherbaseFlag,
+		utils.ShiftbaseFlag,
 		utils.GasPriceFlag,
 		utils.MinerThreadsFlag,
 		utils.MiningEnabledFlag,

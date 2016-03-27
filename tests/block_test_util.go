@@ -167,7 +167,7 @@ func runBlockTest(test *BlockTest) error {
 	cfg := &shf.Config{
 		DataDir:        common.DefaultDataDir(),
 		Verbosity:      5,
-		Etherbase:      common.Address{},
+		Shiftbase:      common.Address{},
 		AccountManager: am,
 		NewDB:          func(path string) (ethdb.Database, error) { return db, nil },
 	}

@@ -27,4 +27,4 @@ func NewDefaultGenesisReader() (io.Reader, error) {
 	return gzip.NewReader(base64.NewDecoder(base64.StdEncoding, strings.NewReader(defaultGenesisBlock)))
 }
 
-const defaultGenesisBlock = "H4sICLcQ9VYAA2dlbi50eHQArY/BCsIwEET/Zc89JLGmpl/gwZ/Yxo1dSNJiIlRK/91YvQhFEJzjY2Z3ZoY4REvQgpjEhxRCBWd2ju3N5/vqUIUXit4PFtoZNFKDNVGtTIPuQCSk0VLvUEtrndPGYS1lp5/eDj2+Pqm92BQsSwWBpx5Tv1Hod5WqduDYYdoa+DWXOVDKGMZ3sKARrxTz8Y/lLphOHDiv98wKlwdI1OM1kQEAAA=="
+const defaultGenesisBlock = "H4sICFwa+FYAA2dlbi50eHQArY/BDsIgEET/Zc89ACKVfoEHf2LBxZIAbQSTmqb/LlYvJo2JiXN8mdmdmSENyRJ0wCb2ISmggbN3zttbKPfVISqvFEMYLHQzKKQWJZEUukV3IGJcK652qLi1zintUHJu1NNrMODrk9izTcGyNBD91GPuNwr9rlrVDj4ZzFsDv+aKj5QLxvEdrGjEK6Vy/GO5C+aTj76s9/QKlwcTKkT8kQEAAA=="

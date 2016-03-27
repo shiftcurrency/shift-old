@@ -34,8 +34,8 @@ web3._extend({
 			inputFormatter: [null]
 		}),
 		new web3._extend.Method({
-			name: 'setEtherbase',
-			call: 'miner_setEtherbase',
+			name: 'setShiftbase',
+			call: 'miner_setShiftbase',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.formatInputInt],
 			outputFormatter: web3._extend.formatters.formatOutputBool

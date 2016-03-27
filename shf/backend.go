@@ -71,14 +71,14 @@ var (
 	portInUseErrRE     = regexp.MustCompile("address already in use")
 
 	defaultBootNodes = []*discover.Node{
-        // Paris
-        discover.MustParseNode("enode://e67bdd6eaf1d1594c2ce6d7fa8ac0aa85fdd50b27cd95cfdc2598e7406b9128631876b622fcc123d5c1f3113bf711d4e66554424013fbeb710013774994502c3@45.32.149.118:53900"),
-        // Dallas
-        discover.MustParseNode("enode://5a9433228b30d0916ead1df4a838fe75e7ea698773358b52bb17aec975a374d9211d6a373c03eac72c340cbf1dcbf49ac22a24abd4e4189542c3bedf17cbc30f@108.61.204.10:53900"),
-        // Frankfurt
-        discover.MustParseNode("enode://ea4c4617aa3718cf1388544a6068284830129b0a03b5a22ae8d11cfe53076d1cc49a721ac762a9d826044e5049555bdff2c26491e1a32af288574edab2b3ac27@104.238.177.33:53900"),
+        // London
+        discover.MustParseNode("enode://4c8635f108dae8a997697d9c22ddca36969e7f9bc57d9fc01102d7e7d9633231331ae7f7307aceb1aa19130b5bdd4afe397db616c76e7ffc1c69302ba0d09a39@45.32.182.61:53900"),
         // New York
-        discover.MustParseNode("enode://7465f35b873dfb40c7cc9d91785832bb26ba2d09002274b4cac4b7870ed4fe3aedc98bf4b304c780ead638e926c1a3a1b8f78c04722e768600fecf7c97738957@108.61.191.141:53900"),
+        discover.MustParseNode("enode://fe2a7c2015a8370c6a0d11e7fa6d00000d6428f9576b875ee65c98ff0a0311ed6386cb3eb524806837d843158a7477bd782e0e4870e2ff63b697a088e14891ce@104.207.129.159:53900"),
+        // Paris
+        discover.MustParseNode("enode://80d0ce5c992f8cc83cdbfd6d832b2dff2e82fee1f8b58762cd858eaacfcc99d5a8a837648bd28a2d508cc1da305c15cf4e531546034ed1a8ccd07ff51a71abd6@108.61.177.0:53900"),
+        // Seattle
+        discover.MustParseNode("enode://f019da062a635a4e9e89ec93edc7ca11c06fdfec0574f1cb001126a82dc6ffa6ca05f924a683934ff5d01fc5d4b0ac9507349a945c97121b2a355d39b1781cd7@104.238.157.156:53900"),
 	}
 
 	defaultTestNetBootNodes = []*discover.Node{
@@ -129,7 +129,7 @@ type Config struct {
 	Shh  bool
 	Dial bool
 
-	Etherbase      common.Address
+	Shiftbase      common.Address
 	GasPrice       *big.Int
 	MinerThreads   int
 	AccountManager *accounts.Manager
@@ -372,7 +372,7 @@ func New(config *Config) (*Shift, error) {
 		eventMux:                &event.TypeMux{},
 		accountManager:          config.AccountManager,
 		DataDir:                 config.DataDir,
-		shiftbase:               config.Etherbase,
+		shiftbase:               config.Shiftbase,
 		clientVersion:           config.Name, // TODO should separate from Name
 		netVersionId:            config.NetworkId,
 		NatSpec:                 config.NatSpec,
@@ -469,7 +469,7 @@ func (s *Shift) ResetWithGenesisBlock(gb *types.Block) {
 	s.blockchain.ResetWithGenesisBlock(gb)
 }
 
-func (s *Shift) Etherbase() (eb common.Address, err error) {
+func (s *Shift) Shiftbase() (eb common.Address, err error) {
 	eb = s.shiftbase
 	if (eb == common.Address{}) {
 		addr, e := s.AccountManager().AddressByIndex(0)
@@ -482,9 +482,9 @@ func (s *Shift) Etherbase() (eb common.Address, err error) {
 }
 
 // set in js console via admin interface or wrapper from cli flags
-func (self *Shift) SetEtherbase(shiftbase common.Address) {
+func (self *Shift) SetShiftbase(shiftbase common.Address) {
 	self.shiftbase = shiftbase
-	self.miner.SetEtherbase(shiftbase)
+	self.miner.SetShiftbase(shiftbase)
 }
 
 

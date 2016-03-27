@@ -172,7 +172,7 @@ func (self *Miner) PendingBlock() *types.Block {
 	return self.worker.pendingBlock()
 }
 
-func (self *Miner) SetEtherbase(addr common.Address) {
+func (self *Miner) SetShiftbase(addr common.Address) {
 	self.shiftbase = addr
-	self.worker.setEtherbase(addr)
+	self.worker.setShiftbase(addr)
 }

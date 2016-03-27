@@ -460,7 +460,7 @@ func (self *XEth) IsListening() bool {
 }
 
 func (self *XEth) Coinbase() string {
-	eb, err := self.backend.Etherbase()
+	eb, err := self.backend.Shiftbase()
 	if err != nil {
 		return "0x0"
 	}

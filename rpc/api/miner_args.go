@@ -93,11 +93,11 @@ func (args *GasPriceArgs) UnmarshalJSON(b []byte) (err error) {
 	return shared.NewInvalidTypeError("Price", "not a string")
 }
 
-type SetEtherbaseArgs struct {
-	Etherbase common.Address
+type SetShiftbaseArgs struct {
+	Shiftbase common.Address
 }
 
-func (args *SetEtherbaseArgs) UnmarshalJSON(b []byte) (err error) {
+func (args *SetShiftbaseArgs) UnmarshalJSON(b []byte) (err error) {
 	var obj []interface{}
 	if err := json.Unmarshal(b, &obj); err != nil {
 		return shared.NewDecodeParamError(err.Error())
@@ -108,14 +108,14 @@ func (args *SetEtherbaseArgs) UnmarshalJSON(b []byte) (err error) {
 	}
 
 	if addr, ok := obj[0].(string); ok {
-		args.Etherbase = common.HexToAddress(addr)
-		if (args.Etherbase == common.Address{}) {
-			return shared.NewInvalidTypeError("Etherbase", "not a valid address")
+		args.Shiftbase = common.HexToAddress(addr)
+		if (args.Shiftbase == common.Address{}) {
+			return shared.NewInvalidTypeError("Shiftbase", "not a valid address")
 		}
 		return nil
 	}
 
-	return shared.NewInvalidTypeError("Etherbase", "not a string")
+	return shared.NewInvalidTypeError("Shiftbase", "not a string")
 }
 
 type MakeDAGArgs struct {

@@ -278,7 +278,7 @@ func TestContract(t *testing.T) {
 	t.Skip("contract testing is implemented with mining in ethash test mode. This takes about 7seconds to run. Unskip and run on demand")
 	shiftbase := common.HexToAddress(testAddress)
 	tmp, repl, shift := testREPL(t, func(conf *shf.Config) {
-		conf.Etherbase = shiftbase
+		conf.Shiftbase = shiftbase
 		conf.PowTest = true
 	})
 	if err := shift.Start(); err != nil {

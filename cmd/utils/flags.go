@@ -175,7 +175,7 @@ var (
 		Name:  "autodag",
 		Usage: "Enable automatic DAG pregeneration",
 	}
-	EtherbaseFlag = cli.StringFlag{
+	ShiftbaseFlag = cli.StringFlag{
 		Name:  "shiftbase",
 		Usage: "Public address for block mining rewards (default = first account created)",
 		Value: "0",
@@ -420,7 +420,7 @@ func MakeEthConfig(clientID, version string, ctx *cli.Context) *shf.Config {
 		clientID += "/" + customName
 	}
 	am := MakeAccountManager(ctx)
-	shiftbase, err := ParamToAddress(ctx.GlobalString(EtherbaseFlag.Name), am)
+	shiftbase, err := ParamToAddress(ctx.GlobalString(ShiftbaseFlag.Name), am)
 	if err != nil {
 		glog.V(logger.Error).Infoln("WARNING: No shiftbase set and no accounts found as default")
 	}
@@ -437,7 +437,7 @@ func MakeEthConfig(clientID, version string, ctx *cli.Context) *shf.Config {
 		NetworkId:               ctx.GlobalInt(NetworkIdFlag.Name),
 		LogFile:                 ctx.GlobalString(LogFileFlag.Name),
 		Verbosity:               ctx.GlobalInt(VerbosityFlag.Name),
-		Etherbase:               common.HexToAddress(shiftbase),
+		Shiftbase:               common.HexToAddress(shiftbase),
 		MinerThreads:            ctx.GlobalInt(MinerThreadsFlag.Name),
 		AccountManager:          am,
 		VmDebug:                 ctx.GlobalBool(VMDebugFlag.Name),

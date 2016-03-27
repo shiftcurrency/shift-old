@@ -146,7 +146,7 @@ func newWorker(shiftbase common.Address, shf core.Backend) *worker {
 	return worker
 }
 
-func (self *worker) setEtherbase(addr common.Address) {
+func (self *worker) setShiftbase(addr common.Address) {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 	self.shiftbase = addr

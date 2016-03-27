@@ -35,7 +35,7 @@ var (
 		"miner_makeDAG":      (*minerApi).MakeDAG,
 		"miner_setExtra":     (*minerApi).SetExtra,
 		"miner_setNrgPrice":  (*minerApi).SetGasPrice,
-		"miner_setEtherbase": (*minerApi).SetEtherbase,
+		"miner_setShiftbase": (*minerApi).SetShiftbase,
 		"miner_startAutoDAG": (*minerApi).StartAutoDAG,
 		"miner_start":        (*minerApi).StartMiner,
 		"miner_stopAutoDAG":  (*minerApi).StopAutoDAG,
@@ -140,12 +140,12 @@ func (self *minerApi) SetGasPrice(req *shared.Request) (interface{}, error) {
 	return true, nil
 }
 
-func (self *minerApi) SetEtherbase(req *shared.Request) (interface{}, error) {
-	args := new(SetEtherbaseArgs)
+func (self *minerApi) SetShiftbase(req *shared.Request) (interface{}, error) {
+	args := new(SetShiftbaseArgs)
 	if err := self.codec.Decode(req.Params, &args); err != nil {
 		return false, err
 	}
-	self.shift.SetEtherbase(args.Etherbase)
+	self.shift.SetShiftbase(args.Shiftbase)
 	return nil, nil
 }
 

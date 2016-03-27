@@ -150,7 +150,7 @@ func testEth(t *testing.T) (shift *shf.Shift, err error) {
 	return shf.New(&shf.Config{
 		DataDir:                 tmp,
 		AccountManager:          am,
-		Etherbase:               common.HexToAddress(testAddress),
+		Shiftbase:               common.HexToAddress(testAddress),
 		MaxPeers:                0,
 		PowTest:                 true,
 		NewDB:                   func(path string) (ethdb.Database, error) { return db, nil },
@@ -177,7 +177,7 @@ func testInit(t *testing.T) (self *testFrontend) {
 	self = &testFrontend{t: t, shift: shift}
 	self.xeth = xe.New(shift, self)
 	self.wait = self.xshf.UpdateState()
-	addr, _ := self.shift.Etherbase()
+	addr, _ := self.shift.Shiftbase()
 
 	// initialise the registry contracts
 	reg := registrar.New(self.xeth)
@@ -232,7 +232,7 @@ func TestNatspecE2E(t *testing.T) {
 
 	tf := testInit(t)
 	defer tf.shift.Stop()
-	addr, _ := tf.shift.Etherbase()
+	addr, _ := tf.shift.Shiftbase()
 
 	// create a contractInfo file (mock cloud-deployed contract metadocs)
 	// incidentally this is the info for the HashReg contract itself

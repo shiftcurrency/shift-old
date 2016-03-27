@@ -66,9 +66,9 @@ func defaultDir() string {
 		home = user.HomeDir
 	}
 	if runtime.GOOS == "windows" {
-		return filepath.Join(home, "AppData", "Ethash")
+		return filepath.Join(home, "AppData", "SHFhash")
 	}
-	return filepath.Join(home, ".ethash")
+	return filepath.Join(home, ".shfhash")
 }
 
 // cache wraps an ethash_light_t with some metadata
