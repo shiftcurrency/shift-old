@@ -94,6 +94,12 @@ if __name__ == "__main__":
 
     account_balances = get_balances(account_list)
 
+    total = 0
+    for i in account_balances:
+        total += int(account_balances[i])
+    print "Total number of shift: %s" % str(total)[:7]
+
+
     ''' write the final .json file '''
     if create_genesis_json(account_balances):
         print "Done. See the created file shift_balances.json."
