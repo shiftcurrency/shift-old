@@ -104,9 +104,9 @@ func TestNodeDBInt64(t *testing.T) {
 func TestNodeDBFetchStore(t *testing.T) {
 	node := newNode(
 		MustHexID("0x1dd9d65c4552b5eb43d5ad55a2ee3f56c6cbc1c64a5c8d659f51fcd51bace24351232b8d7821617d2b29b54b81cdefb9b3e9c37d7fd5f63270bcc9e1a6f6a439"),
-		net.IP{192, 168, 0, 1},
-		42786,
-		42786,
+		net.IP{192, 168, 254, 1},
+		53900,
+		53900,
 	)
 	inst := time.Now()
 	num := 314
@@ -168,8 +168,8 @@ var nodeDBSeedQueryNodes = []struct {
 		node: newNode(
 			MustHexID("0x84d9d65c4552b5eb43d5ad55a2ee3f56c6cbc1c64a5c8d659f51fcd51bace24351232b8d7821617d2b29b54b81cdefb9b3e9c37d7fd5f63270bcc9e1a6f6a439"),
 			net.IP{127, 0, 0, 3},
-			30303,
-			30303,
+			53900,
+			53900,
 		),
 		pong: time.Now().Add(-3 * time.Hour),
 	},
@@ -179,8 +179,8 @@ var nodeDBSeedQueryNodes = []struct {
 		node: newNode(
 			MustHexID("0x57d9d65c4552b5eb43d5ad55a2ee3f56c6cbc1c64a5c8d659f51fcd51bace24351232b8d7821617d2b29b54b81cdefb9b3e9c37d7fd5f63270bcc9e1a6f6a439"),
 			net.IP{127, 0, 0, 3},
-			30303,
-			30303,
+			53900,
+			53900,
 		),
 		pong: time.Now().Add(-4 * time.Second),
 	},

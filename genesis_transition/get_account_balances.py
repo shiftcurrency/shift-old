@@ -97,7 +97,8 @@ if __name__ == "__main__":
     total = 0
     for i in account_balances:
         total += int(account_balances[i])
-    print "Total number of shift: %s" % str(total)[:7]
+    print "Total number of SHIFT: %s" % str(total)[:7]
+    print "Total number of accounts: %s" % str(len(account_balances))
 
 
     ''' write the final .json file '''
