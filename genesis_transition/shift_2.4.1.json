@@ -1,6 +1,6 @@
 {
     "nonce": "0x0000000000000042", 
-    "difficulty": "0x27394295715",
+    "difficulty": "0x273942957",
 "alloc": {
  "0x291bc753e59eccef4e16e1652e974fbcc158937f": { "balance": "8950000000000000" },
  "0x59e3e58451006d4a8ddc70e31cc99fe7b91f5871": { "balance": "9999997952" },
