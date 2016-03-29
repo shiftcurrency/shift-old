@@ -59,9 +59,9 @@ def get_balances(accounts):
 def create_genesis_json(account_balances):
 
 
-    if os.path.isfile("shift_balances.json"):
+    if os.path.isfile("shift_2.4.1.json"):
         try:
-            os.remove("shift_balances.json")
+            os.remove("shift_2.4.1.json")
             print "Removed old json file."
 
         except Exception as e:
@@ -69,7 +69,7 @@ def create_genesis_json(account_balances):
             print e
 
     try:
-        with open("shift_2.0.0.json", "a") as genfile:
+        with open("shift_2.4.1.json", "a") as genfile:
 
             print "Creating genesis account:balance allocation..."
         
@@ -103,5 +103,5 @@ if __name__ == "__main__":
 
     ''' write the final .json file '''
     if create_genesis_json(account_balances):
-        print "Done. See the created file shift_balances.json."
+        print "Done. See the created file shift_2.4.1.json."
         
