@@ -106,7 +106,7 @@ var (
         "eth_shiftbase":                           (*ethApi).Coinbase,
         "eth_mining":                              (*ethApi).IsMining,
         "eth_syncing":                             (*ethApi).IsSyncing,
-        "eth_nrgPrice":                            (*ethApi).GasPrice,
+        "eth_gasPrice":                            (*ethApi).GasPrice,
         "eth_getStorage":                          (*ethApi).GetStorage,
         "eth_storageAt":                           (*ethApi).GetStorage,
         "eth_getStorageAt":                        (*ethApi).GetStorageAt,

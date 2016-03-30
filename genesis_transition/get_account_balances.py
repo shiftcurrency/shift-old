@@ -6,7 +6,7 @@ import requests
 import sys
 import os
 
-conn = sqlite3.connect(".Shift/sql.db")
+conn = sqlite3.connect(".gshift/sql.db")
 c = conn.cursor()
 
 def fetch_accounts():
