@@ -51,7 +51,7 @@ To get the options available:
 
     gshift help
 
-For further details on options, see the [wiki](https://github.com/shiftcurrency/shift/wiki/Command-Line-Options)
+## WIKI (to be added on readthedocs)
 
 ## Contribution
 

@@ -1548,7 +1548,7 @@ var MnemonicWords []string = []string{
 	"feast",
 	"forehead",
 	"former",
-	"franko",
+	"json",
 	"fright",
 	"fully",
 	"gas",
