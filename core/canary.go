@@ -17,9 +17,6 @@
 package core
 
 import (
-	"math/big"
-
-	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core/state"
 )
 
