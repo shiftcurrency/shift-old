@@ -91,9 +91,7 @@ func ApplyTransaction(bc *BlockChain, gp *GasPool, statedb *state.StateDB, heade
 // also rewarded.
 func AccumulateRewards(statedb *state.StateDB, header *types.Header, uncles []*types.Header, block *types.Block) {
 
-    blockNum := block.Number().Uint64()
     reward := new(big.Int).Set(BlockReward)
-
 
     // FIXME: INVALID MERKLE ROOT BECAUSE OF...
 
