@@ -8,7 +8,7 @@ import os
 import numpy as np
 from time import sleep
 
-output_file = "shift_2.5.1.json"
+output_file = "shift_2.5.0.json"
 
 def fetch_accounts():
 
@@ -50,8 +50,12 @@ def fetch_accounts():
             sys.exit(0)
 
     ''' Load the accounts in the old genesis block (These accounts does not show up as transactions)'''
-    data = open("shift_2.4.1.json").read()
-    former_genesis = json.loads(data)
+    try:
+        data = open("shift_2.4.1.json").read()
+        former_genesis = json.loads(data)
+    except Exception as e:
+        print "Count not open shift_2.4.1.json."
+        print e
 
     for i in former_genesis['alloc']:
         accounts.append(i)
@@ -108,17 +112,15 @@ def create_genesis_json(account_balances):
             print "Creating genesis account:balance allocation..."
             genfile.write('{ "nonce": "0x0000000000000042", \n"difficulty": "0x273942957", \n"alloc": {\n')
             for account in account_balances:
-                if account != "":
-                ##and int(account_balances[account]) != 0:
+                if account != "" and int(account_balances[account]) != 0:
                     account_allocation = " \"%s\": { \"balance\": \"%s\" },\n" % (account, account_balances[account])
                     genfile.write(account_allocation)
-    
-            genfile.write('},\n "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",\n \
-"coinbase": "0x0000000000000000000000000000000000000000",\n \
-"timestamp": "0x00",\n "parentHash": \
-"0x0000000000000000000000000000000000000000000000000000000000000000",\n \
-"gasLimit": "0x300000"\n \
-}')
+
+            genesis_ending = '},\n "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",\n' + \
+                             '"coinbase": "0x0000000000000000000000000000000000000000",\n' + \
+                             '"timestamp": "0x00",\n "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",\n' + \
+                             '"gasLimit": "0x300000"\n'
+            genfile.write(genesis_ending)
 
         return True
 
