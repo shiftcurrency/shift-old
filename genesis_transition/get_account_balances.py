@@ -5,28 +5,49 @@ import sqlite3
 import requests
 import sys
 import os
+import numpy as np
+from time import sleep
 
-conn = sqlite3.connect(".gshift/sql.db")
-c = conn.cursor()
+output_file = "shift_2.5.1.json"
 
 def fetch_accounts():
 
+    data = json.dumps({"jsonrpc":"2.0","method":"shf_blockNumber","params":[],"id":83})
+    transactions_to = []
+
     try:
-        c.execute("SELECT DISTINCT(receiver) FROM shift_transactions ORDER BY receiver;")
-        accounts = c.fetchall()
-    except Exception as exception:
-        print "Hit a problem, see the output."
-        print exception
+        response = requests.post("http://localhost:53901", data=data)
+        jsondata = response.json()
+        current_height = int(jsondata['result'], 16)
+
+    except Exception as e:
+        print "Hit a problem with HTTP request."
+        print e
         sys.exit(0)
 
-    account_list = []
+    for num in range(0,current_height):
 
-    if len(accounts) > 0:
-        for i in accounts:
-            account_list.append(i[0])
+        blocks = "Parsing block: %i" % num
+        print "\r", blocks,
+
+        data_string = '{"jsonrpc":"2.0","method":"shf_getBlockByNumber","params":["%s",true],"id":1}' % str(hex(num))
     
-    return account_list
+        try:
+            sleep(0.005)
+            response = requests.post("http://localhost:53901", data=data_string)
+            jsondata = response.json()
+            if (jsondata['result']['transactions']):
+                for i in jsondata['result']['transactions']:
+                    transactions_to.append(i['to'])
+
+        except Exception as e:
+            print "Hit a problem with HTTP request."
+            print e
+            sys.exit(0)
+
+    return np.unique(transactions_to)
         
+
 
 def get_balances(accounts):
 
@@ -59,9 +80,9 @@ def get_balances(accounts):
 def create_genesis_json(account_balances):
 
 
-    if os.path.isfile("shift_2.4.1.json"):
+    if os.path.isfile(output_file):
         try:
-            os.remove("shift_2.4.1.json")
+            os.remove(output_file)
             print "Removed old json file."
 
         except Exception as e:
@@ -69,16 +90,22 @@ def create_genesis_json(account_balances):
             print e
 
     try:
-        with open("shift_2.4.1.json", "a") as genfile:
+        with open(output_file, "a") as genfile:
 
             print "Creating genesis account:balance allocation..."
-        
-            genfile.write('"alloc": {\n')
+            genfile.write('{ "nonce": "0x0000000000000042", \n"difficulty": "0x273942957", \n"alloc": {\n')
             for account in account_balances:
-                if account != "" and int(account_balances[account]) != 0:
+                if account != "":
+                ##and int(account_balances[account]) != 0:
                     account_allocation = " \"%s\": { \"balance\": \"%s\" },\n" % (account, account_balances[account])
                     genfile.write(account_allocation)
-            genfile.write('},\n')
+    
+            genfile.write('},\n "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",\n \
+                                "coinbase": "0x0000000000000000000000000000000000000000",\n \
+                                "timestamp": "0x00",\n "parentHash": \
+                                "0x0000000000000000000000000000000000000000000000000000000000000000",\n \
+                                "gasLimit": "0x300000"\n \
+                            }')
 
         return True
 
@@ -90,10 +117,7 @@ def create_genesis_json(account_balances):
 
 if __name__ == "__main__":
     account_list = fetch_accounts()
-    ''' returns a dictionary with account and balance '''
-
     account_balances = get_balances(account_list)
-
     total = 0
     for i in account_balances:
         total += int(account_balances[i])
@@ -103,5 +127,5 @@ if __name__ == "__main__":
 
     ''' write the final .json file '''
     if create_genesis_json(account_balances):
-        print "Done. See the created file shift_2.4.1.json."
+        print "Done. See the created file %s." % output_file
         
