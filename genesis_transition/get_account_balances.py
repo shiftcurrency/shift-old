@@ -56,6 +56,7 @@ def fetch_accounts():
     except Exception as e:
         print "Count not open shift_2.4.1.json."
         print e
+        sys.exit(0)
 
     for i in former_genesis['alloc']:
         accounts.append(i)
