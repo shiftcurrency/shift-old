@@ -12,8 +12,10 @@ output_file = "shift_2.5.1.json"
 
 def fetch_accounts():
 
+
+    ''' Fetch the current blockheight '''
     data = json.dumps({"jsonrpc":"2.0","method":"shf_blockNumber","params":[],"id":83})
-    transactions_to = []
+    accounts = []
 
     try:
         response = requests.post("http://localhost:53901", data=data)
@@ -25,6 +27,7 @@ def fetch_accounts():
         print e
         sys.exit(0)
 
+    ''' Fetch all blocks and the accounts that have made a transaction'''
     for num in range(0,current_height):
 
         blocks = "Parsing block: %i" % num
@@ -38,14 +41,24 @@ def fetch_accounts():
             jsondata = response.json()
             if (jsondata['result']['transactions']):
                 for i in jsondata['result']['transactions']:
-                    transactions_to.append(i['to'])
+                    accounts.append(i['to'])
+                    accounts.append(i['from'])
 
         except Exception as e:
             print "Hit a problem with HTTP request."
             print e
             sys.exit(0)
 
-    return np.unique(transactions_to)
+    ''' Load the accounts in the old genesis block (These accounts does not show up as transactions)'''
+    data = open("shift_2.4.1.json").read()
+    former_genesis = json.loads(data)
+
+    for i in former_genesis['alloc']:
+        accounts.append(i)
+
+
+    ''' Return all unique accounts as a list '''
+    return np.unique(accounts)
         
 
 
@@ -101,11 +114,11 @@ def create_genesis_json(account_balances):
                     genfile.write(account_allocation)
     
             genfile.write('},\n "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",\n \
-                                "coinbase": "0x0000000000000000000000000000000000000000",\n \
-                                "timestamp": "0x00",\n "parentHash": \
-                                "0x0000000000000000000000000000000000000000000000000000000000000000",\n \
-                                "gasLimit": "0x300000"\n \
-                            }')
+"coinbase": "0x0000000000000000000000000000000000000000",\n \
+"timestamp": "0x00",\n "parentHash": \
+"0x0000000000000000000000000000000000000000000000000000000000000000",\n \
+"gasLimit": "0x300000"\n \
+}')
 
         return True
 
