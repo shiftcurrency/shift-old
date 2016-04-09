@@ -71,7 +71,7 @@ def get_balances(accounts):
 
     account_balance = {}
    
-    print "Collecting account balances via RPC"
+    print "\nCollecting account balances via RPC"
 
     for account in accounts:
         data = json.dumps({"jsonrpc":"2.0","method":"shf_getBalance","params":["%s", "latest"],"id":1}) % (account)
@@ -111,7 +111,7 @@ def create_genesis_json(account_balances):
         with open(output_file, "a") as genfile:
 
             print "Creating genesis account:balance allocation..."
-            genfile.write('{ "nonce": "0x0000000000000042", \n"difficulty": "0x273942957", \n"alloc": {\n')
+            genfile.write('{ "nonce": "0x0000000000000042", \n"difficulty": "0x285042957", \n"alloc": {\n')
             for account in account_balances:
                 if account != "" and int(account_balances[account]) != 0:
                     account_allocation = " \"%s\": { \"balance\": \"%s\" },\n" % (account, account_balances[account])
