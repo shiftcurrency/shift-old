@@ -93,26 +93,6 @@ func AccumulateRewards(statedb *state.StateDB, header *types.Header, uncles []*t
 
     reward := new(big.Int).Set(BlockReward)
 
-    // FIXME: INVALID MERKLE ROOT BECAUSE OF...
-
-    // 80 days decay of mining reward. From 3 to 1 SHIFT.
-    /*
-    if blockNum >= 28800 && blockNum < 57600 {
-        reward = new(big.Int).Set(BRD2)
-    } else if blockNum >= 57600 && blockNum < 86400 {
-        reward = new(big.Int).Set(BRD3)
-    } else if blockNum >= 86400 && blockNum < 115200 {
-        reward = new(big.Int).Set(BRD4)
-    } else if blockNum >= 115200 && blockNum < 144000 {
-        reward = new(big.Int).Set(BRD5) 
-    } else if blockNum >= 144000 && blockNum < 172800 {
-        reward = new(big.Int).Set(BRD6)
-    } else if blockNum >= 172800 && blockNum < 230400 {
-        reward = new(big.Int).Set(BRD7)
-    } else if blockNum >= 230400 {
-        reward = new(big.Int).Set(BRD8)
-    }*/
-
 	r := new(big.Int)
 	for _, uncle := range uncles {
 		r.Add(uncle.Number, big8)

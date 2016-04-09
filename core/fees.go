@@ -20,12 +20,4 @@ import (
 	"math/big"
 )
 
-var BlockReward *big.Int = big.NewInt(3e+18)
-// SHIFT
-var BRD2 *big.Int = big.NewInt(2900000000000000000)
-var BRD3 *big.Int = big.NewInt(2800000000000000000)
-var BRD4 *big.Int = big.NewInt(2600000000000000000)
-var BRD5 *big.Int = big.NewInt(2400000000000000000)
-var BRD6 *big.Int = big.NewInt(2000000000000000000)
-var BRD7 *big.Int = big.NewInt(1500000000000000000)
-var BRD8 *big.Int = big.NewInt(1000000000000000000)
+var BlockReward *big.Int = big.NewInt(2e+18)

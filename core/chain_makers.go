@@ -199,7 +199,7 @@ func makeHeader(parent *types.Block, state *state.StateDB) *types.Header {
 	if parent.Time() == nil {
 		time = big.NewInt(10)
 	} else {
-		time = new(big.Int).Add(parent.Time(), big.NewInt(20)) // Block time is fixed at 20 seconds.
+		time = new(big.Int).Add(parent.Time(), big.NewInt(50))
 	}
 	return &types.Header{
 		Root:       state.IntermediateRoot(),
