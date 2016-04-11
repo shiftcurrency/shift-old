@@ -1,21 +1,11 @@
 ## SHIFT Blocktime
 
-Fixed at 20 seconds (average target 25-30 seconds)
+Fixed at 50 seconds (average target 35-40 seconds)
 
 ## SHIFT Blockreward
 
-80 days (around 230400 blocks) decay of mining reward. The reward will decrease every 28800 blocks. The reward scheme looks as follows,
+Static reward of 2 Shift per block.
 
-Reward    Block
-
-* 3.0 SHIFT 0-28799
-* 2.9 SHIFT 28800-57599
-* 2.8 SHIFT 57600-86399
-* 2.6 SHIFT 86400-115199
-* 2.4 SHIFT 115200-143999
-* 2.0 SHIFT 144000-172799
-* 1.5 SHIFT 172800-230399
-* 1.0 SHIFT 230400 - Infinity
 
 ## Building SHIFT
 
