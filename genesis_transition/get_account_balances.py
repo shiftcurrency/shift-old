@@ -9,16 +9,17 @@ import numpy as np
 from time import sleep
 
 output_file = "shift_2.5.0.json"
+gshift_rpc_url = "http://localhost:53901"
+last_valid_block = 65102
 
 def fetch_accounts():
-
 
     ''' Fetch the current blockheight '''
     data = json.dumps({"jsonrpc":"2.0","method":"shf_blockNumber","params":[],"id":83})
     accounts = []
 
     try:
-        response = requests.post("http://localhost:53901", data=data)
+        response = requests.post(gshift_rpc_url, data=data)
         jsondata = response.json()
         current_height = int(jsondata['result'], 16)
 
@@ -26,8 +27,16 @@ def fetch_accounts():
         print "Hit a problem with HTTP request."
         print e
         sys.exit(0)
+    
+    print "blockchain cointains blocks up to ", current_height    
+    ''' Check block height '''   
+    if ( current_height > last_valid_block ):
+        print "Available blocks exceed valid block height, generating data up to last valid block " , last_valid_block
+    if ( current_height < last_valid_block ):
+        print "Available blocks less than valid block height, generating data up to current height " , current_height
+        
 
-    ''' Fetch all blocks and the accounts that have made a transaction'''
+    ''' Fetch all valid blocks, find accounts from blocks that have made a transaction and mined blocks'''
     for num in range(0,current_height):
 
         blocks = "Parsing block: %i" % num
@@ -37,13 +46,15 @@ def fetch_accounts():
     
         try:
             sleep(0.005)
-            response = requests.post("http://localhost:53901", data=data_string)
+            response = requests.post(gshift_rpc_url, data=data_string)
             jsondata = response.json()
+            ''' Parse transactions  from block'''
             if (jsondata['result']['transactions']):
                 for i in jsondata['result']['transactions']:
                     accounts.append(i['to'])
                     accounts.append(i['from'])
-
+            if (jsondata['result']['miner']):
+                    accounts.append(jsondata['result']['miner'])
         except Exception as e:
             print "Hit a problem with HTTP request."
             print e
@@ -77,7 +88,7 @@ def get_balances(accounts):
         data = json.dumps({"jsonrpc":"2.0","method":"shf_getBalance","params":["%s", "latest"],"id":1}) % (account)
 
         try:
-            response = requests.post("http://localhost:53901", data=data)
+            response = requests.post(gshift_rpc_url, data=data)
         except Exception as e:
             print "Hit a problem with HTTP request."
             print e
@@ -120,7 +131,9 @@ def create_genesis_json(account_balances):
             genesis_ending = '},\n "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",\n' + \
                              '"coinbase": "0x0000000000000000000000000000000000000000",\n' + \
                              '"timestamp": "0x00",\n "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",\n' + \
-                             '"gasLimit": "0x300000"\n'
+                             '"gasLimit": "0x400000"\n' + \
+                             '}\n'
+                             
             genfile.write(genesis_ending)
 
         return True
@@ -128,8 +141,6 @@ def create_genesis_json(account_balances):
     except Exception as e:
         return False
     
-
-
 
 if __name__ == "__main__":
     account_list = fetch_accounts()
@@ -144,4 +155,3 @@ if __name__ == "__main__":
     ''' write the final .json file '''
     if create_genesis_json(account_balances):
         print "Done. See the created file %s." % output_file
-        
