@@ -72,8 +72,6 @@ var (
 	defaultBootNodes = []*discover.Node{
         // London
         discover.MustParseNode("enode://4c8635f108dae8a997697d9c22ddca36969e7f9bc57d9fc01102d7e7d9633231331ae7f7307aceb1aa19130b5bdd4afe397db616c76e7ffc1c69302ba0d09a39@45.32.182.61:53900"),
-        // New York
-        discover.MustParseNode("enode://fe2a7c2015a8370c6a0d11e7fa6d00000d6428f9576b875ee65c98ff0a0311ed6386cb3eb524806837d843158a7477bd782e0e4870e2ff63b697a088e14891ce@104.207.129.159:53900"),
         // Paris
         discover.MustParseNode("enode://80d0ce5c992f8cc83cdbfd6d832b2dff2e82fee1f8b58762cd858eaacfcc99d5a8a837648bd28a2d508cc1da305c15cf4e531546034ed1a8ccd07ff51a71abd6@108.61.177.0:53900"),
         // Seattle
