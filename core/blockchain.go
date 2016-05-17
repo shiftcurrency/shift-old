@@ -122,7 +122,7 @@ type BlockChain struct {
 // NewBlockChain returns a fully initialised block chain using information
 // available in the database. It initialiser the default Ethereum Validator and
 // Processor.
-func NewBlockChain(chainDb ethdb.Database, sqlDB types.SQLDatabase, pow pow.PoW, mux *event.TypeMux) (*BlockChain, error) {
+func NewBlockChain(chainDb ethdb.Database, pow pow.PoW, mux *event.TypeMux) (*BlockChain, error) {
 	headerCache, _ := lru.New(headerCacheLimit)
 	bodyCache, _ := lru.New(bodyCacheLimit)
 	bodyRLPCache, _ := lru.New(bodyCacheLimit)
@@ -132,7 +132,6 @@ func NewBlockChain(chainDb ethdb.Database, sqlDB types.SQLDatabase, pow pow.PoW,
 
 	bc := &BlockChain{
 		chainDb:      chainDb,
-		sqlDB:        sqlDB,
 		eventMux:     mux,
 		quit:         make(chan struct{}),
 		headerCache:  headerCache,

@@ -49,10 +49,10 @@ import (
 const (
 
 	ClientIdentifier = "Gshift"
-	Version          = "2.5.0"
+	Version          = "2.5.2"
 	VersionMajor     = 2
 	VersionMinor     = 5
-	VersionPatch     = 0
+	VersionPatch     = 2
 )
 
 var (

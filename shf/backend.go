@@ -52,7 +52,6 @@ import (
 	"github.com/shiftcurrency/shift/p2p/nat"
 	"github.com/shiftcurrency/shift/rlp"
 	"github.com/shiftcurrency/shift/whisper"
-	"github.com/shiftcurrency/shift/sqldb"
     "github.com/shiftcurrency/shift/pow"
 )
 
@@ -232,7 +231,6 @@ type Shift struct {
 	// DB interfaces
 	chainDb ethdb.Database // Block chain database
 	dappDb  ethdb.Database // Dapp database
-    sqlDB   *sqldb.SQLDB
 
 	// Handlers
 	txPool          *core.TxPool
@@ -389,12 +387,6 @@ func New(config *Config) (*Shift, error) {
 		httpclient:              httpclient.New(config.DocRoot),
 	}
 
-	shf.sqlDB, err = sqldb.NewSQLiteDatabase(filepath.Join(config.DataDir, "sql.db"))
-	if err != nil {
-		return nil, err
-	}
-
-
 	if config.PowTest {
 		glog.V(logger.Info).Infof("ethash used in test mode")
 		shf.pow, err = ethash.NewForTesting()
@@ -405,7 +397,7 @@ func New(config *Config) (*Shift, error) {
 		shf.pow = ethash.New()
 	}
 	//genesis := core.GenesisBlock(uint64(config.GenesisNonce), stateDb)
-	shf.blockchain, err = core.NewBlockChain(chainDb, shf.sqlDB, shf.pow, shf.EventMux())
+	shf.blockchain, err = core.NewBlockChain(chainDb, shf.pow, shf.EventMux())
 	if err != nil {
 		if err == core.ErrNoGenesis {
 			return nil, fmt.Errorf(`Genesis block not found. Please supply a genesis block with the "--genesis /path/to/file" argument`)
@@ -454,7 +446,6 @@ func New(config *Config) (*Shift, error) {
 	}
 
 	vm.Debug = config.VmDebug
-	shf.sqlDB.Refresh(shf.blockchain)
 
 	return shf, nil
 }
@@ -497,7 +488,6 @@ func (s *Shift) Name() string                       { return s.net.Name }
 func (s *Shift) AccountManager() *accounts.Manager  { return s.accountManager }
 func (s *Shift) ChainManager()     *pow.ChainManager { return s.chainManager }
 func (s *Shift) BlockChain() *core.BlockChain       { return s.blockchain }
-func (s *Shift) SQLDB() *sqldb.SQLDB     	        { return s.sqlDB }
 func (s *Shift) TxPool() *core.TxPool               { return s.txPool }
 func (s *Shift) Whisper() *whisper.Whisper          { return s.whisper }
 func (s *Shift) EventMux() *event.TypeMux           { return s.eventMux }

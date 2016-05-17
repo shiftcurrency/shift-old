@@ -224,7 +224,7 @@ func newCanonical(n int, full bool, sqldb types.SQLDatabase) (ethdb.Database, *B
 	// Initialize a fresh chain with only a genesis block
 	genesis, _ := WriteTestNetGenesisBlock(db, 0)
 
-	blockchain, _ := NewBlockChain(db, sqldb, FakePow{}, evmux)
+	blockchain, _ := NewBlockChain(db, FakePow{}, evmux)
 	// Create and inject the requested chain
 	if n == 0 {
 		return db, blockchain, nil
