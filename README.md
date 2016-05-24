@@ -10,7 +10,7 @@ Static reward of 2 Shift per block.
 ## Building SHIFT
 
 For prerequisites and detailed build instructions please read the
-[Installation Instructions](https://github.com/shiftcurrency/shift/wiki/Building-Shift)
+[Installation Instructions](https://github.com/shiftcurrency/shift/wiki/Building-and-Installing-Shift)
 on the wiki.
 
 Building gshift requires both a Go and a C compiler.
