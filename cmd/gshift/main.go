@@ -49,8 +49,8 @@ import (
 const (
 	clientIdentifier = "Gshift"   // Client identifier to advertise over the network
 	versionMajor     = 2        // Major version component of the current release
-	versionMinor     = 5        // Minor version component of the current release
-	versionPatch     = 5        // Patch version component of the current release
+	versionMinor     = 6        // Minor version component of the current release
+	versionPatch     = 0        // Patch version component of the current release
 	versionMeta      = "" // Version metadata to append to the version string
 
 	versionOracle = "0xfa7b9770ca4cb04296cac84f37736d4041251cdf" // Shift address of the Gshift release oracle
