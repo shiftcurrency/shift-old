@@ -27,7 +27,7 @@ The following builds are build automatically by our build servers after each pus
 ## Building the source
 
 For prerequisites and detailed build instructions please read the
-[Installation Instructions](https://github.com/shiftcurrency/shift/wiki/Building-Shift)
+[Installation Instructions](https://github.com/shiftcurrency/shift/wiki/Building-and-Installing-Shift)
 on the wiki.
 
 Building gshift requires both a Go and a C compiler.
