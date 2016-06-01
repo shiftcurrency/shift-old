@@ -1,18 +1,20 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
+// +build ignore
 
 package natspec
 
@@ -25,7 +27,7 @@ import (
 	"runtime"
 	"testing"
 	"time"
-	
+
 	"github.com/shiftcurrency/shift/accounts"
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/common/httpclient"
@@ -34,6 +36,8 @@ import (
 	"github.com/shiftcurrency/shift/crypto"
 	"github.com/shiftcurrency/shift/shf"
 	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/event"
+	"github.com/shiftcurrency/shift/node"
 	xe "github.com/shiftcurrency/shift/xeth"
 )
 
@@ -125,7 +129,6 @@ func testEth(t *testing.T) (shift *shf.Shift, err error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	db, _ := ethdb.NewMemDatabase()
 	addr := common.HexToAddress(testAddress)
 	core.WriteGenesisBlockForTesting(db, core.GenesisAccount{addr, common.String2Big(testBalance)})
@@ -147,13 +150,11 @@ func testEth(t *testing.T) (shift *shf.Shift, err error) {
 	}
 
 	// only use minimalistic stack with no networking
-	return shf.New(&shf.Config{
-		DataDir:                 tmp,
+	return shf.New(&node.ServiceContext{EventMux: new(event.TypeMux)}, &shf.Config{
 		AccountManager:          am,
 		Shiftbase:               common.HexToAddress(testAddress),
-		MaxPeers:                0,
 		PowTest:                 true,
-		NewDB:                   func(path string) (ethdb.Database, error) { return db, nil },
+		TestGenesisState:        db,
 		GpoMinGasPrice:          common.Big1,
 		GpobaseCorrectionFactor: 1,
 		GpoMaxGasPrice:          common.Big1,
@@ -167,7 +168,7 @@ func testInit(t *testing.T) (self *testFrontend) {
 		t.Errorf("error creating shift: %v", err)
 		return
 	}
-	err = shift.Start()
+	err = shift.Start(nil)
 	if err != nil {
 		t.Errorf("error starting shift: %v", err)
 		return
@@ -175,7 +176,7 @@ func testInit(t *testing.T) (self *testFrontend) {
 
 	// mock frontend
 	self = &testFrontend{t: t, shift: shift}
-	self.xeth = xe.New(shift, self)
+	self.xeth = xe.New(nil, self)
 	self.wait = self.xshf.UpdateState()
 	addr, _ := self.shift.Shiftbase()
 
@@ -237,11 +238,11 @@ func TestNatspecE2E(t *testing.T) {
 	// create a contractInfo file (mock cloud-deployed contract metadocs)
 	// incidentally this is the info for the HashReg contract itself
 	ioutil.WriteFile("/tmp/"+testFileName, []byte(testContractInfo), os.ModePerm)
-	dochash := crypto.Sha3Hash([]byte(testContractInfo))
+	dochash := crypto.Keccak256Hash([]byte(testContractInfo))
 
 	// take the codehash for the contract we wanna test
 	codeb := tf.xshf.CodeAtBytes(registrar.HashRegAddr)
-	codehash := crypto.Sha3Hash(codeb)
+	codehash := crypto.Keccak256Hash(codeb)
 
 	reg := registrar.New(tf.xeth)
 	_, err := reg.SetHashToHash(addr, codehash, dochash)
@@ -321,7 +322,6 @@ func processTxs(repl *testFrontend, t *testing.T, expTxc int) bool {
 		t.Errorf("incorrect number of pending transactions, expected %v, got %v", expTxc, txc)
 		return false
 	}
-
 
 	err = repl.shift.StartMining(runtime.NumCPU(), "")
 	if err != nil {

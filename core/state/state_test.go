@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package state
 
@@ -36,7 +36,6 @@ var _ = checker.Suite(&StateSuite{})
 var toAddr = common.BytesToAddress
 
 func (s *StateSuite) TestDump(c *checker.C) {
-	return
 	// generate a few entries
 	obj1 := s.state.GetOrNewStateObject(toAddr([]byte{0x01}))
 	obj1.AddBalance(big.NewInt(22))
@@ -48,24 +47,35 @@ func (s *StateSuite) TestDump(c *checker.C) {
 	// write some of them to the trie
 	s.state.UpdateStateObject(obj1)
 	s.state.UpdateStateObject(obj2)
+	s.state.Commit()
 
 	// check that dump contains the state objects that are in trie
 	got := string(s.state.Dump())
 	want := `{
-    "root": "6e277ae8357d013e50f74eedb66a991f6922f93ae03714de58b3d0c5e9eee53f",
+    "root": "71edff0130dd2385947095001c73d9e28d862fc286fca2b922ca6f6f3cddfdd2",
     "accounts": {
-        "1468288056310c82aa4c01a7e12a10f8111a0560e72b700555479031b86c357d": {
+        "0000000000000000000000000000000000000001": {
             "balance": "22",
             "nonce": 0,
             "root": "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
             "codeHash": "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+            "code": "",
             "storage": {}
         },
-        "a17eacbc25cda025e81db9c5c62868822c73ce097cee2a63e33a2e41268358a1": {
+        "0000000000000000000000000000000000000002": {
+            "balance": "44",
+            "nonce": 0,
+            "root": "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+            "codeHash": "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+            "code": "",
+            "storage": {}
+        },
+        "0000000000000000000000000000000000000102": {
             "balance": "0",
             "nonce": 0,
             "root": "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
             "codeHash": "87874902497a5bb968da31a2998d8f22e949d1ef6214bcdedd8bae24cca4b9e3",
+            "code": "03030303030303",
             "storage": {}
         }
     }
@@ -102,7 +112,7 @@ func (s *StateSuite) TestSnapshot(c *checker.C) {
 	data1 := common.BytesToHash([]byte{42})
 	data2 := common.BytesToHash([]byte{43})
 
-	// set inital state object value
+	// set initial state object value
 	s.state.SetState(stateobjaddr, storageaddr, data1)
 	// get snapshot of current state
 	snapshot := s.state.Copy()
@@ -138,8 +148,7 @@ func TestSnapshot2(t *testing.T) {
 	so0 := state.GetStateObject(stateobjaddr0)
 	so0.balance = big.NewInt(42)
 	so0.nonce = 43
-	so0.code = []byte{'c', 'a', 'f', 'e'}
-	so0.codeHash = so0.CodeHash()
+	so0.SetCode([]byte{'c', 'a', 'f', 'e'})
 	so0.remove = true
 	so0.deleted = false
 	so0.dirty = false
@@ -149,8 +158,7 @@ func TestSnapshot2(t *testing.T) {
 	so1 := state.GetStateObject(stateobjaddr1)
 	so1.balance = big.NewInt(52)
 	so1.nonce = 53
-	so1.code = []byte{'c', 'a', 'f', 'e', '2'}
-	so1.codeHash = so1.CodeHash()
+	so1.SetCode([]byte{'c', 'a', 'f', 'e', '2'})
 	so1.remove = true
 	so1.deleted = true
 	so1.dirty = true

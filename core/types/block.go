@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package types contains data types related to Shift consensus.
 package types
@@ -34,7 +34,7 @@ import (
 )
 
 // A BlockNonce is a 64-bit hash which proves (combined with the
-// mix-hash) that a suffcient amount of computation has been carried
+// mix-hash) that a sufficient amount of computation has been carried
 // out on a block.
 type BlockNonce [8]byte
 
@@ -46,6 +46,10 @@ func EncodeNonce(i uint64) BlockNonce {
 
 func (n BlockNonce) Uint64() uint64 {
 	return binary.BigEndian.Uint64(n[:])
+}
+
+func (n BlockNonce) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"0x%x"`, n)), nil
 }
 
 type Header struct {
@@ -141,13 +145,6 @@ type Block struct {
 	ReceivedAt time.Time
 }
 
-// A bit of a hack to put it here, but good enough for now 
-type SQLDatabase interface {
-    InsertBlock(block *Block)
-    DeleteBlock(block *Block)
-}
-
-
 // DeprecatedTd is an old relic for extracting the TD of a block. It is in the
 // code solely to facilitate upgrading the database from the old format to the
 // new, after which it should be deleted. Do not use!
@@ -155,20 +152,20 @@ func (b *Block) DeprecatedTd() *big.Int {
 	return b.td
 }
 
-// [deprecated by eth/63]
+// [deprecated by shf/63]
 // StorageBlock defines the RLP encoding of a Block stored in the
 // state database. The StorageBlock encoding contains fields that
 // would otherwise need to be recomputed.
 type StorageBlock Block
 
-// "external" block encoding. used for exp protocol, etc.
+// "external" block encoding. used for eth protocol, etc.
 type extblock struct {
 	Header *Header
 	Txs    []*Transaction
 	Uncles []*Header
 }
 
-// [deprecated by eth/63]
+// [deprecated by shf/63]
 // "storage" block encoding. used for database.
 type storageblock struct {
 	Header *Header
@@ -290,7 +287,7 @@ func (b *Block) EncodeRLP(w io.Writer) error {
 	})
 }
 
-// [deprecated by eth/63]
+// [deprecated by shf/63]
 func (b *StorageBlock) DecodeRLP(s *rlp.Stream) error {
 	var sb storageblock
 	if err := s.Decode(&sb); err != nil {
@@ -332,6 +329,9 @@ func (b *Block) UncleHash() common.Hash   { return b.header.UncleHash }
 func (b *Block) Extra() []byte            { return common.CopyBytes(b.header.Extra) }
 
 func (b *Block) Header() *Header { return CopyHeader(b.header) }
+
+// Body returns the non-header content of the block.
+func (b *Block) Body() *Body { return &Body{b.transactions, b.uncles} }
 
 func (b *Block) HashNoNonce() common.Hash {
 	return b.header.HashNoNonce()

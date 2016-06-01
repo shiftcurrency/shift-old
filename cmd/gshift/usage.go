@@ -1,5 +1,5 @@
 // Copyright 2015 The go-ethereum Authors
-// This file is part of shift.
+// This file is part of go-ethereum.
 //
 // go-ethereum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,9 +12,9 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with shift. If not, see <http://www.gnu.org/licenses/>.
+// along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
 
-// Contains the geth command usage template and generator.
+// Contains the gshift command usage template and generator.
 
 package main
 
@@ -23,6 +23,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/shiftcurrency/shift/cmd/utils"
+	"github.com/shiftcurrency/shift/internal/debug"
 )
 
 // AppHelpTemplate is the test template for the default, global app help topic.
@@ -59,9 +60,10 @@ type flagGroup struct {
 // AppHelpFlagGroups is the application flags, grouped by functionality.
 var AppHelpFlagGroups = []flagGroup{
 	{
-		Name: "SHIFT",
+		Name: "ETHEREUM",
 		Flags: []cli.Flag{
 			utils.DataDirFlag,
+			utils.KeyStoreDirFlag,
 			utils.NetworkIdFlag,
 			utils.OlympicFlag,
 			utils.TestNetFlag,
@@ -87,13 +89,19 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.RPCEnabledFlag,
 			utils.RPCListenAddrFlag,
 			utils.RPCPortFlag,
-			utils.RpcApiFlag,
+			utils.RPCApiFlag,
+			utils.WSEnabledFlag,
+			utils.WSListenAddrFlag,
+			utils.WSPortFlag,
+			utils.WSApiFlag,
+			utils.WSAllowedOriginsFlag,
 			utils.IPCDisabledFlag,
 			utils.IPCApiFlag,
 			utils.IPCPathFlag,
 			utils.RPCCORSDomainFlag,
 			utils.JSpathFlag,
 			utils.ExecFlag,
+			utils.PreLoadJSFlag,
 		},
 	},
 	{
@@ -117,6 +125,7 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.MiningGPUFlag,
 			utils.AutoDAGFlag,
 			utils.ShiftbaseFlag,
+			utils.TargetGasLimitFlag,
 			utils.GasPriceFlag,
 			utils.ExtraDataFlag,
 		},
@@ -135,7 +144,6 @@ var AppHelpFlagGroups = []flagGroup{
 	{
 		Name: "VIRTUAL MACHINE",
 		Flags: []cli.Flag{
-			utils.VMDebugFlag,
 			utils.VMEnableJitFlag,
 			utils.VMForceJitFlag,
 			utils.VMJitCacheFlag,
@@ -143,15 +151,10 @@ var AppHelpFlagGroups = []flagGroup{
 	},
 	{
 		Name: "LOGGING AND DEBUGGING",
-		Flags: []cli.Flag{
-			utils.VerbosityFlag,
-			utils.LogVModuleFlag,
-			utils.BacktraceAtFlag,
-			utils.LogFileFlag,
-			utils.PProfEanbledFlag,
-			utils.PProfPortFlag,
+		Flags: append([]cli.Flag{
 			utils.MetricsEnabledFlag,
-		},
+			utils.FakePoWFlag,
+		}, debug.Flags...),
 	},
 	{
 		Name: "EXPERIMENTAL",

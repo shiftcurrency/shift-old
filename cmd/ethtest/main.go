@@ -1,20 +1,20 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of shift.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of go-ethereum.
 //
-// shift is free software: you can redistribute it and/or modify
+// go-ethereum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// shift is distributed in the hope that it will be useful,
+// go-ethereum is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with shift. If not, see <http://www.gnu.org/licenses/>.
+// along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
 
-// shift§test executes Shift JSON tests.
+// ethtest executes Shift JSON tests.
 package main
 
 import (
@@ -26,8 +26,8 @@ import (
 	"strings"
 
 	"github.com/codegangsta/cli"
-	"github.com/shiftcurrency/shift/core/vm"
 	"github.com/shiftcurrency/shift/logger/glog"
+	"github.com/shiftcurrency/shift/params"
 	"github.com/shiftcurrency/shift/tests"
 )
 
@@ -74,9 +74,10 @@ func runTestWithReader(test string, r io.Reader) error {
 	var err error
 	switch strings.ToLower(test) {
 	case "bk", "block", "blocktest", "blockchaintest", "blocktests", "blockchaintests":
-		err = tests.RunBlockTestWithReader(r, skipTests)
+		err = tests.RunBlockTestWithReader(params.MainNetHomesteadBlock, r, skipTests)
 	case "st", "state", "statetest", "statetests":
-		err = tests.RunStateTestWithReader(r, skipTests)
+		rs := tests.RuleSet{HomesteadBlock: params.MainNetHomesteadBlock}
+		err = tests.RunStateTestWithReader(rs, r, skipTests)
 	case "tx", "transactiontest", "transactiontests":
 		err = tests.RunTransactionTestsWithReader(r, skipTests)
 	case "vm", "vmtest", "vmtests":
@@ -188,7 +189,6 @@ func setupApp(c *cli.Context) {
 	continueOnError = c.GlobalBool(ContinueOnErrorFlag.Name)
 	useStdIn := c.GlobalBool(ReadStdInFlag.Name)
 	skipTests = strings.Split(c.GlobalString(SkipTestsFlag.Name), " ")
-	vm.Debug = c.GlobalBool(TraceFlag.Name)
 
 	if !useStdIn {
 		runSuite(flagTest, flagFile)
@@ -204,7 +204,7 @@ func main() {
 	glog.SetToStderr(true)
 
 	app := cli.NewApp()
-	app.Name = "shifttest"
+	app.Name = "shftest"
 	app.Usage = "shift test interface"
 	app.Action = setupApp
 	app.Version = "0.2.0"

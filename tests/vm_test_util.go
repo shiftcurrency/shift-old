@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package tests
 
@@ -29,6 +29,7 @@ import (
 	"github.com/shiftcurrency/shift/core/vm"
 	"github.com/shiftcurrency/shift/ethdb"
 	"github.com/shiftcurrency/shift/logger/glog"
+	"github.com/shiftcurrency/shift/params"
 )
 
 func RunVmTestWithReader(r io.Reader, skipTests []string) error {
@@ -67,11 +68,6 @@ func BenchVmTest(p string, conf bconf, b *testing.B) error {
 		return fmt.Errorf("test not found: %s", conf.name)
 	}
 
-	pJit := vm.EnableJit
-	vm.EnableJit = conf.jit
-	pForceJit := vm.ForceJit
-	vm.ForceJit = conf.precomp
-
 	env := make(map[string]string)
 	env["currentCoinbase"] = test.Env.CurrentCoinbase
 	env["currentDifficulty"] = test.Env.CurrentDifficulty
@@ -98,9 +94,6 @@ func BenchVmTest(p string, conf bconf, b *testing.B) error {
 	for i := 0; i < b.N; i++ {
 		benchVmTest(test, env, b)
 	}
-
-	vm.EnableJit = pJit
-	vm.ForceJit = pForceJit
 
 	return nil
 }
@@ -200,9 +193,9 @@ func runVmTest(test VmTest) error {
 	if len(test.Gas) == 0 && err == nil {
 		return fmt.Errorf("gas unspecified, indicating an error. VM returned (incorrectly) successfull")
 	} else {
-		gshift := common.Big(test.Gas)
-		if gshift.Cmp(gas) != 0 {
-			return fmt.Errorf("gas failed. Expected %v, got %v\n", gshift, gas)
+		gexp := common.Big(test.Gas)
+		if gexp.Cmp(gas) != 0 {
+			return fmt.Errorf("gas failed. Expected %v, got %v\n", gexp, gas)
 		}
 	}
 
@@ -248,7 +241,7 @@ func RunVm(state *state.StateDB, env, exec map[string]string) ([]byte, vm.Logs, 
 
 	caller := state.GetOrNewStateObject(from)
 
-	vmenv := NewEnvFromMap(state, env, exec)
+	vmenv := NewEnvFromMap(RuleSet{params.MainNetHomesteadBlock}, state, env, exec)
 	vmenv.vmTest = true
 	vmenv.skipTransfer = true
 	vmenv.initial = true

@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
@@ -25,7 +25,6 @@ import (
 	"github.com/shiftcurrency/shift/logger"
 	"github.com/shiftcurrency/shift/logger/glog"
 	"github.com/shiftcurrency/shift/params"
-
 )
 
 var (
@@ -79,7 +78,7 @@ func MessageCreatesContract(msg Message) bool {
 	return msg.To() == nil
 }
 
-// IntrinsicGas computes the 'intrisic gas' for a message
+// IntrinsicGas computes the 'intrinsic gas' for a message
 // with the given data.
 func IntrinsicGas(data []byte, contractCreation, homestead bool) *big.Int {
 	igas := new(big.Int)
@@ -105,8 +104,9 @@ func IntrinsicGas(data []byte, contractCreation, homestead bool) *big.Int {
 	return igas
 }
 
-func ApplyMessage(env vm.Environment, msg Message, gp *GasPool) ([]byte, *big.Int, error) {
-	var st = StateTransition{
+// NewStateTransition initialises and returns a new state transition object.
+func NewStateTransition(env vm.Environment, msg Message, gp *GasPool) *StateTransition {
+	return &StateTransition{
 		gp:         gp,
 		env:        env,
 		msg:        msg,
@@ -117,7 +117,20 @@ func ApplyMessage(env vm.Environment, msg Message, gp *GasPool) ([]byte, *big.In
 		data:       msg.Data(),
 		state:      env.Db(),
 	}
-	return st.transitionDb()
+}
+
+// ApplyMessage computes the new state by applying the given message
+// against the old state within the environment.
+//
+// ApplyMessage returns the bytes returned by any EVM execution (if it took place),
+// the gas used (which includes gas refunds) and an error if it failed. An error always
+// indicates a core error meaning that the message would always fail for that particular
+// state and would never be accepted within a block.
+func ApplyMessage(env vm.Environment, msg Message, gp *GasPool) ([]byte, *big.Int, error) {
+	st := NewStateTransition(env, msg, gp)
+
+	ret, _, gasUsed, err := st.TransitionDb()
+	return ret, gasUsed, err
 }
 
 func (self *StateTransition) from() (vm.Account, error) {
@@ -125,7 +138,7 @@ func (self *StateTransition) from() (vm.Account, error) {
 		f   common.Address
 		err error
 	)
-	if params.IsHomestead(self.env.BlockNumber()) {
+	if self.env.RuleSet().IsHomestead(self.env.BlockNumber()) {
 		f, err = self.msg.From()
 	} else {
 		f, err = self.msg.FromFrontier()
@@ -138,6 +151,7 @@ func (self *StateTransition) from() (vm.Account, error) {
 	}
 	return self.state.GetAccount(f), nil
 }
+
 func (self *StateTransition) to() vm.Account {
 	if self.msg == nil {
 		return nil
@@ -175,7 +189,7 @@ func (self *StateTransition) buyGas() error {
 		return err
 	}
 	if sender.Balance().Cmp(mgval) < 0 {
-		return fmt.Errorf("insufficient EXP for gas (%x). Req %v, has %v", sender.Address().Bytes()[:4], mgval, sender.Balance())
+		return fmt.Errorf("insufficient ETH for gas (%x). Req %v, has %v", sender.Address().Bytes()[:4], mgval, sender.Balance())
 	}
 	if err = self.gp.SubGas(mgas); err != nil {
 		return err
@@ -194,7 +208,6 @@ func (self *StateTransition) preCheck() (err error) {
 	}
 
 	// Make sure this transaction's nonce is correct
-	//if sender.Nonce() != msg.Nonce() {
 	if n := self.state.GetNonce(sender.Address()); n != msg.Nonce() {
 		return NonceError(msg.Nonce(), n)
 	}
@@ -210,18 +223,19 @@ func (self *StateTransition) preCheck() (err error) {
 	return nil
 }
 
-func (self *StateTransition) transitionDb() (ret []byte, usedGas *big.Int, err error) {
+// TransitionDb will move the state by applying the message against the given environment.
+func (self *StateTransition) TransitionDb() (ret []byte, requiredGas, usedGas *big.Int, err error) {
 	if err = self.preCheck(); err != nil {
 		return
 	}
 	msg := self.msg
 	sender, _ := self.from() // err checked in preCheck
 
-	homestead := params.IsHomestead(self.env.BlockNumber())
+	homestead := self.env.RuleSet().IsHomestead(self.env.BlockNumber())
 	contractCreation := MessageCreatesContract(msg)
 	// Pay intrinsic gas
 	if err = self.useGas(IntrinsicGas(self.data, contractCreation, homestead)); err != nil {
-		return nil, nil, InvalidTxError(err)
+		return nil, nil, nil, InvalidTxError(err)
 	}
 
 	vmenv := self.env
@@ -246,7 +260,7 @@ func (self *StateTransition) transitionDb() (ret []byte, usedGas *big.Int, err e
 	}
 
 	if err != nil && IsValueTransferErr(err) {
-		return nil, nil, InvalidTxError(err)
+		return nil, nil, nil, InvalidTxError(err)
 	}
 
 	// We aren't interested in errors here. Errors returned by the VM are non-consensus errors and therefor shouldn't bubble up
@@ -254,14 +268,12 @@ func (self *StateTransition) transitionDb() (ret []byte, usedGas *big.Int, err e
 		err = nil
 	}
 
-	if vm.Debug {
-		vm.StdErrFormat(vmenv.StructLogs())
-	}
+	requiredGas = new(big.Int).Set(self.gasUsed())
 
 	self.refundGas()
 	self.state.AddBalance(self.env.Coinbase(), new(big.Int).Mul(self.gasUsed(), self.gasPrice))
 
-	return ret, self.gasUsed(), err
+	return ret, requiredGas, self.gasUsed(), err
 }
 
 func (self *StateTransition) refundGas() {

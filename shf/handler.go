@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package shf
 
@@ -74,19 +74,19 @@ type ProtocolManager struct {
 	minedBlockSub event.Subscription
 
 	// channels for fetcher, syncer, txsyncLoop
-	newPeerCh chan *peer
-	txsyncCh  chan *txsync
-	quitSync  chan struct{}
+	newPeerCh   chan *peer
+	txsyncCh    chan *txsync
+	quitSync    chan struct{}
+	noMorePeers chan struct{}
 
 	// wait group is used for graceful shutdowns during downloading
 	// and processing
-	wg   sync.WaitGroup
-	quit bool
+	wg sync.WaitGroup
 }
 
-// NewProtocolManager returns a new ethereum sub protocol manager. The Ethereum sub protocol manages peers capable
-// with the ethereum network.
-func NewProtocolManager(fastSync bool, networkId int, mux *event.TypeMux, txpool txPool, pow pow.PoW, blockchain *core.BlockChain, chaindb ethdb.Database) (*ProtocolManager, error) {
+// NewProtocolManager returns a new shift sub protocol manager. The Shift sub protocol manages peers capable
+// with the shift network.
+func NewProtocolManager(config *core.ChainConfig, fastSync bool, networkId int, mux *event.TypeMux, txpool txPool, pow pow.PoW, blockchain *core.BlockChain, chaindb ethdb.Database) (*ProtocolManager, error) {
 	// Figure out whether to allow fast sync or not
 	if fastSync && blockchain.CurrentBlock().NumberU64() > 0 {
 		glog.V(logger.Info).Infof("blockchain not empty, fast sync disabled")
@@ -94,19 +94,19 @@ func NewProtocolManager(fastSync bool, networkId int, mux *event.TypeMux, txpool
 	}
 	// Create the protocol manager with the base fields
 	manager := &ProtocolManager{
-		networkId:  networkId,
-		fastSync:   fastSync,
-		eventMux:   mux,
-		txpool:     txpool,
-		blockchain: blockchain,
-		chaindb:    chaindb,
-		peers:      newPeerSet(),
-		newPeerCh:  make(chan *peer, 1),
-		txsyncCh:   make(chan *txsync),
-		quitSync:   make(chan struct{}),
+		networkId:   networkId,
+		fastSync:    fastSync,
+		eventMux:    mux,
+		txpool:      txpool,
+		blockchain:  blockchain,
+		chaindb:     chaindb,
+		peers:       newPeerSet(),
+		newPeerCh:   make(chan *peer),
+		noMorePeers: make(chan struct{}),
+		txsyncCh:    make(chan *txsync),
+		quitSync:    make(chan struct{}),
 	}
 	// Initiate a sub-protocol for every implemented version we can handle
-
 	manager.SubProtocols = make([]p2p.Protocol, 0, len(ProtocolVersions))
 	for i, version := range ProtocolVersions {
 		// Skip protocol version if incompatible with the mode of operation
@@ -116,14 +116,19 @@ func NewProtocolManager(fastSync bool, networkId int, mux *event.TypeMux, txpool
 		// Compatible; initialise the sub-protocol
 		version := version // Closure for the run
 		manager.SubProtocols = append(manager.SubProtocols, p2p.Protocol{
-
 			Name:    ProtocolName,
 			Version: version,
 			Length:  ProtocolLengths[i],
 			Run: func(p *p2p.Peer, rw p2p.MsgReadWriter) error {
 				peer := manager.newPeer(int(version), p, rw)
-				manager.newPeerCh <- peer
-				return manager.handle(peer)
+				select {
+				case manager.newPeerCh <- peer:
+					manager.wg.Add(1)
+					defer manager.wg.Done()
+					return manager.handle(peer)
+				case <-manager.quitSync:
+					return p2p.DiscQuitting
+				}
 			},
 			NodeInfo: func() interface{} {
 				return manager.NodeInfo()
@@ -146,7 +151,7 @@ func NewProtocolManager(fastSync bool, networkId int, mux *event.TypeMux, txpool
 		manager.removePeer)
 
 	validator := func(block *types.Block, parent *types.Block) error {
-		return core.ValidateHeader(pow, block.Header(), parent.Header(), true, false)
+		return core.ValidateHeader(config, pow, block.Header(), parent.Header(), true, false)
 	}
 	heighter := func() uint64 {
 		return blockchain.CurrentBlock().NumberU64()
@@ -189,16 +194,25 @@ func (pm *ProtocolManager) Start() {
 }
 
 func (pm *ProtocolManager) Stop() {
-	// Showing a log message. During download / process this could actually
-	// take between 5 to 10 seconds and therefor feedback is required.
 	glog.V(logger.Info).Infoln("Stopping shift protocol handler...")
 
-	pm.quit = true
 	pm.txSub.Unsubscribe()         // quits txBroadcastLoop
 	pm.minedBlockSub.Unsubscribe() // quits blockBroadcastLoop
-	close(pm.quitSync)             // quits syncer, fetcher, txsyncLoop
 
-	// Wait for any process action
+	// Quit the sync loop.
+	// After this send has completed, no new peers will be accepted.
+	pm.noMorePeers <- struct{}{}
+
+	// Quit fetcher, txsyncLoop.
+	close(pm.quitSync)
+
+	// Disconnect existing sessions.
+	// This also closes the gate for any new registrations on the peer set.
+	// sessions which are already established but not added to pm.peers yet
+	// will exit when they try to register.
+	pm.peers.Close()
+
+	// Wait for all peer handler goroutines and the loops to come down.
 	pm.wg.Wait()
 
 	glog.V(logger.Info).Infoln("Shift protocol handler stopped")
@@ -208,7 +222,7 @@ func (pm *ProtocolManager) newPeer(pv int, p *p2p.Peer, rw p2p.MsgReadWriter) *p
 	return newPeer(pv, p, newMeteredMsgWriter(rw))
 }
 
-// handle is the callback invoked to manage the life cycle of an shift peer. When
+// handle is the callback invoked to manage the life cycle of an eth peer. When
 // this function terminates, the peer is disconnected.
 func (pm *ProtocolManager) handle(p *peer) error {
 	glog.V(logger.Debug).Infof("%v: peer connected [%s]", p, p.Name())
@@ -247,7 +261,6 @@ func (pm *ProtocolManager) handle(p *peer) error {
 			return err
 		}
 	}
-	return nil
 }
 
 // handleMsg is invoked whenever an inbound message is received from a remote
@@ -375,6 +388,8 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		if err := msg.Decode(&query); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
+		hashMode := query.Origin.Hash != (common.Hash{})
+
 		// Gather headers until the fetch or network limits is reached
 		var (
 			bytes   common.StorageSize
@@ -384,7 +399,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		for !unknown && len(headers) < int(query.Amount) && bytes < softResponseLimit && len(headers) < downloader.MaxHeaderFetch {
 			// Retrieve the next header satisfying the query
 			var origin *types.Header
-			if query.Origin.Hash != (common.Hash{}) {
+			if hashMode {
 				origin = pm.blockchain.GetHeader(query.Origin.Hash)
 			} else {
 				origin = pm.blockchain.GetHeaderByNumber(query.Origin.Number)
@@ -590,7 +605,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		}
 
 	case msg.Code == NewBlockHashesMsg:
-		// Retrieve and deseralize the remote new block hashes notification
+		// Retrieve and deserialize the remote new block hashes notification
 		type announce struct {
 			Hash   common.Hash
 			Number uint64
@@ -751,21 +766,21 @@ func (self *ProtocolManager) txBroadcastLoop() {
 	}
 }
 
-// EthNodeInfo represents a short summary of the Ethereum sub-protocol metadata known
+// EthNodeInfo represents a short summary of the Shift sub-protocol metadata known
 // about the host peer.
-type EthNodeInfo struct {
-	Network    int      `json:"network"`    // Ethereum network ID (0=Olympic, 1=Frontier, 2=Morden)
-	Difficulty *big.Int `json:"difficulty"` // Total difficulty of the host's blockchain
-	Genesis    string   `json:"genesis"`    // SHA3 hash of the host's genesis block
-	Head       string   `json:"head"`       // SHA3 hash of the host's best owned block
+type ShfNodeInfo struct {
+	Network    int         `json:"network"`    // Shift network ID (0=Olympic, 1=Frontier, 2=Morden)
+	Difficulty *big.Int    `json:"difficulty"` // Total difficulty of the host's blockchain
+	Genesis    common.Hash `json:"genesis"`    // SHA3 hash of the host's genesis block
+	Head       common.Hash `json:"head"`       // SHA3 hash of the host's best owned block
 }
 
 // NodeInfo retrieves some protocol metadata about the running host node.
-func (self *ProtocolManager) NodeInfo() *EthNodeInfo {
-	return &EthNodeInfo{
+func (self *ProtocolManager) NodeInfo() *ShfNodeInfo {
+	return &ShfNodeInfo{
 		Network:    self.networkId,
 		Difficulty: self.blockchain.GetTd(self.blockchain.CurrentBlock().Hash()),
-		Genesis:    fmt.Sprintf("%x", self.blockchain.Genesis().Hash()),
-		Head:       fmt.Sprintf("%x", self.blockchain.CurrentBlock().Hash()),
+		Genesis:    self.blockchain.Genesis().Hash(),
+		Head:       self.blockchain.CurrentBlock().Hash(),
 	}
 }

@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // +build evmjit
 
@@ -25,7 +25,7 @@ int   evmjit_run(void* _jit, void* _data, void* _env);
 void  evmjit_destroy(void* _jit);
 
 // Shared library evmjit (e.g. libevmjit.so) is expected to be installed in /usr/local/lib
-// More: https://github.com/shiftcurrency/evmjit
+// More: https://github.com/shift/evmjit
 #cgo LDFLAGS: -levmjit
 */
 import "C"
@@ -138,7 +138,7 @@ func llvm2big(m *i256) *big.Int {
 }
 
 // llvm2bytesRef creates a []byte slice that references byte buffer on LLVM side (as of that not controller by GC)
-// User must asure that referenced memory is available to Go until the data is copied or not needed any more
+// User must ensure that referenced memory is available to Go until the data is copied or not needed any more
 func llvm2bytesRef(data *byte, length uint64) []byte {
 	if length == 0 {
 		return nil
@@ -171,7 +171,7 @@ func (self *JitVm) Run(me, caller ContextRef, code []byte, value, gas, price *bi
 
 	// TODO: Move it to Env.Call() or sth
 	if Precompiled[string(me.Address())] != nil {
-		// if it's address of precopiled contract
+		// if it's address of precompiled contract
 		// fallback to standard VM
 		stdVm := New(self.env)
 		return stdVm.Run(me, caller, code, value, gas, price, callData)
@@ -200,7 +200,7 @@ func (self *JitVm) Run(me, caller ContextRef, code []byte, value, gas, price *bi
 	self.data.timestamp = self.env.Time()
 	self.data.code = getDataPtr(code)
 	self.data.codeSize = uint64(len(code))
-	self.data.codeHash = hash2llvm(crypto.Sha3(code)) // TODO: Get already computed hash?
+	self.data.codeHash = hash2llvm(crypto.Keccak256(code)) // TODO: Get already computed hash?
 
 	jit := C.evmjit_create()
 	retCode := C.evmjit_run(jit, unsafe.Pointer(&self.data), unsafe.Pointer(self))
@@ -242,7 +242,7 @@ func (self *JitVm) Env() Environment {
 //export env_sha3
 func env_sha3(dataPtr *byte, length uint64, resultPtr unsafe.Pointer) {
 	data := llvm2bytesRef(dataPtr, length)
-	hash := crypto.Sha3(data)
+	hash := crypto.Keccak256(data)
 	result := (*i256)(resultPtr)
 	*result = hash2llvm(hash)
 }
@@ -348,7 +348,7 @@ func env_create(_vm unsafe.Pointer, _gas *int64, _value unsafe.Pointer, initData
 	gas := big.NewInt(*_gas)
 	ret, suberr, ref := vm.env.Create(vm.me, nil, initData, gas, vm.price, value)
 	if suberr == nil {
-		dataGas := big.NewInt(int64(len(ret))) // TODO: Nto the best design. env.Create can do it, it has the reference to gas counter
+		dataGas := big.NewInt(int64(len(ret))) // TODO: Not the best design. env.Create can do it, it has the reference to gas counter
 		dataGas.Mul(dataGas, params.CreateDataGas)
 		gas.Sub(gas, dataGas)
 		*result = hash2llvm(ref.Address())

@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
@@ -64,8 +64,81 @@ func TestMissingRoot(t *testing.T) {
 	if trie != nil {
 		t.Error("New returned non-nil trie for invalid root")
 	}
-	if err != ErrMissingRoot {
-		t.Error("New returned wrong error: %v", err)
+	if _, ok := err.(*MissingNodeError); !ok {
+		t.Errorf("New returned wrong error: %v", err)
+	}
+}
+
+func TestMissingNode(t *testing.T) {
+	db, _ := ethdb.NewMemDatabase()
+	trie, _ := New(common.Hash{}, db)
+	updateString(trie, "120000", "qwerqwerqwerqwerqwerqwerqwerqwer")
+	updateString(trie, "123456", "asdfasdfasdfasdfasdfasdfasdfasdf")
+	root, _ := trie.Commit()
+
+	ClearGlobalCache()
+
+	trie, _ = New(root, db)
+	_, err := trie.TryGet([]byte("120000"))
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	trie, _ = New(root, db)
+	_, err = trie.TryGet([]byte("120099"))
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	trie, _ = New(root, db)
+	_, err = trie.TryGet([]byte("123456"))
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	trie, _ = New(root, db)
+	err = trie.TryUpdate([]byte("120099"), []byte("zxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcv"))
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	trie, _ = New(root, db)
+	err = trie.TryDelete([]byte("123456"))
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	db.Delete(common.FromHex("e1d943cc8f061a0c0b98162830b970395ac9315654824bf21b73b891365262f9"))
+	ClearGlobalCache()
+
+	trie, _ = New(root, db)
+	_, err = trie.TryGet([]byte("120000"))
+	if _, ok := err.(*MissingNodeError); !ok {
+		t.Errorf("Wrong error: %v", err)
+	}
+
+	trie, _ = New(root, db)
+	_, err = trie.TryGet([]byte("120099"))
+	if _, ok := err.(*MissingNodeError); !ok {
+		t.Errorf("Wrong error: %v", err)
+	}
+
+	trie, _ = New(root, db)
+	_, err = trie.TryGet([]byte("123456"))
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	trie, _ = New(root, db)
+	err = trie.TryUpdate([]byte("120099"), []byte("zxcv"))
+	if _, ok := err.(*MissingNodeError); !ok {
+		t.Errorf("Wrong error: %v", err)
+	}
+
+	trie, _ = New(root, db)
+	err = trie.TryDelete([]byte("123456"))
+	if _, ok := err.(*MissingNodeError); !ok {
+		t.Errorf("Wrong error: %v", err)
 	}
 }
 
@@ -388,7 +461,7 @@ func tempDB() (string, Database) {
 	if err != nil {
 		panic(fmt.Sprintf("can't create temporary directory: %v", err))
 	}
-	db, err := ethdb.NewLDBDatabase(dir, 300*1024)
+	db, err := ethdb.NewLDBDatabase(dir, 256, 0)
 	if err != nil {
 		panic(fmt.Sprintf("can't create temporary database: %v", err))
 	}

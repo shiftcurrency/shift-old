@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package shf
 
@@ -22,7 +22,6 @@ import (
 	"math/big"
 	"sync"
 	"time"
-
 
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core/types"
@@ -35,6 +34,7 @@ import (
 )
 
 var (
+	errClosed            = errors.New("peer set is closed")
 	errAlreadyRegistered = errors.New("peer is already registered")
 	errNotRegistered     = errors.New("peer is not registered")
 )
@@ -45,10 +45,10 @@ const (
 	handshakeTimeout = 5 * time.Second
 )
 
-// PeerInfo represents a short summary of the Ethereum sub-protocol metadata known
+// PeerInfo represents a short summary of the Shift sub-protocol metadata known
 // about a connected peer.
 type PeerInfo struct {
-	Version    int      `json:"version"`    // Ethereum protocol version negotiated
+	Version    int      `json:"version"`    // Shift protocol version negotiated
 	Difficulty *big.Int `json:"difficulty"` // Total difficulty of the peer's blockchain
 	Head       string   `json:"head"`       // SHA3 hash of the peer's best owned block
 }
@@ -239,7 +239,6 @@ func (p *peer) RequestBlocks(hashes []common.Hash) error {
 	return p2p.Send(p.rw, GetBlocksMsg, hashes)
 }
 
-
 // RequestHeaders is a wrapper around the header query functions to fetch a
 // single header. It is used solely by the fetcher.
 func (p *peer) RequestOneHeader(hash common.Hash) error {
@@ -346,15 +345,16 @@ func (p *peer) readStatus(network int, status *statusData, genesis common.Hash) 
 // String implements fmt.Stringer.
 func (p *peer) String() string {
 	return fmt.Sprintf("Peer %s [%s]", p.id,
-		fmt.Sprintf("shift/%2d", p.version),
+		fmt.Sprintf("shf/%2d", p.version),
 	)
 }
 
 // peerSet represents the collection of active peers currently participating in
 // the Shift sub-protocol.
 type peerSet struct {
-	peers map[string]*peer
-	lock  sync.RWMutex
+	peers  map[string]*peer
+	lock   sync.RWMutex
+	closed bool
 }
 
 // newPeerSet creates a new peer set to track the active participants.
@@ -370,6 +370,9 @@ func (ps *peerSet) Register(p *peer) error {
 	ps.lock.Lock()
 	defer ps.lock.Unlock()
 
+	if ps.closed {
+		return errClosed
+	}
 	if _, ok := ps.peers[p.id]; ok {
 		return errAlreadyRegistered
 	}
@@ -451,4 +454,16 @@ func (ps *peerSet) BestPeer() *peer {
 		}
 	}
 	return bestPeer
+}
+
+// Close disconnects all peers.
+// No new peers can be registered after Close has returned.
+func (ps *peerSet) Close() {
+	ps.lock.Lock()
+	defer ps.lock.Unlock()
+
+	for _, p := range ps.peers {
+		p.Disconnect(p2p.DiscQuitting)
+	}
+	ps.closed = true
 }

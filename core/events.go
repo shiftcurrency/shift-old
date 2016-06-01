@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
@@ -22,7 +22,6 @@ import (
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core/types"
 	"github.com/shiftcurrency/shift/core/vm"
-
 )
 
 // TxPreEvent is posted when a transaction enters the transaction pool.
@@ -30,6 +29,14 @@ type TxPreEvent struct{ Tx *types.Transaction }
 
 // TxPostEvent is posted when a transaction has been processed.
 type TxPostEvent struct{ Tx *types.Transaction }
+
+// PendingLogsEvent is posted pre mining and notifies of pending logs.
+type PendingLogsEvent struct {
+	Logs vm.Logs
+}
+
+// PendingStateEvent is posted pre mining and notifies of pending state changes.
+type PendingStateEvent struct{}
 
 // NewBlockEvent is posted when a block has been imported.
 type NewBlockEvent struct{ Block *types.Block }
@@ -39,6 +46,9 @@ type NewMinedBlockEvent struct{ Block *types.Block }
 
 // RemovedTransactionEvent is posted when a reorg happens
 type RemovedTransactionEvent struct{ Txs types.Transactions }
+
+// RemovedLogEvent is posted when a reorg happens
+type RemovedLogsEvent struct{ Logs vm.Logs }
 
 // ChainSplit is posted when a new head is detected
 type ChainSplitEvent struct {

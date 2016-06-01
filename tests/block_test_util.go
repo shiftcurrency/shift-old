@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package tests
 
@@ -22,20 +22,17 @@ import (
 	"fmt"
 	"io"
 	"math/big"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/shiftcurrency/shift/accounts"
+	"github.com/ethereum/ethash"
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core"
 	"github.com/shiftcurrency/shift/core/state"
 	"github.com/shiftcurrency/shift/core/types"
-	"github.com/shiftcurrency/shift/crypto"
-	"github.com/shiftcurrency/shift/shf"
 	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/event"
 	"github.com/shiftcurrency/shift/logger/glog"
 	"github.com/shiftcurrency/shift/rlp"
 )
@@ -106,7 +103,7 @@ type btTransaction struct {
 	Value    string
 }
 
-func RunBlockTestWithReader(r io.Reader, skipTests []string) error {
+func RunBlockTestWithReader(homesteadBlock *big.Int, r io.Reader, skipTests []string) error {
 	btjs := make(map[string]*btJSON)
 	if err := readJson(r, &btjs); err != nil {
 		return err
@@ -117,13 +114,13 @@ func RunBlockTestWithReader(r io.Reader, skipTests []string) error {
 		return err
 	}
 
-	if err := runBlockTests(bt, skipTests); err != nil {
+	if err := runBlockTests(homesteadBlock, bt, skipTests); err != nil {
 		return err
 	}
 	return nil
 }
 
-func RunBlockTest(file string, skipTests []string) error {
+func RunBlockTest(homesteadBlock *big.Int, file string, skipTests []string) error {
 	btjs := make(map[string]*btJSON)
 	if err := readJsonFile(file, &btjs); err != nil {
 		return err
@@ -133,13 +130,13 @@ func RunBlockTest(file string, skipTests []string) error {
 	if err != nil {
 		return err
 	}
-	if err := runBlockTests(bt, skipTests); err != nil {
+	if err := runBlockTests(homesteadBlock, bt, skipTests); err != nil {
 		return err
 	}
 	return nil
 }
 
-func runBlockTests(bt map[string]*BlockTest, skipTests []string) error {
+func runBlockTests(homesteadBlock *big.Int, bt map[string]*BlockTest, skipTests []string) error {
 	skipTest := make(map[string]bool, len(skipTests))
 	for _, name := range skipTests {
 		skipTest[name] = true
@@ -151,60 +148,46 @@ func runBlockTests(bt map[string]*BlockTest, skipTests []string) error {
 			continue
 		}
 		// test the block
-		if err := runBlockTest(test); err != nil {
+		if err := runBlockTest(homesteadBlock, test); err != nil {
 			return fmt.Errorf("%s: %v", name, err)
 		}
 		glog.Infoln("Block test passed: ", name)
 
 	}
 	return nil
-
 }
-func runBlockTest(test *BlockTest) error {
-	ks := crypto.NewKeyStorePassphrase(filepath.Join(common.DefaultDataDir(), "keystore"), crypto.StandardScryptN, crypto.StandardScryptP)
-	am := accounts.NewManager(ks)
-	db, _ := ethdb.NewMemDatabase()
-	cfg := &shf.Config{
-		DataDir:        common.DefaultDataDir(),
-		Verbosity:      5,
-		Shiftbase:      common.Address{},
-		AccountManager: am,
-		NewDB:          func(path string) (ethdb.Database, error) { return db, nil },
-	}
 
-	cfg.GenesisBlock = test.Genesis
-
+func runBlockTest(homesteadBlock *big.Int, test *BlockTest) error {
 	// import pre accounts & construct test genesis block & state root
-	_, err := test.InsertPreState(db, am)
-	if err != nil {
+	db, _ := ethdb.NewMemDatabase()
+	if _, err := test.InsertPreState(db); err != nil {
 		return fmt.Errorf("InsertPreState: %v", err)
 	}
 
-
-	shift, err := shf.New(cfg)
+	core.WriteTd(db, test.Genesis.Hash(), test.Genesis.Difficulty())
+	core.WriteBlock(db, test.Genesis)
+	core.WriteCanonicalHash(db, test.Genesis.Hash(), test.Genesis.NumberU64())
+	core.WriteHeadBlockHash(db, test.Genesis.Hash())
+	evmux := new(event.TypeMux)
+	config := &core.ChainConfig{HomesteadBlock: homesteadBlock}
+	chain, err := core.NewBlockChain(db, config, ethash.NewShared(), evmux)
 	if err != nil {
 		return err
 	}
 
-	err = shift.Start()
-	if err != nil {
-		return err
-	}
-
-	cm := shift.BlockChain()
 	//vm.Debug = true
-	validBlocks, err := test.TryBlocksInsert(cm)
+	validBlocks, err := test.TryBlocksInsert(chain)
 	if err != nil {
 		return err
 	}
 
 	lastblockhash := common.HexToHash(test.lastblockhash)
-	cmlast := cm.LastBlockHash()
+	cmlast := chain.LastBlockHash()
 	if lastblockhash != cmlast {
 		return fmt.Errorf("lastblockhash validation mismatch: want: %x, have: %x", lastblockhash, cmlast)
 	}
 
-	newDB, err := cm.State()
+	newDB, err := chain.State()
 	if err != nil {
 		return err
 	}
@@ -212,22 +195,17 @@ func runBlockTest(test *BlockTest) error {
 		return fmt.Errorf("post state validation failed: %v", err)
 	}
 
-	return test.ValidateImportedHeaders(cm, validBlocks)
+	return test.ValidateImportedHeaders(chain, validBlocks)
 }
 
 // InsertPreState populates the given database with the genesis
 // accounts defined by the test.
-func (t *BlockTest) InsertPreState(db ethdb.Database, am *accounts.Manager) (*state.StateDB, error) {
+func (t *BlockTest) InsertPreState(db ethdb.Database) (*state.StateDB, error) {
 	statedb, err := state.New(common.Hash{}, db)
 	if err != nil {
 		return nil, err
 	}
-
 	for addrString, acct := range t.preAccounts {
-		addr, err := hex.DecodeString(addrString)
-		if err != nil {
-			return nil, err
-		}
 		code, err := hex.DecodeString(strings.TrimPrefix(acct.Code, "0x"))
 		if err != nil {
 			return nil, err
@@ -240,16 +218,6 @@ func (t *BlockTest) InsertPreState(db ethdb.Database, am *accounts.Manager) (*st
 		if err != nil {
 			return nil, err
 		}
-
-		if acct.PrivateKey != "" {
-			privkey, err := hex.DecodeString(strings.TrimPrefix(acct.PrivateKey, "0x"))
-			err = crypto.ImportBlockTestKey(privkey)
-			err = am.TimedUnlock(common.BytesToAddress(addr), "", 999999*time.Second)
-			if err != nil {
-				return nil, err
-			}
-		}
-
 		obj := statedb.CreateAccount(common.HexToAddress(addrString))
 		obj.SetCode(code)
 		obj.SetBalance(balance)
@@ -269,7 +237,7 @@ func (t *BlockTest) InsertPreState(db ethdb.Database, am *accounts.Manager) (*st
 	return statedb, nil
 }
 
-/* See https://github.com/shiftcurrency/tests/wiki/Blockchain-Tests-II
+/* See https://github.com/shift/tests/wiki/Blockchain-Tests-II
 
    Whether a block is valid or not is a bit subtle, it's defined by presence of
    blockHeader, transactions and uncleHeaders fields. If they are missing, the block is
@@ -388,7 +356,6 @@ func validateHeader(h *btHeader, h2 *types.Header) error {
 
 	expectedTimestamp := mustConvertBigInt(h.Timestamp, 16)
 	if expectedTimestamp.Cmp(h2.Time) != 0 {
-
 		return fmt.Errorf("Timestamp: want: %v have: %v", expectedTimestamp, h2.Time)
 	}
 
@@ -524,7 +491,7 @@ func mustConvertBytes(in string) []byte {
 	h := unfuckFuckedHex(strings.TrimPrefix(in, "0x"))
 	out, err := hex.DecodeString(h)
 	if err != nil {
-		panic(fmt.Errorf("invalid hex: %q: ", h, err))
+		panic(fmt.Errorf("invalid hex: %q", h))
 	}
 	return out
 }

@@ -1,24 +1,25 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"math/big"
 
@@ -50,6 +51,8 @@ var (
 	MIPMapLevels = []uint64{1000000, 500000, 100000, 50000, 1000}
 
 	blockHashPrefix = []byte("block-hash-") // [deprecated by the header/block split, remove eventually]
+
+	configPrefix = []byte("shift-config-") // config prefix for the db
 )
 
 // GetCanonicalHash retrieves a hash assigned to a canonical block number.
@@ -315,7 +318,7 @@ func WriteTd(db ethdb.Database, hash common.Hash, td *big.Int) error {
 // WriteBlock serializes a block into the database, header and body separately.
 func WriteBlock(db ethdb.Database, block *types.Block) error {
 	// Store the body first to retain database consistency
-	if err := WriteBody(db, block.Hash(), &types.Body{block.Transactions(), block.Uncles()}); err != nil {
+	if err := WriteBody(db, block.Hash(), block.Body()); err != nil {
 		return err
 	}
 	// Store the header too, signaling full block ownership
@@ -461,7 +464,7 @@ func DeleteReceipt(db ethdb.Database, hash common.Hash) {
 // GetBlockByHashOld returns the old combined block corresponding to the hash
 // or nil if not found. This method is only used by the upgrade mechanism to
 // access the old combined block representation. It will be dropped after the
-// network transitions to eth/63.
+// network transitions to shf/63.
 func GetBlockByHashOld(db ethdb.Database, hash common.Hash) *types.Block {
 	data, _ := db.Get(append(blockHashPrefix, hash[:]...))
 	if len(data) == 0 {
@@ -512,4 +515,49 @@ func WriteMipmapBloom(db ethdb.Database, number uint64, receipts types.Receipts)
 func GetMipmapBloom(db ethdb.Database, number, level uint64) types.Bloom {
 	bloomDat, _ := db.Get(mipmapKey(number, level))
 	return types.BytesToBloom(bloomDat)
+}
+
+// GetBlockChainVersion reads the version number from db.
+func GetBlockChainVersion(db ethdb.Database) int {
+	var vsn uint
+	enc, _ := db.Get([]byte("BlockchainVersion"))
+	rlp.DecodeBytes(enc, &vsn)
+	return int(vsn)
+}
+
+// WriteBlockChainVersion writes vsn as the version number to db.
+func WriteBlockChainVersion(db ethdb.Database, vsn int) {
+	enc, _ := rlp.EncodeToBytes(uint(vsn))
+	db.Put([]byte("BlockchainVersion"), enc)
+}
+
+// WriteChainConfig writes the chain config settings to the database.
+func WriteChainConfig(db ethdb.Database, hash common.Hash, cfg *ChainConfig) error {
+	// short circuit and ignore if nil config. GetChainConfig
+	// will return a default.
+	if cfg == nil {
+		return nil
+	}
+
+	jsonChainConfig, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	return db.Put(append(configPrefix, hash[:]...), jsonChainConfig)
+}
+
+// GetChainConfig will fetch the network settings based on the given hash.
+func GetChainConfig(db ethdb.Database, hash common.Hash) (*ChainConfig, error) {
+	jsonChainConfig, _ := db.Get(append(configPrefix, hash[:]...))
+	if len(jsonChainConfig) == 0 {
+		return nil, ChainConfigNotFoundErr
+	}
+
+	var config ChainConfig
+	if err := json.Unmarshal(jsonChainConfig, &config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
 }

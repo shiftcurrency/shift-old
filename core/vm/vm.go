@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package vm
 
@@ -28,27 +28,49 @@ import (
 	"github.com/shiftcurrency/shift/params"
 )
 
-// Vm is an EVM and implements VirtualMachine
-type Vm struct {
-	env Environment
+// Config are the configuration options for the EVM
+type Config struct {
+	Debug     bool
+	EnableJit bool
+	ForceJit  bool
+	Logger    LogConfig
 }
 
-// New returns a new Vm
-func New(env Environment) *Vm {
-	// init the jump table. Also prepares the homestead changes
-	jumpTable.init(env.BlockNumber())
+// EVM is used to run Shift based contracts and will utilise the
+// passed environment to query external sources for state information.
+// The EVM will run the byte code VM or JIT VM based on the passed
+// configuration.
+type EVM struct {
+	env       Environment
+	jumpTable vmJumpTable
+	cfg       Config
 
-	return &Vm{env: env}
+	logger *Logger
+}
+
+// New returns a new instance of the EVM.
+func New(env Environment, cfg Config) *EVM {
+	var logger *Logger
+	if cfg.Debug {
+		logger = newLogger(cfg.Logger, env)
+	}
+
+	return &EVM{
+		env:       env,
+		jumpTable: newJumpTable(env.RuleSet(), env.BlockNumber()),
+		cfg:       cfg,
+		logger:    logger,
+	}
 }
 
 // Run loops and evaluates the contract's code with the given input data
-func (self *Vm) Run(contract *Contract, input []byte) (ret []byte, err error) {
-	self.env.SetDepth(self.env.Depth() + 1)
-	defer self.env.SetDepth(self.env.Depth() - 1)
+func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
+	evm.env.SetDepth(evm.env.Depth() + 1)
+	defer evm.env.SetDepth(evm.env.Depth() - 1)
 
 	if contract.CodeAddr != nil {
 		if p := Precompiled[contract.CodeAddr.Str()]; p != nil {
-			return self.RunPrecompiled(p, input, contract)
+			return evm.RunPrecompiled(p, input, contract)
 		}
 	}
 
@@ -58,29 +80,29 @@ func (self *Vm) Run(contract *Contract, input []byte) (ret []byte, err error) {
 	}
 
 	var (
-		codehash = crypto.Sha3Hash(contract.Code) // codehash is used when doing jump dest caching
+		codehash = crypto.Keccak256Hash(contract.Code) // codehash is used when doing jump dest caching
 		program  *Program
 	)
-	if EnableJit {
+	if evm.cfg.EnableJit {
 		// If the JIT is enabled check the status of the JIT program,
-		// if it doesn't exist compile a new program in a seperate
+		// if it doesn't exist compile a new program in a separate
 		// goroutine or wait for compilation to finish if the JIT is
 		// forced.
 		switch GetProgramStatus(codehash) {
 		case progReady:
-			return RunProgram(GetProgram(codehash), self.env, contract, input)
+			return RunProgram(GetProgram(codehash), evm.env, contract, input)
 		case progUnknown:
-			if ForceJit {
+			if evm.cfg.ForceJit {
 				// Create and compile program
 				program = NewProgram(contract.Code)
 				perr := CompileProgram(program)
 				if perr == nil {
-					return RunProgram(program, self.env, contract, input)
+					return RunProgram(program, evm.env, contract, input)
 				}
 				glog.V(logger.Info).Infoln("error compiling program", err)
 			} else {
 				// create and compile the program. Compilation
-				// is done in a seperate goroutine
+				// is done in a separate goroutine
 				program = NewProgram(contract.Code)
 				go func() {
 					err := CompileProgram(program)
@@ -98,12 +120,12 @@ func (self *Vm) Run(contract *Contract, input []byte) (ret []byte, err error) {
 		code       = contract.Code
 		instrCount = 0
 
-		op      OpCode          // current opcode
-		mem     = NewMemory()   // bound memory
-		stack   = newstack()    // local stack
-		statedb = self.env.Db() // current state
+		op      OpCode         // current opcode
+		mem     = NewMemory()  // bound memory
+		stack   = newstack()   // local stack
+		statedb = evm.env.Db() // current state
 		// For optimisation reason we're using uint64 as the program counter.
-		// It's theoretically possible to go above 2^64. The YP defines the PC to be uint256. Pratically much less so feasible.
+		// It's theoretically possible to go above 2^64. The YP defines the PC to be uint256. Practically much less so feasible.
 		pc = uint64(0) // program counter
 
 		// jump evaluates and checks whether the given jump destination is a valid one
@@ -126,8 +148,8 @@ func (self *Vm) Run(contract *Contract, input []byte) (ret []byte, err error) {
 
 	// User defer pattern to check for an error and, based on the error being nil or not, use all gas and return.
 	defer func() {
-		if err != nil {
-			self.log(pc, op, contract.Gas, cost, mem, stack, contract, err)
+		if err != nil && evm.cfg.Debug {
+			evm.logger.captureState(pc, op, contract.Gas, cost, mem, stack, contract, evm.env.Depth(), err)
 		}
 	}()
 
@@ -146,7 +168,7 @@ func (self *Vm) Run(contract *Contract, input []byte) (ret []byte, err error) {
 					// move execution
 					fmt.Println("moved", it)
 					glog.V(logger.Info).Infoln("Moved execution to JIT")
-					return runProgram(program, pc, mem, stack, self.env, contract, input)
+					return runProgram(program, pc, mem, stack, evm.env, contract, input)
 				}
 			}
 		*/
@@ -154,7 +176,7 @@ func (self *Vm) Run(contract *Contract, input []byte) (ret []byte, err error) {
 		// Get the memory location of pc
 		op = contract.GetOp(pc)
 		// calculate the new memory size and gas price for the current executing opcode
-		newMemSize, cost, err = calculateGasAndSize(self.env, contract, caller, op, statedb, mem, stack)
+		newMemSize, cost, err = calculateGasAndSize(evm.env, contract, caller, op, statedb, mem, stack)
 		if err != nil {
 			return nil, err
 		}
@@ -168,14 +190,17 @@ func (self *Vm) Run(contract *Contract, input []byte) (ret []byte, err error) {
 		// Resize the memory calculated previously
 		mem.Resize(newMemSize.Uint64())
 		// Add a log message
-		self.log(pc, op, contract.Gas, cost, mem, stack, contract, nil)
-		if opPtr := jumpTable[op]; opPtr.valid {
+		if evm.cfg.Debug {
+			evm.logger.captureState(pc, op, contract.Gas, cost, mem, stack, contract, evm.env.Depth(), nil)
+		}
+
+		if opPtr := evm.jumpTable[op]; opPtr.valid {
 			if opPtr.fn != nil {
-				opPtr.fn(instruction{}, &pc, self.env, contract, mem, stack)
+				opPtr.fn(instruction{}, &pc, evm.env, contract, mem, stack)
 			} else {
 				switch op {
 				case PC:
-					opPc(instruction{data: new(big.Int).SetUint64(pc)}, &pc, self.env, contract, mem, stack)
+					opPc(instruction{data: new(big.Int).SetUint64(pc)}, &pc, evm.env, contract, mem, stack)
 				case JUMP:
 					if err := jump(pc, stack.pop()); err != nil {
 						return nil, err
@@ -198,7 +223,7 @@ func (self *Vm) Run(contract *Contract, input []byte) (ret []byte, err error) {
 
 					return ret, nil
 				case SUICIDE:
-					opSuicide(instruction{}, nil, self.env, contract, mem, stack)
+					opSuicide(instruction{}, nil, evm.env, contract, mem, stack)
 
 					fallthrough
 				case STOP: // Stop the contract
@@ -271,7 +296,7 @@ func calculateGasAndSize(env Environment, contract *Contract, caller ContractRef
 		// This checks for 3 scenario's and calculates gas accordingly
 		// 1. From a zero-value address to a non-zero value         (NEW VALUE)
 		// 2. From a non-zero value address to a zero-value address (DELETE)
-		// 3. From a nen-zero to a non-zero                         (CHANGE)
+		// 3. From a non-zero to a non-zero                         (CHANGE)
 		if common.EmptyHash(val) && !common.EmptyHash(common.BigToHash(y)) {
 			// 0 => non 0
 			g = params.SstoreSetGas
@@ -350,7 +375,7 @@ func calculateGasAndSize(env Environment, contract *Contract, caller ContractRef
 }
 
 // RunPrecompile runs and evaluate the output of a precompiled contract defined in contracts.go
-func (self *Vm) RunPrecompiled(p *PrecompiledAccount, input []byte, contract *Contract) (ret []byte, err error) {
+func (evm *EVM) RunPrecompiled(p *PrecompiledAccount, input []byte, contract *Contract) (ret []byte, err error) {
 	gas := p.Gas(len(input))
 	if contract.UseGas(gas) {
 		ret = p.Call(input)
@@ -359,31 +384,4 @@ func (self *Vm) RunPrecompiled(p *PrecompiledAccount, input []byte, contract *Co
 	} else {
 		return nil, OutOfGasError
 	}
-}
-
-// log emits a log event to the environment for each opcode encountered. This is not to be confused with the
-// LOG* opcode.
-func (self *Vm) log(pc uint64, op OpCode, gas, cost *big.Int, memory *Memory, stack *stack, contract *Contract, err error) {
-	if Debug {
-		mem := make([]byte, len(memory.Data()))
-		copy(mem, memory.Data())
-
-		stck := make([]*big.Int, len(stack.Data()))
-		for i, item := range stack.Data() {
-			stck[i] = new(big.Int).Set(item)
-		}
-		storage := make(map[common.Hash][]byte)
-		/*
-			object := contract.self.(*state.StateObject)
-			object.EachStorage(func(k, v []byte) {
-				storage[common.BytesToHash(k)] = v
-			})
-		*/
-		self.env.AddStructLog(StructLog{pc, op, new(big.Int).Set(gas), cost, mem, stck, storage, err})
-	}
-}
-
-// Environment returns the current workable state of the VM
-func (self *Vm) Env() Environment {
-	return self.env
 }

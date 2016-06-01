@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package tests
 
@@ -21,10 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/big"
 	"runtime"
 
 	"github.com/shiftcurrency/shift/common"
+	"github.com/shiftcurrency/shift/core"
 	"github.com/shiftcurrency/shift/core/types"
 	"github.com/shiftcurrency/shift/logger/glog"
 	"github.com/shiftcurrency/shift/params"
@@ -91,8 +91,6 @@ func RunTransactionTests(file string, skipTests []string) error {
 }
 
 func runTransactionTests(tests map[string]TransactionTest, skipTests []string) error {
-	params.HomesteadBlock = big.NewInt(900000)
-
 	skipTest := make(map[string]bool, len(skipTests))
 	for _, name := range skipTests {
 		skipTest[name] = true
@@ -166,7 +164,8 @@ func verifyTxFields(txTest TransactionTest, decodedTx *types.Transaction) (err e
 		decodedSender common.Address
 	)
 
-	if params.IsHomestead(common.String2Big(txTest.Blocknumber)) {
+	chainConfig := &core.ChainConfig{HomesteadBlock: params.MainNetHomesteadBlock}
+	if chainConfig.IsHomestead(common.String2Big(txTest.Blocknumber)) {
 		decodedSender, err = decodedTx.From()
 	} else {
 		decodedSender, err = decodedTx.FromFrontier()

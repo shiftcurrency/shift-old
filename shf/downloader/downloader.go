@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package downloader contains the manual full chain synchronisation.
 package downloader
@@ -34,6 +34,7 @@ import (
 	"github.com/shiftcurrency/shift/event"
 	"github.com/shiftcurrency/shift/logger"
 	"github.com/shiftcurrency/shift/logger/glog"
+	"github.com/shiftcurrency/shift/params"
 	"github.com/rcrowley/go-metrics"
 )
 
@@ -45,24 +46,25 @@ var (
 	MaxReceiptFetch = 256 // Amount of transaction receipts to allow fetching per request
 	MaxStateFetch   = 384 // Amount of node state values to allow fetching per request
 
-	hashTTL        = 3 * time.Second     // [eth/61] Time it takes for a hash request to time out
-	blockTargetRTT = 3 * time.Second / 2 // [eth/61] Target time for completing a block retrieval request
-	blockTTL       = 3 * blockTargetRTT  // [eth/61] Maximum time allowance before a block request is considered expired
+	MaxForkAncestry = 10 * params.EpochDuration.Uint64() // Maximum chain reorganisation
 
-	headerTTL        = 3 * time.Second      // [eth/62] Time it takes for a header request to time out
-	bodyTargetRTT    = 3 * time.Second / 2  // [eth/62] Target time for completing a block body retrieval request
-	bodyTTL          = 3 * bodyTargetRTT    // [eth/62] Maximum time allowance before a block body request is considered expired
-	receiptTargetRTT = 3 * time.Second / 2  // [eth/63] Target time for completing a receipt retrieval request
-	receiptTTL       = 3 * receiptTargetRTT // [eth/63] Maximum time allowance before a receipt request is considered expired
-	stateTargetRTT   = 2 * time.Second / 2  // [eth/63] Target time for completing a state trie retrieval request
-	stateTTL         = 3 * stateTargetRTT   // [eth/63] Maximum time allowance before a node data request is considered expired
+	hashTTL        = 3 * time.Second     // [shf/61] Time it takes for a hash request to time out
+	blockTargetRTT = 3 * time.Second / 2 // [shf/61] Target time for completing a block retrieval request
+	blockTTL       = 3 * blockTargetRTT  // [shf/61] Maximum time allowance before a block request is considered expired
 
-	maxQueuedHashes   = 256 * 1024 // [eth/61] Maximum number of hashes to queue for import (DOS protection)
-	maxQueuedHeaders  = 256 * 1024 // [eth/62] Maximum number of headers to queue for import (DOS protection)
-	maxQueuedStates   = 256 * 1024 // [eth/63] Maximum number of state requests to queue (DOS protection)
+	headerTTL        = 3 * time.Second      // [shf/62] Time it takes for a header request to time out
+	bodyTargetRTT    = 3 * time.Second / 2  // [shf/62] Target time for completing a block body retrieval request
+	bodyTTL          = 3 * bodyTargetRTT    // [shf/62] Maximum time allowance before a block body request is considered expired
+	receiptTargetRTT = 3 * time.Second / 2  // [shf/63] Target time for completing a receipt retrieval request
+	receiptTTL       = 3 * receiptTargetRTT // [shf/63] Maximum time allowance before a receipt request is considered expired
+	stateTargetRTT   = 2 * time.Second / 2  // [shf/63] Target time for completing a state trie retrieval request
+	stateTTL         = 3 * stateTargetRTT   // [shf/63] Maximum time allowance before a node data request is considered expired
+
+	maxQueuedHashes   = 256 * 1024 // [shf/61] Maximum number of hashes to queue for import (DOS protection)
+	maxQueuedHeaders  = 256 * 1024 // [shf/62] Maximum number of headers to queue for import (DOS protection)
 	maxResultsProcess = 256        // Number of download results to import at once into the chain
 
-	fsHeaderCheckFrequency = 100  // Verification frequency of the downloaded headers during fast sync
+	fsHeaderCheckFrequency = 5000  // Verification frequency of the downloaded headers during fast sync
 	fsHeaderSafetyNet      = 2048 // Number of headers to discard in case a chain violation is detected
 	fsHeaderForceVerify    = 24   // Number of headers to verify before and after the pivot to accept it
 	fsPivotInterval        = 512  // Number of headers out of which to randomize the pivot point
@@ -80,6 +82,7 @@ var (
 	errEmptyHeaderSet     = errors.New("empty header set by peer")
 	errPeersUnavailable   = errors.New("no peers available or all tried for download")
 	errAlreadyInPool      = errors.New("hash already in pool")
+	errInvalidAncestor    = errors.New("retrieved ancestor is invalid")
 	errInvalidChain       = errors.New("retrieved hash chain is invalid")
 	errInvalidBlock       = errors.New("retrieved block is invalid")
 	errInvalidBody        = errors.New("retrieved block body is invalid")
@@ -134,16 +137,16 @@ type Downloader struct {
 
 	// Channels
 	newPeerCh     chan *peer
-	hashCh        chan dataPack // [eth/61] Channel receiving inbound hashes
-	blockCh       chan dataPack // [eth/61] Channel receiving inbound blocks
-	headerCh      chan dataPack // [eth/62] Channel receiving inbound block headers
-	bodyCh        chan dataPack // [eth/62] Channel receiving inbound block bodies
-	receiptCh     chan dataPack // [eth/63] Channel receiving inbound receipts
-	stateCh       chan dataPack // [eth/63] Channel receiving inbound node state data
-	blockWakeCh   chan bool     // [eth/61] Channel to signal the block fetcher of new tasks
-	bodyWakeCh    chan bool     // [eth/62] Channel to signal the block body fetcher of new tasks
-	receiptWakeCh chan bool     // [eth/63] Channel to signal the receipt fetcher of new tasks
-	stateWakeCh   chan bool     // [eth/63] Channel to signal the state fetcher of new tasks
+	hashCh        chan dataPack // [shf/61] Channel receiving inbound hashes
+	blockCh       chan dataPack // [shf/61] Channel receiving inbound blocks
+	headerCh      chan dataPack // [shf/62] Channel receiving inbound block headers
+	bodyCh        chan dataPack // [shf/62] Channel receiving inbound block bodies
+	receiptCh     chan dataPack // [shf/63] Channel receiving inbound receipts
+	stateCh       chan dataPack // [shf/63] Channel receiving inbound node state data
+	blockWakeCh   chan bool     // [shf/61] Channel to signal the block fetcher of new tasks
+	bodyWakeCh    chan bool     // [shf/62] Channel to signal the block body fetcher of new tasks
+	receiptWakeCh chan bool     // [shf/63] Channel to signal the receipt fetcher of new tasks
+	stateWakeCh   chan bool     // [shf/63] Channel to signal the state fetcher of new tasks
 
 	cancelCh   chan struct{} // Channel to cancel mid-flight syncs
 	cancelLock sync.RWMutex  // Lock to protect the cancel channel in delivers
@@ -197,7 +200,15 @@ func New(stateDb ethdb.Database, mux *event.TypeMux, hasHeader headerCheckFn, ha
 // Progress retrieves the synchronisation boundaries, specifically the origin
 // block where synchronisation started at (may have failed/suspended); the block
 // or header sync is currently at; and the latest known block which the sync targets.
-func (d *Downloader) Progress() (uint64, uint64, uint64) {
+//
+// In addition, during the state download phase of fast synchronisation the number
+// of processed and the total number of known states are also returned. Otherwise
+// these are zero.
+func (d *Downloader) Progress() (uint64, uint64, uint64, uint64, uint64) {
+	// Fetch the pending state count outside of the lock to prevent unforeseen deadlocks
+	pendingStates := uint64(d.queue.PendingNodeData())
+
+	// Lock the current stats and return the progress
 	d.syncStatsLock.RLock()
 	defer d.syncStatsLock.RUnlock()
 
@@ -210,7 +221,7 @@ func (d *Downloader) Progress() (uint64, uint64, uint64) {
 	case LightSync:
 		current = d.headHeader().Number.Uint64()
 	}
-	return d.syncStatsChainOrigin, current, d.syncStatsChainHeight
+	return d.syncStatsChainOrigin, current, d.syncStatsChainHeight, d.syncStatsStateDone, d.syncStatsStateDone + pendingStates
 }
 
 // Synchronising returns whether the downloader is currently retrieving blocks.
@@ -221,7 +232,7 @@ func (d *Downloader) Synchronising() bool {
 // RegisterPeer injects a new download peer into the set of block source to be
 // used for fetching hashes and blocks from.
 func (d *Downloader) RegisterPeer(id string, version int, head common.Hash,
-	getRelHashes relativeHashFetcherFn, getAbsHashes absoluteHashFetcherFn, getBlocks blockFetcherFn, // eth/61 callbacks, remove when upgrading
+	getRelHashes relativeHashFetcherFn, getAbsHashes absoluteHashFetcherFn, getBlocks blockFetcherFn, // shf/61 callbacks, remove when upgrading
 	getRelHeaders relativeHeaderFetcherFn, getAbsHeaders absoluteHeaderFetcherFn, getBlockBodies blockBodyFetcherFn,
 	getReceipts receiptFetcherFn, getNodeData stateFetcherFn) error {
 
@@ -259,7 +270,7 @@ func (d *Downloader) Synchronise(id string, head common.Hash, td *big.Int, mode 
 	case errBusy:
 		glog.V(logger.Detail).Infof("Synchronisation already in progress")
 
-	case errTimeout, errBadPeer, errStallingPeer, errEmptyHashSet, errEmptyHeaderSet, errPeersUnavailable, errInvalidChain:
+	case errTimeout, errBadPeer, errStallingPeer, errEmptyHashSet, errEmptyHeaderSet, errPeersUnavailable, errInvalidAncestor, errInvalidChain:
 		glog.V(logger.Debug).Infof("Removing peer %v: %v", id, err)
 		d.dropPeer(id)
 
@@ -273,7 +284,7 @@ func (d *Downloader) Synchronise(id string, head common.Hash, td *big.Int, mode 
 // it will use the best peer possible and synchronize if it's TD is higher than our own. If any of the
 // checks fail an error will be returned. This method is synchronous
 func (d *Downloader) synchronise(id string, hash common.Hash, td *big.Int, mode SyncMode) error {
-	// Mock out the synchonisation if testing
+	// Mock out the synchronisation if testing
 	if d.synchroniseMock != nil {
 		return d.synchroniseMock(id, hash)
 	}
@@ -297,7 +308,7 @@ func (d *Downloader) synchronise(id string, hash common.Hash, td *big.Int, mode 
 		default:
 		}
 	}
-	// Reset and ephemeral sync statistics
+	// Reset any ephemeral sync statistics
 	d.syncStatsLock.Lock()
 	d.syncStatsStateTotal = 0
 	d.syncStatsStateDone = 0
@@ -334,10 +345,11 @@ func (d *Downloader) syncWithPeer(p *peer, hash common.Hash, td *big.Int) (err e
 		}
 	}()
 
-	glog.V(logger.Debug).Infof("Synchronising with the network using: %s [eth/%d]", p.id, p.version)
+	glog.V(logger.Debug).Infof("Synchronising with the network using: %s [shf/%d]", p.id, p.version)
 	defer func(start time.Time) {
 		glog.V(logger.Debug).Infof("Synchronisation terminated after %v", time.Since(start))
 	}(time.Now())
+
 	switch {
 	case p.version == 61:
 		// Look up the sync boundaries: the common ancestor and the target block
@@ -345,7 +357,7 @@ func (d *Downloader) syncWithPeer(p *peer, hash common.Hash, td *big.Int) (err e
 		if err != nil {
 			return err
 		}
-		origin, err := d.findAncestor61(p)
+		origin, err := d.findAncestor61(p, latest)
 		if err != nil {
 			return err
 		}
@@ -372,8 +384,7 @@ func (d *Downloader) syncWithPeer(p *peer, hash common.Hash, td *big.Int) (err e
 		if err != nil {
 			return err
 		}
-
-		origin, err := d.findAncestor(p)
+		origin, err := d.findAncestor(p, latest)
 		if err != nil {
 			return err
 		}
@@ -421,7 +432,7 @@ func (d *Downloader) syncWithPeer(p *peer, hash common.Hash, td *big.Int) (err e
 
 	default:
 		// Something very wrong, stop right here
-		glog.V(logger.Error).Infof("Unsupported shift protocol: %d", p.version)
+		glog.V(logger.Error).Infof("Unsupported eth protocol: %d", p.version)
 		return errBadPeer
 	}
 }
@@ -518,7 +529,7 @@ func (d *Downloader) fetchHeight61(p *peer) (uint64, error) {
 		case <-d.bodyCh:
 		case <-d.stateCh:
 		case <-d.receiptCh:
-			// Ignore eth/{62,63} packets because this is eth/61.
+			// Ignore shf/{62,63} packets because this is shf/61.
 			// These can arrive as a late delivery from a previous sync.
 		}
 	}
@@ -527,13 +538,21 @@ func (d *Downloader) fetchHeight61(p *peer) (uint64, error) {
 // findAncestor61 tries to locate the common ancestor block of the local chain and
 // a remote peers blockchain. In the general case when our node was in sync and
 // on the correct chain, checking the top N blocks should already get us a match.
-// In the rare scenario when we ended up on a long reorganization (i.e. none of
+// In the rare scenario when we ended up on a long reorganisation (i.e. none of
 // the head blocks match), we do a binary search to find the common ancestor.
-func (d *Downloader) findAncestor61(p *peer) (uint64, error) {
+func (d *Downloader) findAncestor61(p *peer, height uint64) (uint64, error) {
 	glog.V(logger.Debug).Infof("%v: looking for common ancestor", p)
 
-	// Request out head blocks to short circuit ancestor location
-	head := d.headBlock().NumberU64()
+	// Figure out the valid ancestor range to prevent rewrite attacks
+	floor, ceil := int64(-1), d.headBlock().NumberU64()
+	if ceil >= MaxForkAncestry {
+		floor = int64(ceil - MaxForkAncestry)
+	}
+	// Request the topmost blocks to short circuit binary ancestor lookup
+	head := ceil
+	if head > height {
+		head = height
+	}
 	from := int64(head) - int64(MaxHashFetch) + 1
 	if from < 0 {
 		from = 0
@@ -564,8 +583,14 @@ func (d *Downloader) findAncestor61(p *peer) (uint64, error) {
 			// Check if a common ancestor was found
 			finished = true
 			for i := len(hashes) - 1; i >= 0; i-- {
+				// Skip any headers that underflow/overflow our requested set
+				header := d.getHeader(hashes[i])
+				if header == nil || header.Number.Int64() < from || header.Number.Uint64() > head {
+					continue
+				}
+				// Otherwise check if we already know the header or not
 				if d.hasBlockAndState(hashes[i]) {
-					number, hash = uint64(from)+uint64(i), hashes[i]
+					number, hash = header.Number.Uint64(), header.Hash()
 					break
 				}
 			}
@@ -581,17 +606,24 @@ func (d *Downloader) findAncestor61(p *peer) (uint64, error) {
 		case <-d.bodyCh:
 		case <-d.stateCh:
 		case <-d.receiptCh:
-			// Ignore eth/{62,63} packets because this is eth/61.
+			// Ignore shf/{62,63} packets because this is shf/61.
 			// These can arrive as a late delivery from a previous sync.
 		}
 	}
 	// If the head fetch already found an ancestor, return
 	if !common.EmptyHash(hash) {
+		if int64(number) <= floor {
+			glog.V(logger.Warn).Infof("%v: potential rewrite attack: #%d [%x…] <= #%d limit", p, number, hash[:4], floor)
+			return 0, errInvalidAncestor
+		}
 		glog.V(logger.Debug).Infof("%v: common ancestor: #%d [%x…]", p, number, hash[:4])
 		return number, nil
 	}
 	// Ancestor not found, we need to binary search over our chain
 	start, end := uint64(0), head
+	if floor > 0 {
+		start = uint64(floor)
+	}
 	for start+1 < end {
 		// Split our chain interval in two, and request the hash to cross check
 		check := (start + end) / 2
@@ -642,11 +674,17 @@ func (d *Downloader) findAncestor61(p *peer) (uint64, error) {
 			case <-d.bodyCh:
 			case <-d.stateCh:
 			case <-d.receiptCh:
-				// Ignore eth/{62,63} packets because this is eth/61.
+				// Ignore shf/{62,63} packets because this is shf/61.
 				// These can arrive as a late delivery from a previous sync.
 			}
 		}
 	}
+	// Ensure valid ancestry and return
+	if int64(start) <= floor {
+		glog.V(logger.Warn).Infof("%v: potential rewrite attack: #%d [%x…] <= #%d limit", p, start, hash[:4], floor)
+		return 0, errInvalidAncestor
+	}
+	glog.V(logger.Debug).Infof("%v: common ancestor: #%d [%x…]", p, start, hash[:4])
 	return start, nil
 }
 
@@ -696,7 +734,7 @@ func (d *Downloader) fetchHashes61(p *peer, td *big.Int, from uint64) error {
 				}
 				// If no hashes were retrieved at all, the peer violated it's TD promise that it had a
 				// better chain compared to ours. The only exception is if it's promised blocks were
-				// already imported by other means (e.g. fecher):
+				// already imported by other means (e.g. fetcher):
 				//
 				// R <remote peer>, L <local node>: Both at block 10
 				// R: Mine block 11, and propagate it to L
@@ -750,7 +788,7 @@ func (d *Downloader) fetchHashes61(p *peer, td *big.Int, from uint64) error {
 		case <-d.bodyCh:
 		case <-d.stateCh:
 		case <-d.receiptCh:
-			// Ignore eth/{62,63} packets because this is eth/61.
+			// Ignore shf/{62,63} packets because this is shf/61.
 			// These can arrive as a late delivery from a previous sync.
 		}
 	}
@@ -879,8 +917,7 @@ func (d *Downloader) fetchBlocks61(from uint64) error {
 					// case, the internal state of the downloader and the queue is very wrong so
 					// better hard crash and note the error instead of silently accumulating into
 					// a much bigger issue.
-					panic(fmt.Sprintf("%v: fetch assignment failed, hard panic", peer))
-					d.queue.CancelBlocks(request) // noop for now
+					panic(fmt.Sprintf("%v: fetch assignment failed", peer))
 				}
 			}
 			// Make sure that we have peers available for fetching. If all peers have been tried
@@ -893,7 +930,7 @@ func (d *Downloader) fetchBlocks61(from uint64) error {
 		case <-d.bodyCh:
 		case <-d.stateCh:
 		case <-d.receiptCh:
-			// Ignore eth/{62,63} packets because this is eth/61.
+			// Ignore shf/{62,63} packets because this is shf/61.
 			// These can arrive as a late delivery from a previous sync.
 		}
 	}
@@ -938,7 +975,7 @@ func (d *Downloader) fetchHeight(p *peer) (uint64, error) {
 
 		case <-d.hashCh:
 		case <-d.blockCh:
-			// Ignore eth/61 packets because this is eth/62+.
+			// Ignore shf/61 packets because this is shf/62+.
 			// These can arrive as a late delivery from a previous sync.
 		}
 	}
@@ -947,17 +984,25 @@ func (d *Downloader) fetchHeight(p *peer) (uint64, error) {
 // findAncestor tries to locate the common ancestor link of the local chain and
 // a remote peers blockchain. In the general case when our node was in sync and
 // on the correct chain, checking the top N links should already get us a match.
-// In the rare scenario when we ended up on a long reorganization (i.e. none of
+// In the rare scenario when we ended up on a long reorganisation (i.e. none of
 // the head links match), we do a binary search to find the common ancestor.
-func (d *Downloader) findAncestor(p *peer) (uint64, error) {
+func (d *Downloader) findAncestor(p *peer, height uint64) (uint64, error) {
 	glog.V(logger.Debug).Infof("%v: looking for common ancestor", p)
 
-	// Request our head headers to short circuit ancestor location
-	head := d.headHeader().Number.Uint64()
+	// Figure out the valid ancestor range to prevent rewrite attacks
+	floor, ceil := int64(-1), d.headHeader().Number.Uint64()
 	if d.mode == FullSync {
-		head = d.headBlock().NumberU64()
+		ceil = d.headBlock().NumberU64()
 	} else if d.mode == FastSync {
-		head = d.headFastBlock().NumberU64()
+		ceil = d.headFastBlock().NumberU64()
+	}
+	if ceil >= MaxForkAncestry {
+		floor = int64(ceil - MaxForkAncestry)
+	}
+	// Request the topmost blocks to short circuit binary ancestor lookup
+	head := ceil
+	if head > height {
+		head = height
 	}
 	from := int64(head) - int64(MaxHeaderFetch) + 1
 	if from < 0 {
@@ -983,12 +1028,28 @@ func (d *Downloader) findAncestor(p *peer) (uint64, error) {
 			// Make sure the peer actually gave something valid
 			headers := packet.(*headerPack).headers
 			if len(headers) == 0 {
-				glog.V(logger.Debug).Infof("%v: empty head header set", p)
+				glog.V(logger.Warn).Infof("%v: empty head header set", p)
 				return 0, errEmptyHeaderSet
+			}
+			// Make sure the peer's reply conforms to the request
+			for i := 0; i < len(headers); i++ {
+				if number := headers[i].Number.Int64(); number != from+int64(i) {
+					glog.V(logger.Warn).Infof("%v: head header set (item %d) broke chain ordering: requested %d, got %d", p, i, from+int64(i), number)
+					return 0, errInvalidChain
+				}
+				if i > 0 && headers[i-1].Hash() != headers[i].ParentHash {
+					glog.V(logger.Warn).Infof("%v: head header set (item %d) broke chain ancestry: expected [%x], got [%x]", p, i, headers[i-1].Hash().Bytes()[:4], headers[i].ParentHash[:4])
+					return 0, errInvalidChain
+				}
 			}
 			// Check if a common ancestor was found
 			finished = true
 			for i := len(headers) - 1; i >= 0; i-- {
+				// Skip any headers that underflow/overflow our requested set
+				if headers[i].Number.Int64() < from || headers[i].Number.Uint64() > head {
+					continue
+				}
+				// Otherwise check if we already know the header or not
 				if (d.mode != LightSync && d.hasBlockAndState(headers[i].Hash())) || (d.mode == LightSync && d.hasHeader(headers[i].Hash())) {
 					number, hash = headers[i].Number.Uint64(), headers[i].Hash()
 					break
@@ -1006,17 +1067,24 @@ func (d *Downloader) findAncestor(p *peer) (uint64, error) {
 
 		case <-d.hashCh:
 		case <-d.blockCh:
-			// Ignore eth/61 packets because this is eth/62+.
+			// Ignore shf/61 packets because this is shf/62+.
 			// These can arrive as a late delivery from a previous sync.
 		}
 	}
 	// If the head fetch already found an ancestor, return
 	if !common.EmptyHash(hash) {
+		if int64(number) <= floor {
+			glog.V(logger.Warn).Infof("%v: potential rewrite attack: #%d [%x…] <= #%d limit", p, number, hash[:4], floor)
+			return 0, errInvalidAncestor
+		}
 		glog.V(logger.Debug).Infof("%v: common ancestor: #%d [%x…]", p, number, hash[:4])
 		return number, nil
 	}
 	// Ancestor not found, we need to binary search over our chain
 	start, end := uint64(0), head
+	if floor > 0 {
+		start = uint64(floor)
+	}
 	for start+1 < end {
 		// Split our chain interval in two, and request the hash to cross check
 		check := (start + end) / 2
@@ -1067,11 +1135,17 @@ func (d *Downloader) findAncestor(p *peer) (uint64, error) {
 
 			case <-d.hashCh:
 			case <-d.blockCh:
-				// Ignore eth/61 packets because this is eth/62+.
+				// Ignore shf/61 packets because this is shf/62+.
 				// These can arrive as a late delivery from a previous sync.
 			}
 		}
 	}
+	// Ensure valid ancestry and return
+	if int64(start) <= floor {
+		glog.V(logger.Warn).Infof("%v: potential rewrite attack: #%d [%x…] <= #%d limit", p, start, hash[:4], floor)
+		return 0, errInvalidAncestor
+	}
+	glog.V(logger.Debug).Infof("%v: common ancestor: #%d [%x…]", p, start, hash[:4])
 	return start, nil
 }
 
@@ -1151,7 +1225,7 @@ func (d *Downloader) fetchHeaders(p *peer, td *big.Int, from uint64) error {
 				}
 				// If no headers were retrieved at all, the peer violated it's TD promise that it had a
 				// better chain compared to ours. The only exception is if it's promised blocks were
-				// already imported by other means (e.g. fecher):
+				// already imported by other means (e.g. fetcher):
 				//
 				// R <remote peer>, L <local node>: Both at block 10
 				// R: Mine block 11, and propagate it to L
@@ -1199,6 +1273,10 @@ func (d *Downloader) fetchHeaders(p *peer, td *big.Int, from uint64) error {
 					frequency = 1
 				}
 				if n, err := d.insertHeaders(headers, frequency); err != nil {
+					// If some headers were inserted, add them too to the rollback list
+					if n > 0 {
+						rollback = append(rollback, headers[:n]...)
+					}
 					glog.V(logger.Debug).Infof("%v: invalid header #%d [%x…]: %v", p, headers[n].Number, headers[n].Hash().Bytes()[:4], err)
 					return errInvalidChain
 				}
@@ -1256,7 +1334,7 @@ func (d *Downloader) fetchHeaders(p *peer, td *big.Int, from uint64) error {
 
 		case <-d.hashCh:
 		case <-d.blockCh:
-			// Ignore eth/61 packets because this is eth/62+.
+			// Ignore shf/61 packets because this is shf/62+.
 			// These can arrive as a late delivery from a previous sync.
 		}
 	}
@@ -1492,8 +1570,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan dataPack, deliv
 					// case, the internal state of the downloader and the queue is very wrong so
 					// better hard crash and note the error instead of silently accumulating into
 					// a much bigger issue.
-					panic(fmt.Sprintf("%v: %s fetch assignment failed, hard panic", peer, strings.ToLower(kind)))
-					cancel(request) // noop for now
+					panic(fmt.Sprintf("%v: %s fetch assignment failed", peer, strings.ToLower(kind)))
 				}
 				running = true
 			}
@@ -1505,7 +1582,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan dataPack, deliv
 
 		case <-d.hashCh:
 		case <-d.blockCh:
-			// Ignore eth/61 packets because this is eth/62+.
+			// Ignore shf/61 packets because this is shf/62+.
 			// These can arrive as a late delivery from a previous sync.
 		}
 	}
@@ -1588,7 +1665,7 @@ func (d *Downloader) DeliverBlocks(id string, blocks []*types.Block) (err error)
 	return d.deliver(id, d.blockCh, &blockPack{id, blocks}, blockInMeter, blockDropMeter)
 }
 
-// DeliverHeaders injects a new batch of blck headers received from a remote
+// DeliverHeaders injects a new batch of block headers received from a remote
 // node into the download schedule.
 func (d *Downloader) DeliverHeaders(id string, headers []*types.Header) (err error) {
 	return d.deliver(id, d.headerCh, &headerPack{id, headers}, headerInMeter, headerDropMeter)

@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package secp256k1
 
@@ -24,7 +24,7 @@ import (
 	"github.com/shiftcurrency/shift/crypto/randentropy"
 )
 
-const TestCount = 10000
+const TestCount = 1000
 
 func TestPrivkeyGenerate(t *testing.T) {
 	_, seckey := GenerateKeyPair()
@@ -86,10 +86,7 @@ func TestSignAndRecover(t *testing.T) {
 func TestRandomMessagesWithSameKey(t *testing.T) {
 	pubkey, seckey := GenerateKeyPair()
 	keys := func() ([]byte, []byte) {
-		// Sign function zeroes the privkey so we need a new one in each call
-		newkey := make([]byte, len(seckey))
-		copy(newkey, seckey)
-		return pubkey, newkey
+		return pubkey, seckey
 	}
 	signAndRecoverWithRandomMessages(t, keys)
 }
@@ -209,30 +206,32 @@ func compactSigCheck(t *testing.T, sig []byte) {
 	}
 }
 
-// godep go test -v -run=XXX -bench=BenchmarkSignRandomInputEachRound
+// godep go test -v -run=XXX -bench=BenchmarkSign
 // add -benchtime=10s to benchmark longer for more accurate average
-func BenchmarkSignRandomInputEachRound(b *testing.B) {
+
+// to avoid compiler optimizing the benchmarked function call
+var err error
+
+func BenchmarkSign(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		b.StopTimer()
 		_, seckey := GenerateKeyPair()
 		msg := randentropy.GetEntropyCSPRNG(32)
 		b.StartTimer()
-		if _, err := Sign(msg, seckey); err != nil {
-			b.Fatal(err)
-		}
+		_, e := Sign(msg, seckey)
+		err = e
+		b.StopTimer()
 	}
 }
 
-//godep go test -v -run=XXX -bench=BenchmarkRecoverRandomInputEachRound
-func BenchmarkRecoverRandomInputEachRound(b *testing.B) {
+//godep go test -v -run=XXX -bench=BenchmarkECRec
+func BenchmarkRecover(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		b.StopTimer()
 		_, seckey := GenerateKeyPair()
 		msg := randentropy.GetEntropyCSPRNG(32)
 		sig, _ := Sign(msg, seckey)
 		b.StartTimer()
-		if _, err := RecoverPubkey(msg, sig); err != nil {
-			b.Fatal(err)
-		}
+		_, e := RecoverPubkey(msg, sig)
+		err = e
+		b.StopTimer()
 	}
 }

@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package common contains various helper functions.
 package common
@@ -46,22 +46,6 @@ func FromHex(s string) []byte {
 		return Hex2Bytes(s)
 	}
 	return nil
-}
-
-type Bytes []byte
-
-func (self Bytes) String() string {
-	return string(self)
-}
-
-func DeleteFromByteSlice(s [][]byte, hash []byte) [][]byte {
-	for i, h := range s {
-		if bytes.Compare(h, hash) == 0 {
-			return append(s[:i:i], s[i+1:]...)
-		}
-	}
-
-	return s
 }
 
 // Number to bytes
@@ -154,7 +138,6 @@ func Hex2Bytes(str string) []byte {
 }
 
 func Hex2BytesFixed(str string, flen int) []byte {
-
 	h, _ := hex.DecodeString(str)
 	if len(h) == flen {
 		return h
@@ -167,7 +150,6 @@ func Hex2BytesFixed(str string, flen int) []byte {
 			return hh
 		}
 	}
-
 }
 
 func StringToByteFunc(str string, cb func(str string) []byte) (ret []byte) {

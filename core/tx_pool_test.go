@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
@@ -40,7 +40,7 @@ func setupTxPool() (*TxPool, *ecdsa.PrivateKey) {
 
 	var m event.TypeMux
 	key, _ := crypto.GenerateKey()
-	newPool := NewTxPool(&m, func() (*state.StateDB, error) { return statedb, nil }, func() *big.Int { return big.NewInt(1000000) })
+	newPool := NewTxPool(testChainConfig(), &m, func() (*state.StateDB, error) { return statedb, nil }, func() *big.Int { return big.NewInt(1000000) })
 	newPool.resetState()
 	return newPool, key
 }
@@ -71,6 +71,17 @@ func TestInvalidTransactions(t *testing.T) {
 	tx = transaction(0, big.NewInt(100000), key)
 	if err := pool.Add(tx); err != ErrNonce {
 		t.Error("expected", ErrNonce)
+	}
+
+	tx = transaction(1, big.NewInt(100000), key)
+	pool.minGasPrice = big.NewInt(1000)
+	if err := pool.Add(tx); err != ErrCheap {
+		t.Error("expected", ErrCheap, "got", err)
+	}
+
+	pool.SetLocal(tx)
+	if err := pool.Add(tx); err != nil {
+		t.Error("expected", nil, "got", err)
 	}
 }
 
@@ -320,7 +331,7 @@ func TestTransactionDropping(t *testing.T) {
 
 // Tests that if a transaction is dropped from the current pending pool (e.g. out
 // of fund), all consecutive (still valid, but not executable) transactions are
-// postponed back into the future queue to prevent broadcating them.
+// postponed back into the future queue to prevent broadcasting them.
 func TestTransactionPostponing(t *testing.T) {
 	// Create a test account and fund it
 	pool, key := setupTxPool()
@@ -355,7 +366,7 @@ func TestTransactionPostponing(t *testing.T) {
 	if len(pool.queue[account]) != 0 {
 		t.Errorf("queued transaction mismatch: have %d, want %d", len(pool.queue), 0)
 	}
-	// Reduce the balance of the account, and check that transactions are reorganized
+	// Reduce the balance of the account, and check that transactions are reorganised
 	state.AddBalance(account, big.NewInt(-750))
 	pool.resetState()
 

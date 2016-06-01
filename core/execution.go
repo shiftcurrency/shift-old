@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
@@ -23,7 +23,6 @@ import (
 	"github.com/shiftcurrency/shift/core/vm"
 	"github.com/shiftcurrency/shift/crypto"
 	"github.com/shiftcurrency/shift/params"
-
 )
 
 // Call executes within the given contract
@@ -52,7 +51,7 @@ func DelegateCall(env vm.Environment, caller vm.ContractRef, addr common.Address
 func Create(env vm.Environment, caller vm.ContractRef, code []byte, gas, gasPrice, value *big.Int) (ret []byte, address common.Address, err error) {
 	ret, address, err = exec(env, caller, nil, nil, nil, code, gas, gasPrice, value)
 	// Here we get an error if we run into maximum stack depth,
-	// See: https://github.com/shiftcurrency/yellowpaper/pull/131
+	// See: https://github.com/shift/yellowpaper/pull/131
 	// and YP definitions for CREATE instruction
 	if err != nil {
 		return nil, address, err
@@ -61,7 +60,7 @@ func Create(env vm.Environment, caller vm.ContractRef, code []byte, gas, gasPric
 }
 
 func exec(env vm.Environment, caller vm.ContractRef, address, codeAddr *common.Address, input, code []byte, gas, gasPrice, value *big.Int) (ret []byte, addr common.Address, err error) {
-	evm := vm.NewVm(env)
+	evm := env.Vm()
 	// Depth check execution. Fail if we're trying to execute above the
 	// limit.
 	if env.Depth() > int(params.CallCreateDepth.Int64()) {
@@ -127,7 +126,7 @@ func exec(env vm.Environment, caller vm.ContractRef, address, codeAddr *common.A
 	// When an error was returned by the EVM or when setting the creation code
 	// above we revert to the snapshot and consume any gas remaining. Additionally
 	// when we're in homestead this also counts for code storage gas errors.
-	if err != nil && (params.IsHomestead(env.BlockNumber()) || err != vm.CodeStoreOutOfGasError) {
+	if err != nil && (env.RuleSet().IsHomestead(env.BlockNumber()) || err != vm.CodeStoreOutOfGasError) {
 		contract.UseGas(contract.Gas)
 
 		env.SetSnapshot(snapshotPreTransfer)
@@ -137,7 +136,7 @@ func exec(env vm.Environment, caller vm.ContractRef, address, codeAddr *common.A
 }
 
 func execDelegateCall(env vm.Environment, caller vm.ContractRef, originAddr, toAddr, codeAddr *common.Address, input, code []byte, gas, gasPrice, value *big.Int) (ret []byte, addr common.Address, err error) {
-	evm := vm.NewVm(env)
+	evm := env.Vm()
 	// Depth check execution. Fail if we're trying to execute above the
 	// limit.
 	if env.Depth() > int(params.CallCreateDepth.Int64()) {

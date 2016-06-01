@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
@@ -54,6 +54,12 @@ func (s *TrieEncodingSuite) TestCompactEncode(c *checker.C) {
 func (s *TrieEncodingSuite) TestCompactHexDecode(c *checker.C) {
 	exp := []byte{7, 6, 6, 5, 7, 2, 6, 2, 16}
 	res := compactHexDecode([]byte("verb"))
+	c.Assert(res, checker.DeepEquals, exp)
+}
+
+func (s *TrieEncodingSuite) TestCompactHexEncode(c *checker.C) {
+	exp := []byte("verb")
+	res := compactHexEncode([]byte{7, 6, 6, 5, 7, 2, 6, 2, 16})
 	c.Assert(res, checker.DeepEquals, exp)
 }
 

@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package compiler
 
@@ -157,7 +157,7 @@ func (sol *Solidity) Compile(source string) (map[string]*Contract, error) {
 		return nil, fmt.Errorf("solc: %v\n%s", err, string(stderr.Bytes()))
 	}
 	// Sanity check that something was actually built
-	matches, _ := filepath.Glob(wd + "/*\\.bin*")
+	matches, _ := filepath.Glob(filepath.Join(wd, "*.bin*"))
 	if len(matches) < 1 {
 		return nil, fmt.Errorf("solc: no build results found")
 	}
@@ -220,7 +220,7 @@ func SaveInfo(info *ContractInfo, filename string) (contenthash common.Hash, err
 	if err != nil {
 		return
 	}
-	contenthash = common.BytesToHash(crypto.Sha3(infojson))
+	contenthash = common.BytesToHash(crypto.Keccak256(infojson))
 	err = ioutil.WriteFile(filename, infojson, 0600)
 	return
 }

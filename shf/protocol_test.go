@@ -1,23 +1,22 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package shf
 
 import (
-	"crypto/rand"
 	"fmt"
 	"sync"
 	"testing"
@@ -35,7 +34,7 @@ func init() {
 	// glog.SetV(6)
 }
 
-var testAccount = crypto.NewKey(rand.Reader)
+var testAccount, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 
 // Tests that handshake failures are detected and reported correctly.
 func TestStatusMsgErrors61(t *testing.T) { testStatusMsgErrors(t, 61) }
@@ -79,7 +78,7 @@ func testStatusMsgErrors(t *testing.T, protocol int) {
 		select {
 		case err := <-errc:
 			if err == nil {
-				t.Errorf("test %d: protocol returned nil error, want %q", test.wantError)
+				t.Errorf("test %d: protocol returned nil error, want %q", i, test.wantError)
 			} else if err.Error() != test.wantError.Error() {
 				t.Errorf("test %d: wrong error: got %q, want %q", i, err, test.wantError)
 			}

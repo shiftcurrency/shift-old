@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package vm
 
@@ -28,9 +28,10 @@ type ContractRef interface {
 	Address() common.Address
 	Value() *big.Int
 	SetCode([]byte)
+	ForEachStorage(callback func(key, value common.Hash) bool)
 }
 
-// Contract represents an ethereum contract in the state database. It contains
+// Contract represents an shift contract in the state database. It contains
 // the the contract code, calling arguments. Contract implements ContractRef
 type Contract struct {
 	// CallerAddress is the result of the caller which initialised this
@@ -151,4 +152,10 @@ func (self *Contract) SetCode(code []byte) {
 func (self *Contract) SetCallCode(addr *common.Address, code []byte) {
 	self.Code = code
 	self.CodeAddr = addr
+}
+
+// EachStorage iterates the contract's storage and calls a method for every key
+// value pair.
+func (self *Contract) ForEachStorage(cb func(key, value common.Hash) bool) {
+	self.caller.ForEachStorage(cb)
 }

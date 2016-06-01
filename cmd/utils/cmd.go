@@ -1,47 +1,41 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of shift.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of go-ethereum.
 //
-// shift is free software: you can redistribute it and/or modify
+// go-ethereum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// shift is distributed in the hope that it will be useful,
+// go-ethereum is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with shift. If not, see <http://www.gnu.org/licenses/>.
+// along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
 
-// Package utils contains internal helper functions for shift commands.
+// Package utils contains internal helper functions for go-ethereum commands.
 package utils
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
 	"os/signal"
 	"regexp"
-	"strings"
 
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core"
 	"github.com/shiftcurrency/shift/core/types"
-	"github.com/shiftcurrency/shift/shf"
+	"github.com/shiftcurrency/shift/internal/debug"
 	"github.com/shiftcurrency/shift/logger"
 	"github.com/shiftcurrency/shift/logger/glog"
+	"github.com/shiftcurrency/shift/node"
 	"github.com/shiftcurrency/shift/rlp"
-	"github.com/peterh/liner"
 )
 
 const (
 	importBatchSize = 2500
-)
-
-var (
-	interruptCallbacks = []func(os.Signal){}
 )
 
 func openLogFile(Datadir string, filename string) *os.File {
@@ -51,49 +45,6 @@ func openLogFile(Datadir string, filename string) *os.File {
 		panic(fmt.Sprintf("error opening log file '%s': %v", filename, err))
 	}
 	return file
-}
-
-func PromptConfirm(prompt string) (bool, error) {
-	var (
-		input string
-		err   error
-	)
-	prompt = prompt + " [y/N] "
-
-	// if liner.TerminalSupported() {
-	// 	fmt.Println("term")
-	// 	lr := liner.NewLiner()
-	// 	defer lr.Close()
-	// 	input, err = lr.Prompt(prompt)
-	// } else {
-	fmt.Print(prompt)
-	input, err = bufio.NewReader(os.Stdin).ReadString('\n')
-	fmt.Println()
-	// }
-
-	if len(input) > 0 && strings.ToUpper(input[:1]) == "Y" {
-		return true, nil
-	} else {
-		return false, nil
-	}
-
-	return false, err
-}
-
-func PromptPassword(prompt string, warnTerm bool) (string, error) {
-	if liner.TerminalSupported() {
-		lr := liner.NewLiner()
-		defer lr.Close()
-		return lr.PasswordPrompt(prompt)
-	}
-	if warnTerm {
-		fmt.Println("!! Unsupported terminal, password will be echoed.")
-	}
-	fmt.Print(prompt)
-	input, err := bufio.NewReader(os.Stdin).ReadString('\n')
-    input = strings.TrimRight(input, "\r\n")
-	fmt.Println()
-	return input, err
 }
 
 // Fatalf formats a message to standard error and exits the program.
@@ -111,10 +62,9 @@ func Fatalf(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func StartShift(shift *shf.Shift) {
-	glog.V(logger.Info).Infoln("Starting", shift.Name())
-	if err := shift.Start(); err != nil {
-		Fatalf("Error starting Shift: %v", err)
+func StartNode(stack *node.Node) {
+	if err := stack.Start(); err != nil {
+		Fatalf("Error starting protocol stack: %v", err)
 	}
 	go func() {
 		sigc := make(chan os.Signal, 1)
@@ -122,17 +72,15 @@ func StartShift(shift *shf.Shift) {
 		defer signal.Stop(sigc)
 		<-sigc
 		glog.V(logger.Info).Infoln("Got interrupt, shutting down...")
-		go shift.Stop()
-		logger.Flush()
+		go stack.Stop()
 		for i := 10; i > 0; i-- {
 			<-sigc
 			if i > 1 {
-				glog.V(logger.Info).Infoln("Already shutting down, please be patient.")
-				glog.V(logger.Info).Infoln("Interrupt", i-1, "more times to induce panic.")
+				glog.V(logger.Info).Infof("Already shutting down, interrupt %d more times for panic.", i-1)
 			}
 		}
-		glog.V(logger.Error).Infof("Force quitting: this might not end so well.")
-		panic("boom")
+		debug.Exit() // ensure trace and CPU profile data is flushed.
+		debug.LoudPanic("boom")
 	}()
 }
 

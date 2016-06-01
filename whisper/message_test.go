@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package whisper
 
@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/shiftcurrency/shift/crypto"
+	"github.com/shiftcurrency/shift/crypto/secp256k1"
 )
 
 // Tests whether a message can be wrapped without any identity or encryption.
@@ -72,8 +73,8 @@ func TestMessageCleartextSignRecover(t *testing.T) {
 	if pubKey == nil {
 		t.Fatalf("failed to recover public key")
 	}
-	p1 := elliptic.Marshal(crypto.S256(), key.PublicKey.X, key.PublicKey.Y)
-	p2 := elliptic.Marshal(crypto.S256(), pubKey.X, pubKey.Y)
+	p1 := elliptic.Marshal(secp256k1.S256(), key.PublicKey.X, key.PublicKey.Y)
+	p2 := elliptic.Marshal(secp256k1.S256(), pubKey.X, pubKey.Y)
 	if !bytes.Equal(p1, p2) {
 		t.Fatalf("public key mismatch: have 0x%x, want 0x%x", p2, p1)
 	}
@@ -107,7 +108,7 @@ func TestMessageAnonymousEncryptDecrypt(t *testing.T) {
 		t.Fatalf("failed to open encrypted message: %v", err)
 	}
 	if !bytes.Equal(out.Payload, payload) {
-		t.Error("payload mismatch: have 0x%x, want 0x%x", out.Payload, payload)
+		t.Errorf("payload mismatch: have 0x%x, want 0x%x", out.Payload, payload)
 	}
 }
 
@@ -143,15 +144,15 @@ func TestMessageFullCrypto(t *testing.T) {
 		t.Fatalf("failed to open encrypted message: %v", err)
 	}
 	if !bytes.Equal(out.Payload, payload) {
-		t.Error("payload mismatch: have 0x%x, want 0x%x", out.Payload, payload)
+		t.Errorf("payload mismatch: have 0x%x, want 0x%x", out.Payload, payload)
 	}
 
 	pubKey := out.Recover()
 	if pubKey == nil {
 		t.Fatalf("failed to recover public key")
 	}
-	p1 := elliptic.Marshal(crypto.S256(), fromKey.PublicKey.X, fromKey.PublicKey.Y)
-	p2 := elliptic.Marshal(crypto.S256(), pubKey.X, pubKey.Y)
+	p1 := elliptic.Marshal(secp256k1.S256(), fromKey.PublicKey.X, fromKey.PublicKey.Y)
+	p2 := elliptic.Marshal(secp256k1.S256(), pubKey.X, pubKey.Y)
 	if !bytes.Equal(p1, p2) {
 		t.Fatalf("public key mismatch: have 0x%x, want 0x%x", p2, p1)
 	}

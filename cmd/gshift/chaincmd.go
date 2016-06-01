@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of shift.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of go-ethereum.
 //
-// shift is free software: you can redistribute it and/or modify
+// go-ethereum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// shift is distributed in the hope that it will be useful,
+// go-ethereum is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with shift. If not, see <http://www.gnu.org/licenses/>.
+// along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
 
 package main
 
@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/codegangsta/cli"
-
 	"github.com/shiftcurrency/shift/cmd/utils"
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core"
@@ -117,7 +116,7 @@ func exportChain(ctx *cli.Context) {
 }
 
 func removeDB(ctx *cli.Context) {
-	confirm, err := utils.PromptConfirm("Remove local database?")
+	confirm, err := utils.Stdin.ConfirmPrompt("Remove local database?")
 	if err != nil {
 		utils.Fatalf("%v", err)
 	}
@@ -138,8 +137,7 @@ func upgradeDB(ctx *cli.Context) {
 	glog.Infoln("Upgrading blockchain database")
 
 	chain, chainDb := utils.MakeChain(ctx)
-	v, _ := chainDb.Get([]byte("BlockchainVersion"))
-	bcVersion := int(common.NewValue(v).Uint())
+	bcVersion := core.GetBlockChainVersion(chainDb)
 	if bcVersion == 0 {
 		bcVersion = core.BlockChainVersion
 	}
@@ -155,7 +153,7 @@ func upgradeDB(ctx *cli.Context) {
 
 	// Import the chain file.
 	chain, chainDb = utils.MakeChain(ctx)
-	chainDb.Put([]byte("BlockchainVersion"), common.NewValue(core.BlockChainVersion).Bytes())
+	core.WriteBlockChainVersion(chainDb, core.BlockChainVersion)
 	err := utils.ImportChain(chain, exportFile)
 	chainDb.Close()
 	if err != nil {

@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package shf
 
@@ -36,7 +36,7 @@ const (
 // Official short name of the protocol used during capability negotiation.
 var ProtocolName = "shift"
 
-// Supported versions of the eth protocol (first is primary).
+// Supported versions of the shf protocol (first is primary).
 var ProtocolVersions = []uint{eth63, eth62, eth61}
 
 // Number of implemented message corresponding to different protocol versions.
@@ -47,7 +47,7 @@ const (
 	ProtocolMaxMsgSize = 10 * 1024 * 1024 // Maximum cap on the size of a protocol message
 )
 
-// shift protocol message codes
+// shf protocol message codes
 const (
 	// Protocol messages belonging to eth/61
 	StatusMsg                   = 0x00
@@ -60,17 +60,17 @@ const (
 	NewBlockMsg                 = 0x07
 	GetBlockHashesFromNumberMsg = 0x08
 
-	// Protocol messages belonging to eth/62 (new protocol from scratch)
-	// StatusMsg          = 0x00 (uncomment after eth/61 deprecation)
-	// NewBlockHashesMsg  = 0x01 (uncomment after eth/61 deprecation)
-	// TxMsg              = 0x02 (uncomment after eth/61 deprecation)
+	// Protocol messages belonging to shf/62 (new protocol from scratch)
+	// StatusMsg          = 0x00 (uncomment after shf/61 deprecation)
+	// NewBlockHashesMsg  = 0x01 (uncomment after shf/61 deprecation)
+	// TxMsg              = 0x02 (uncomment after shf/61 deprecation)
 	GetBlockHeadersMsg = 0x03
 	BlockHeadersMsg    = 0x04
 	GetBlockBodiesMsg  = 0x05
 	BlockBodiesMsg     = 0x06
-	// 	NewBlockMsg       = 0x07 (uncomment after eth/61 deprecation)
+	// 	NewBlockMsg       = 0x07 (uncomment after shf/61 deprecation)
 
-	// Protocol messages belonging to eth/63
+	// Protocol messages belonging to shf/63
 	GetNodeDataMsg = 0x0d
 	NodeDataMsg    = 0x0e
 	GetReceiptsMsg = 0x0f

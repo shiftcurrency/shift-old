@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Contains the active peer-set of the downloader, maintaining both failures
 // as well as reputation metrics to prioritize the block retrievals.
@@ -35,12 +35,12 @@ const (
 	throughputImpact = 0.1  // The impact a single measurement has on a peer's final throughput value.
 )
 
-// Hash and block fetchers belonging to eth/61 and below
+// Hash and block fetchers belonging to shf/61 and below
 type relativeHashFetcherFn func(common.Hash) error
 type absoluteHashFetcherFn func(uint64, int) error
 type blockFetcherFn func([]common.Hash) error
 
-// Block header and body fetchers belonging to eth/62 and above
+// Block header and body fetchers belonging to shf/62 and above
 type relativeHeaderFetcherFn func(common.Hash, int, int, bool) error
 type absoluteHeaderFetcherFn func(uint64, int, int, bool) error
 type blockBodyFetcherFn func([]common.Hash) error
@@ -72,16 +72,16 @@ type peer struct {
 
 	lacking map[common.Hash]struct{} // Set of hashes not to request (didn't have previously)
 
-	getRelHashes relativeHashFetcherFn // [eth/61] Method to retrieve a batch of hashes from an origin hash
-	getAbsHashes absoluteHashFetcherFn // [eth/61] Method to retrieve a batch of hashes from an absolute position
-	getBlocks    blockFetcherFn        // [eth/61] Method to retrieve a batch of blocks
+	getRelHashes relativeHashFetcherFn // [shf/61] Method to retrieve a batch of hashes from an origin hash
+	getAbsHashes absoluteHashFetcherFn // [shf/61] Method to retrieve a batch of hashes from an absolute position
+	getBlocks    blockFetcherFn        // [shf/61] Method to retrieve a batch of blocks
 
-	getRelHeaders  relativeHeaderFetcherFn // [eth/62] Method to retrieve a batch of headers from an origin hash
-	getAbsHeaders  absoluteHeaderFetcherFn // [eth/62] Method to retrieve a batch of headers from an absolute position
-	getBlockBodies blockBodyFetcherFn      // [eth/62] Method to retrieve a batch of block bodies
+	getRelHeaders  relativeHeaderFetcherFn // [shf/62] Method to retrieve a batch of headers from an origin hash
+	getAbsHeaders  absoluteHeaderFetcherFn // [shf/62] Method to retrieve a batch of headers from an absolute position
+	getBlockBodies blockBodyFetcherFn      // [shf/62] Method to retrieve a batch of block bodies
 
-	getReceipts receiptFetcherFn // [eth/63] Method to retrieve a batch of block transaction receipts
-	getNodeData stateFetcherFn   // [eth/63] Method to retrieve a batch of state trie data
+	getReceipts receiptFetcherFn // [shf/63] Method to retrieve a batch of block transaction receipts
+	getNodeData stateFetcherFn   // [shf/63] Method to retrieve a batch of state trie data
 
 	version int // Eth protocol version number to switch strategies
 	lock    sync.RWMutex
@@ -90,7 +90,7 @@ type peer struct {
 // newPeer create a new downloader peer, with specific hash and block retrieval
 // mechanisms.
 func newPeer(id string, version int, head common.Hash,
-	getRelHashes relativeHashFetcherFn, getAbsHashes absoluteHashFetcherFn, getBlocks blockFetcherFn, // eth/61 callbacks, remove when upgrading
+	getRelHashes relativeHashFetcherFn, getAbsHashes absoluteHashFetcherFn, getBlocks blockFetcherFn, // shf/61 callbacks, remove when upgrading
 	getRelHeaders relativeHeaderFetcherFn, getAbsHeaders absoluteHeaderFetcherFn, getBlockBodies blockBodyFetcherFn,
 	getReceipts receiptFetcherFn, getNodeData stateFetcherFn) *peer {
 	return &peer{
@@ -133,7 +133,7 @@ func (p *peer) Reset() {
 func (p *peer) Fetch61(request *fetchRequest) error {
 	// Sanity check the protocol version
 	if p.version != 61 {
-		panic(fmt.Sprintf("block fetch [eth/61] requested on eth/%d", p.version))
+		panic(fmt.Sprintf("block fetch [shf/61] requested on shf/%d", p.version))
 	}
 	// Short circuit if the peer is already fetching
 	if !atomic.CompareAndSwapInt32(&p.blockIdle, 0, 1) {
@@ -155,7 +155,7 @@ func (p *peer) Fetch61(request *fetchRequest) error {
 func (p *peer) FetchBodies(request *fetchRequest) error {
 	// Sanity check the protocol version
 	if p.version < 62 {
-		panic(fmt.Sprintf("body fetch [eth/62+] requested on eth/%d", p.version))
+		panic(fmt.Sprintf("body fetch [shf/62+] requested on shf/%d", p.version))
 	}
 	// Short circuit if the peer is already fetching
 	if !atomic.CompareAndSwapInt32(&p.blockIdle, 0, 1) {
@@ -177,7 +177,7 @@ func (p *peer) FetchBodies(request *fetchRequest) error {
 func (p *peer) FetchReceipts(request *fetchRequest) error {
 	// Sanity check the protocol version
 	if p.version < 63 {
-		panic(fmt.Sprintf("body fetch [eth/63+] requested on eth/%d", p.version))
+		panic(fmt.Sprintf("body fetch [shf/63+] requested on shf/%d", p.version))
 	}
 	// Short circuit if the peer is already fetching
 	if !atomic.CompareAndSwapInt32(&p.receiptIdle, 0, 1) {
@@ -199,7 +199,7 @@ func (p *peer) FetchReceipts(request *fetchRequest) error {
 func (p *peer) FetchNodeData(request *fetchRequest) error {
 	// Sanity check the protocol version
 	if p.version < 63 {
-		panic(fmt.Sprintf("node data fetch [eth/63+] requested on eth/%d", p.version))
+		panic(fmt.Sprintf("node data fetch [shf/63+] requested on shf/%d", p.version))
 	}
 	// Short circuit if the peer is already fetching
 	if !atomic.CompareAndSwapInt32(&p.stateIdle, 0, 1) {
@@ -251,8 +251,8 @@ func (p *peer) setIdle(started time.Time, delivered int, throughput *float64, id
 	// Irrelevant of the scaling, make sure the peer ends up idle
 	defer atomic.StoreInt32(idle, 0)
 
-	p.lock.RLock()
-	defer p.lock.RUnlock()
+	p.lock.Lock()
+	defer p.lock.Unlock()
 
 	// If nothing was delivered (hard timeout / unavailable data), reduce throughput to minimum
 	if delivered == 0 {
@@ -492,7 +492,6 @@ func (ps *peerSet) idlePeers(minProtocol, maxProtocol int, idleCheck func(*peer)
 
 	idle, total := make([]*peer, 0, len(ps.peers)), 0
 	for _, p := range ps.peers {
-
 		if p.version >= minProtocol && p.version <= maxProtocol {
 			if idleCheck(p) {
 				idle = append(idle, p)

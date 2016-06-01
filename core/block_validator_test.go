@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
@@ -30,12 +30,16 @@ import (
 	"github.com/shiftcurrency/shift/pow/ezp"
 )
 
+func testChainConfig() *ChainConfig {
+	return &ChainConfig{HomesteadBlock: big.NewInt(0)}
+}
+
 func proc() (Validator, *BlockChain) {
 	db, _ := ethdb.NewMemDatabase()
 	var mux event.TypeMux
 
-	WriteTestNetGenesisBlock(db, 0)
-	blockchain, err := NewBlockChain(db, thePow(), &mux)
+	WriteTestNetGenesisBlock(db)
+	blockchain, err := NewBlockChain(db, testChainConfig(), thePow(), &mux)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -49,14 +53,14 @@ func TestNumber(t *testing.T) {
 	statedb, _ := state.New(chain.Genesis().Root(), chain.chainDb)
 	header := makeHeader(chain.Genesis(), statedb)
 	header.Number = big.NewInt(3)
-	err := ValidateHeader(pow, header, chain.Genesis().Header(), false, false)
+	cfg := testChainConfig()
+	err := ValidateHeader(cfg, pow, header, chain.Genesis().Header(), false, false)
 	if err != BlockNumberErr {
 		t.Errorf("expected block number error, got %q", err)
 	}
 
 	header = makeHeader(chain.Genesis(), statedb)
-
-	err = ValidateHeader(pow, header, chain.Genesis().Header(), false, false)
+	err = ValidateHeader(cfg, pow, header, chain.Genesis().Header(), false, false)
 	if err == BlockNumberErr {
 		t.Errorf("didn't expect block number error")
 	}

@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of shift.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of go-ethereum.
 //
-// shift is free software: you can redistribute it and/or modify
+// go-ethereum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// shift is distributed in the hope that it will be useful,
+// go-ethereum is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with shift. If not, see <http://www.gnu.org/licenses/>.
+// along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
 
 package main
 
@@ -32,119 +32,112 @@ import (
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/common/compiler"
 	"github.com/shiftcurrency/shift/common/httpclient"
-	"github.com/shiftcurrency/shift/common/natspec"
-	"github.com/shiftcurrency/shift/common/registrar"
 	"github.com/shiftcurrency/shift/core"
 	"github.com/shiftcurrency/shift/crypto"
 	"github.com/shiftcurrency/shift/shf"
 	"github.com/shiftcurrency/shift/ethdb"
-	"github.com/shiftcurrency/shift/rpc/codec"
-	"github.com/shiftcurrency/shift/rpc/comms"
-
+	"github.com/shiftcurrency/shift/node"
 )
 
 const (
 	testSolcPath = ""
 	solcVersion  = "0.9.23"
-
-	testKey     = "e6fab74a43941f82d89cb7faa408e227cdad3153c4720e540e855c19b15e6674"
-	testAddress = "0x8605cdbbdb6d264aa742e77020dcbc58fcdce182"
-	testBalance = "10000000000000000000"
+	testAddress  = "0x8605cdbbdb6d264aa742e77020dcbc58fcdce182"
+	testBalance  = "10000000000000000000"
 	// of empty string
 	testHash = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
 )
 
 var (
-	versionRE   = regexp.MustCompile(strconv.Quote(`"compilerVersion":"` + solcVersion + `"`))
-	testNodeKey = crypto.ToECDSA(common.Hex2Bytes("4b50fa71f5c3eeb8fdc452224b2395af2fcc3d125e06c32c82e048c0559db03f"))
-	testGenesis = `{"` + testAddress[2:] + `": {"balance": "` + testBalance + `"}}`
+	versionRE      = regexp.MustCompile(strconv.Quote(`"compilerVersion":"` + solcVersion + `"`))
+	testNodeKey, _ = crypto.HexToECDSA("4b50fa71f5c3eeb8fdc452224b2395af2fcc3d125e06c32c82e048c0559db03f")
+	testAccount, _ = crypto.HexToECDSA("e6fab74a43941f82d89cb7faa408e227cdad3153c4720e540e855c19b15e6674")
+	testGenesis    = `{"` + testAddress[2:] + `": {"balance": "` + testBalance + `"}}`
 )
 
-type testjethre struct {
+type testjshfre struct {
 	*jsre
 	lastConfirm string
 	client      *httpclient.HTTPClient
 }
 
-func (self *testjethre) UnlockAccount(acc []byte) bool {
-	err := self.shift.AccountManager().Unlock(common.BytesToAddress(acc), "")
-	if err != nil {
-		panic("unable to unlock")
-	}
-	return true
-}
+// Temporary disabled while natspec hasn't been migrated
+//func (self *testjshfre) ConfirmTransaction(tx string) bool {
+//	var shift *shf.Shift
+//	self.stack.Service(&shift)
+//
+//	if shift.NatSpec {
+//		self.lastConfirm = natspec.GetNotice(self.xeth, tx, self.client)
+//	}
+//	return true
+//}
 
-func (self *testjethre) ConfirmTransaction(tx string) bool {
-	if self.shift.NatSpec {
-		self.lastConfirm = natspec.GetNotice(self.xeth, tx, self.client)
-	}
-	return true
-}
-
-func testJEthRE(t *testing.T) (string, *testjethre, *shf.Shift) {
+func testJShfRE(t *testing.T) (string, *testjshfre, *node.Node) {
 	return testREPL(t, nil)
 }
 
-func testREPL(t *testing.T, config func(*shf.Config)) (string, *testjethre, *shf.Shift) {
+func testREPL(t *testing.T, config func(*shf.Config)) (string, *testjshfre, *node.Node) {
 	tmp, err := ioutil.TempDir("", "gshift-test")
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	// Create a networkless protocol stack
+	stack, err := node.New(&node.Config{DataDir: tmp, PrivateKey: testNodeKey, Name: "test", NoDiscovery: true})
+	if err != nil {
+		t.Fatalf("failed to create node: %v", err)
+	}
+	// Initialize and register the Shift protocol
+	accman := accounts.NewPlaintextManager(filepath.Join(tmp, "keystore"))
 	db, _ := ethdb.NewMemDatabase()
-
-	core.WriteGenesisBlockForTesting(db, core.GenesisAccount{common.HexToAddress(testAddress), common.String2Big(testBalance)})
-	ks := crypto.NewKeyStorePlain(filepath.Join(tmp, "keystore"))
-	am := accounts.NewManager(ks)
-	conf := &shf.Config{
-		NodeKey:        testNodeKey,
-		DataDir:        tmp,
-		AccountManager: am,
-		MaxPeers:       0,
-		Name:           "test",
-		DocRoot:        "/",
-		SolcPath:       testSolcPath,
-		PowTest:        true,
-		NewDB:          func(path string) (ethdb.Database, error) { return db, nil },
+	core.WriteGenesisBlockForTesting(db, core.GenesisAccount{
+		Address: common.HexToAddress(testAddress),
+		Balance: common.String2Big(testBalance),
+	})
+	shfConf := &shf.Config{
+		ChainConfig:      &core.ChainConfig{HomesteadBlock: new(big.Int)},
+		TestGenesisState: db,
+		AccountManager:   accman,
+		DocRoot:          "/",
+		SolcPath:         testSolcPath,
+		PowTest:          true,
 	}
 	if config != nil {
-		config(conf)
+		config(shfConf)
 	}
-	shift, err := shf.New(conf)
-	if err != nil {
-		t.Fatal("%v", err)
+	if err := stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
+		return shf.New(ctx, shfConf)
+	}); err != nil {
+		t.Fatalf("failed to register shift protocol: %v", err)
 	}
-
-	keyb, err := crypto.HexToECDSA(testKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	key := crypto.NewKeyFromECDSA(keyb)
-	err = ks.StoreKey(key, "")
+	// Initialize all the keys for testing
+	a, err := accman.ImportECDSA(testAccount, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	err = am.Unlock(key.Address, "")
-	if err != nil {
+	if err := accman.Unlock(a, ""); err != nil {
 		t.Fatal(err)
 	}
+	// Start the node and assemble the REPL tester
+	if err := stack.Start(); err != nil {
+		t.Fatalf("failed to start test stack: %v", err)
+	}
+	var shift *shf.Shift
+	stack.Service(&shift)
 
-	assetPath := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "shift", "shift", "cmd", "mist", "assets", "ext")
-	client := comms.NewInProcClient(codec.JSON)
-
-	tf := &testjethre{client: shift.HTTPClient()}
-	repl := newJSRE(shift, assetPath, "", client, false, tf)
+	assetPath := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "shiftcurrency", "shift", "cmd", "mist", "assets", "ext")
+	client, err := stack.Attach()
+	if err != nil {
+		t.Fatalf("failed to attach to node: %v", err)
+	}
+	tf := &testjshfre{client: shift.HTTPClient()}
+	repl := newJSRE(stack, assetPath, "", client, false)
 	tf.jsre = repl
-	return tmp, tf, shift
+	return tmp, tf, stack
 }
 
 func TestNodeInfo(t *testing.T) {
 	t.Skip("broken after p2p update")
-	tmp, repl, shift := testJEthRE(t)
-	if err := shift.Start(); err != nil {
-		t.Fatalf("error starting shift: %v", err)
-	}
+	tmp, repl, shift := testJShfRE(t)
 	defer shift.Stop()
 	defer os.RemoveAll(tmp)
 
@@ -153,16 +146,13 @@ func TestNodeInfo(t *testing.T) {
 }
 
 func TestAccounts(t *testing.T) {
-	tmp, repl, shift := testJEthRE(t)
-	if err := shift.Start(); err != nil {
-		t.Fatalf("error starting shift: %v", err)
-	}
-	defer shift.Stop()
+	tmp, repl, node := testJShfRE(t)
+	defer node.Stop()
 	defer os.RemoveAll(tmp)
 
 	checkEvalJSON(t, repl, `shf.accounts`, `["`+testAddress+`"]`)
-	checkEvalJSON(t, repl, `shf.shiftbase`, `"`+testAddress+`"`)
-	val, err := repl.re.Run(`personal.newAccount("password")`)
+	checkEvalJSON(t, repl, `shf.coinbase`, `"`+testAddress+`"`)
+	val, err := repl.re.Run(`jshf.newAccount("password")`)
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
 	}
@@ -176,11 +166,8 @@ func TestAccounts(t *testing.T) {
 }
 
 func TestBlockChain(t *testing.T) {
-	tmp, repl, shift := testJEthRE(t)
-	if err := shift.Start(); err != nil {
-		t.Fatalf("error starting shift: %v", err)
-	}
-	defer shift.Stop()
+	tmp, repl, node := testJShfRE(t)
+	defer node.Stop()
 	defer os.RemoveAll(tmp)
 	// get current block dump before export/import.
 	val, err := repl.re.Run("JSON.stringify(debug.dumpBlock(shf.blockNumber))")
@@ -198,6 +185,8 @@ func TestBlockChain(t *testing.T) {
 	tmpfile := filepath.Join(extmp, "export.chain")
 	tmpfileq := strconv.Quote(tmpfile)
 
+	var shift *shf.Shift
+	node.Service(&shift)
 	shift.BlockChain().Reset()
 
 	checkEvalJSON(t, repl, `admin.exportChain(`+tmpfileq+`)`, `true`)
@@ -211,22 +200,15 @@ func TestBlockChain(t *testing.T) {
 }
 
 func TestMining(t *testing.T) {
-	tmp, repl, shift := testJEthRE(t)
-	if err := shift.Start(); err != nil {
-		t.Fatalf("error starting shift: %v", err)
-	}
-	defer shift.Stop()
+	tmp, repl, node := testJShfRE(t)
+	defer node.Stop()
 	defer os.RemoveAll(tmp)
 	checkEvalJSON(t, repl, `shf.mining`, `false`)
 }
 
 func TestRPC(t *testing.T) {
-	tmp, repl, shift := testJEthRE(t)
-	if err := shift.Start(); err != nil {
-		t.Errorf("error starting shift: %v", err)
-		return
-	}
-	defer shift.Stop()
+	tmp, repl, node := testJShfRE(t)
+	defer node.Stop()
 	defer os.RemoveAll(tmp)
 
 	checkEvalJSON(t, repl, `admin.startRPC("127.0.0.1", 5004, "*", "web3,shf,net")`, `true`)
@@ -236,12 +218,8 @@ func TestCheckTestAccountBalance(t *testing.T) {
 	t.Skip() // i don't think it tests the correct behaviour here. it's actually testing
 	// internals which shouldn't be tested. This now fails because of a change in the core
 	// and i have no means to fix this, sorry - @obscuren
-	tmp, repl, shift := testJEthRE(t)
-	if err := shift.Start(); err != nil {
-		t.Errorf("error starting shift: %v", err)
-		return
-	}
-	defer shift.Stop()
+	tmp, repl, node := testJShfRE(t)
+	defer node.Stop()
 	defer os.RemoveAll(tmp)
 
 	repl.re.Run(`primary = "` + testAddress + `"`)
@@ -249,12 +227,8 @@ func TestCheckTestAccountBalance(t *testing.T) {
 }
 
 func TestSignature(t *testing.T) {
-	tmp, repl, shift := testJEthRE(t)
-	if err := shift.Start(); err != nil {
-		t.Errorf("error starting shift: %v", err)
-		return
-	}
-	defer shift.Stop()
+	tmp, repl, node := testJShfRE(t)
+	defer node.Stop()
 	defer os.RemoveAll(tmp)
 
 	val, err := repl.re.Run(`shf.sign("` + testAddress + `", "` + testHash + `")`)
@@ -276,9 +250,9 @@ func TestSignature(t *testing.T) {
 
 func TestContract(t *testing.T) {
 	t.Skip("contract testing is implemented with mining in ethash test mode. This takes about 7seconds to run. Unskip and run on demand")
-	shiftbase := common.HexToAddress(testAddress)
+	coinbase := common.HexToAddress(testAddress)
 	tmp, repl, shift := testREPL(t, func(conf *shf.Config) {
-		conf.Shiftbase = shiftbase
+		conf.Shiftbase = coinbase
 		conf.PowTest = true
 	})
 	if err := shift.Start(); err != nil {
@@ -288,19 +262,20 @@ func TestContract(t *testing.T) {
 	defer shift.Stop()
 	defer os.RemoveAll(tmp)
 
-	reg := registrar.New(repl.xeth)
-	_, err := reg.SetGlobalRegistrar("", shiftbase)
-	if err != nil {
-		t.Errorf("error setting HashReg: %v", err)
-	}
-	_, err = reg.SetHashReg("", shiftbase)
-	if err != nil {
-		t.Errorf("error setting HashReg: %v", err)
-	}
-	_, err = reg.SetUrlHint("", shiftbase)
-	if err != nil {
-		t.Errorf("error setting HashReg: %v", err)
-	}
+	// Temporary disabled while registrar isn't migrated
+	//reg := registrar.New(repl.xeth)
+	//_, err := reg.SetGlobalRegistrar("", coinbase)
+	//if err != nil {
+	//	t.Errorf("error setting HashReg: %v", err)
+	//}
+	//_, err = reg.SetHashReg("", coinbase)
+	//if err != nil {
+	//	t.Errorf("error setting HashReg: %v", err)
+	//}
+	//_, err = reg.SetUrlHint("", coinbase)
+	//if err != nil {
+	//	t.Errorf("error setting HashReg: %v", err)
+	//}
 	/* TODO:
 	* lookup receipt and contract addresses by tx hash
 	* name registration for HashReg and UrlHint addresses
@@ -406,7 +381,7 @@ multiply7 = Multiply7.at(contractaddress);
 	if sol != nil && solcVersion != sol.Version() {
 		modContractInfo := versionRE.ReplaceAll(contractInfo, []byte(`"compilerVersion":"`+sol.Version()+`"`))
 		fmt.Printf("modified contractinfo:\n%s\n", modContractInfo)
-		contentHash = `"` + common.ToHex(crypto.Sha3([]byte(modContractInfo))) + `"`
+		contentHash = `"` + common.ToHex(crypto.Keccak256([]byte(modContractInfo))) + `"`
 	}
 	if checkEvalJSON(t, repl, `filename = "/tmp/info.json"`, `"/tmp/info.json"`) != nil {
 		return
@@ -444,12 +419,15 @@ multiply7 = Multiply7.at(contractaddress);
 	}
 }
 
-func pendingTransactions(repl *testjethre, t *testing.T) (txc int64, err error) {
-	txs := repl.shift.TxPool().GetTransactions()
+func pendingTransactions(repl *testjshfre, t *testing.T) (txc int64, err error) {
+	var shift *shf.Shift
+	repl.stack.Service(&shift)
+
+	txs := shift.TxPool().GetTransactions()
 	return int64(len(txs)), nil
 }
 
-func processTxs(repl *testjethre, t *testing.T, expTxc int) bool {
+func processTxs(repl *testjshfre, t *testing.T, expTxc int) bool {
 	var txc int64
 	var err error
 	for i := 0; i < 50; i++ {
@@ -470,16 +448,19 @@ func processTxs(repl *testjethre, t *testing.T, expTxc int) bool {
 		t.Errorf("incorrect number of pending transactions, expected %v, got %v", expTxc, txc)
 		return false
 	}
+	var shift *shf.Shift
+	repl.stack.Service(&shift)
 
-	err = repl.shift.StartMining(runtime.NumCPU(), "")
+	err = shift.StartMining(runtime.NumCPU(), "")
 	if err != nil {
 		t.Errorf("unexpected error mining: %v", err)
 		return false
 	}
-	defer repl.shift.StopMining()
+	defer shift.StopMining()
 
 	timer := time.NewTimer(100 * time.Second)
-	height := new(big.Int).Add(repl.xeth.CurrentBlock().Number(), big.NewInt(1))
+	blockNr := shift.BlockChain().CurrentBlock().Number()
+	height := new(big.Int).Add(blockNr, big.NewInt(1))
 	repl.wait <- height
 	select {
 	case <-timer.C:
@@ -504,7 +485,7 @@ func processTxs(repl *testjethre, t *testing.T, expTxc int) bool {
 	return true
 }
 
-func checkEvalJSON(t *testing.T, re *testjethre, expr, want string) error {
+func checkEvalJSON(t *testing.T, re *testjshfre, expr, want string) error {
 	val, err := re.re.Run("JSON.stringify(" + expr + ")")
 	if err == nil && val.String() != want {
 		err = fmt.Errorf("Output mismatch for `%s`:\ngot:  %s\nwant: %s", expr, val.String(), want)

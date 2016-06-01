@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 //go:generate go run defaults.go default.json defs.go
 
@@ -28,7 +28,7 @@ import (
 	"strings"
 )
 
-func fatal(str string, v ...interface{}) {
+func fatalf(str string, v ...interface{}) {
 	fmt.Fprintf(os.Stderr, str, v...)
 	os.Exit(1)
 }
@@ -40,21 +40,21 @@ type setting struct {
 
 func main() {
 	if len(os.Args) < 3 {
-		fatal("usage %s <input> <output>\n", os.Args[0])
+		fatalf("usage %s <input> <output>\n", os.Args[0])
 	}
 
 	content, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
-		fatal("error reading file %v\n", err)
+		fatalf("error reading file %v\n", err)
 	}
 
 	m := make(map[string]setting)
 	json.Unmarshal(content, &m)
 
-	filepath := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "shift", "shift", "params", os.Args[2])
-	output, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, os.ModePerm /*0777*/)
+	filepath := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "shiftcurrency", "shift", "params", os.Args[2])
+	output, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
-		fatal("error opening file for writing %v\n", err)
+		fatalf("error opening file for writing %v\n", err)
 	}
 
 	output.WriteString(`// DO NOT EDIT!!!
@@ -76,6 +76,6 @@ var (
 
 	cmd := exec.Command("gofmt", "-w", filepath)
 	if err := cmd.Run(); err != nil {
-		fatal("gofmt failed: %v\n", err)
+		fatalf("gofmt failed: %v\n", err)
 	}
 }

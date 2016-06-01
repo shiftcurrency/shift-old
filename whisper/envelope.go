@@ -1,21 +1,21 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Contains the Whisper protocol Envelope element. For formal details please see
-// the specs at https://github.com/shiftcurrency/wiki/wiki/Whisper-PoC-1-Protocol-Spec#envelopes.
+// the specs at https://github.com/shift/wiki/wiki/Whisper-PoC-1-Protocol-Spec#envelopes.
 
 package whisper
 
@@ -66,7 +66,7 @@ func (self *Envelope) Seal(pow time.Duration) {
 		for i := 0; i < 1024; i++ {
 			binary.BigEndian.PutUint32(d[60:], nonce)
 
-			firstBit := common.FirstBitSet(common.BigD(crypto.Sha3(d)))
+			firstBit := common.FirstBitSet(common.BigD(crypto.Keccak256(d)))
 			if firstBit > bestBit {
 				self.Nonce, bestBit = nonce, firstBit
 			}
@@ -123,7 +123,7 @@ func (self *Envelope) Open(key *ecdsa.PrivateKey) (msg *Message, err error) {
 func (self *Envelope) Hash() common.Hash {
 	if (self.hash == common.Hash{}) {
 		enc, _ := rlp.EncodeToBytes(self)
-		self.hash = crypto.Sha3Hash(enc)
+		self.hash = crypto.Keccak256Hash(enc)
 	}
 	return self.hash
 }
@@ -142,6 +142,6 @@ func (self *Envelope) DecodeRLP(s *rlp.Stream) error {
 	if err := rlp.DecodeBytes(raw, (*rlpenv)(self)); err != nil {
 		return err
 	}
-	self.hash = crypto.Sha3Hash(raw)
+	self.hash = crypto.Keccak256Hash(raw)
 	return nil
 }

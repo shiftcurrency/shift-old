@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package types
 
@@ -158,7 +158,7 @@ func (tx *Transaction) Size() common.StorageSize {
 }
 
 // From returns the address derived from the signature (V, R, S) using secp256k1
-// eliptic curve and an error if it failed deriving or upon an incorrect
+// elliptic curve and an error if it failed deriving or upon an incorrect
 // signature.
 //
 // From Uses the homestead consensus rules to determine whether the signature is
@@ -168,7 +168,7 @@ func (tx *Transaction) Size() common.StorageSize {
 // Frontier / Homestead. however, the first time called it runs
 // signature validations, so we need two versions. This makes it
 // easier to ensure backwards compatibility of things like package rpc
-// where eth_getblockbynumber uses tx.From() and needs to work for
+// where shf_getblockbynumber uses tx.From() and needs to work for
 // both txs before and after the first homestead block. Signatures
 // valid in homestead are a subset of valid ones in Frontier)
 func (tx *Transaction) From() (common.Address, error) {
@@ -176,7 +176,7 @@ func (tx *Transaction) From() (common.Address, error) {
 }
 
 // FromFrontier returns the address derived from the signature (V, R, S) using
-// secp256k1 eliptic curve and an error if it failed deriving or upon an
+// secp256k1 elliptic curve and an error if it failed deriving or upon an
 // incorrect signature.
 //
 // FromFrantier uses the frontier consensus rules to determine whether the
@@ -186,7 +186,7 @@ func (tx *Transaction) From() (common.Address, error) {
 // Frontier / Homestead. however, the first time called it runs
 // signature validations, so we need two versions. This makes it
 // easier to ensure backwards compatibility of things like package rpc
-// where eth_getblockbynumber uses tx.From() and needs to work for
+// where shf_getblockbynumber uses tx.From() and needs to work for
 // both txs before and after the first homestead block. Signatures
 // valid in homestead are a subset of valid ones in Frontier)
 func (tx *Transaction) FromFrontier() (common.Address, error) {
@@ -202,7 +202,7 @@ func doFrom(tx *Transaction, homestead bool) (common.Address, error) {
 		return common.Address{}, err
 	}
 	var addr common.Address
-	copy(addr[:], crypto.Sha3(pubkey[1:])[12:])
+	copy(addr[:], crypto.Keccak256(pubkey[1:])[12:])
 	tx.from.Store(addr)
 	return addr, nil
 }
@@ -282,8 +282,8 @@ func (tx *Transaction) String() string {
 	From:     %s
 	To:       %s
 	Nonce:    %v
-	NrgPrice: %v
-	NrgLimit  %v
+	GasPrice: %v
+	GasLimit  %v
 	Value:    %v
 	Data:     0x%x
 	V:        0x%x

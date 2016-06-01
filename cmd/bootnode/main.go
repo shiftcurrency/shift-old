@@ -1,40 +1,37 @@
-// Copyright 2015 The shift Authors
-// This file is part of shift.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of go-ethereum.
 //
-// shift is free software: you can redistribute it and/or modify
+// go-ethereum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// shift is distributed in the hope that it will be useful,
+// go-ethereum is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with shift. If not, see <http://www.gnu.org/licenses/>.
+// along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
 
 // bootnode runs a bootstrap node for the Shift Discovery Protocol.
 package main
 
 import (
 	"crypto/ecdsa"
-	"encoding/hex"
 	"flag"
-	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
 
+	"github.com/shiftcurrency/shift/cmd/utils"
 	"github.com/shiftcurrency/shift/crypto"
-	"github.com/shiftcurrency/shift/logger"
+	"github.com/shiftcurrency/shift/logger/glog"
 	"github.com/shiftcurrency/shift/p2p/discover"
 	"github.com/shiftcurrency/shift/p2p/nat"
 )
 
 func main() {
 	var (
-		listenAddr  = flag.String("addr", ":42787", "listen address")
+		listenAddr  = flag.String("addr", ":53905", "listen address")
 		genKey      = flag.String("genkey", "", "generate a node key and quit")
 		nodeKeyFile = flag.String("nodekey", "", "private key filename")
 		nodeKeyHex  = flag.String("nodekeyhex", "", "private key as hex (for testing)")
@@ -43,50 +40,43 @@ func main() {
 		nodeKey *ecdsa.PrivateKey
 		err     error
 	)
+	flag.Var(glog.GetVerbosity(), "verbosity", "log verbosity (0-9)")
+	flag.Var(glog.GetVModule(), "vmodule", "log verbosity pattern")
+	glog.SetToStderr(true)
 	flag.Parse()
-	logger.AddLogSystem(logger.NewStdLogSystem(os.Stdout, log.LstdFlags, logger.DebugLevel))
 
 	if *genKey != "" {
-		writeKey(*genKey)
+		key, err := crypto.GenerateKey()
+		if err != nil {
+			utils.Fatalf("could not generate key: %v", err)
+		}
+		if err := crypto.SaveECDSA(*genKey, key); err != nil {
+			utils.Fatalf("%v", err)
+		}
 		os.Exit(0)
 	}
 
 	natm, err := nat.Parse(*natdesc)
 	if err != nil {
-		log.Fatalf("-nat: %v", err)
+		utils.Fatalf("-nat: %v", err)
 	}
 	switch {
 	case *nodeKeyFile == "" && *nodeKeyHex == "":
-		log.Fatal("Use -nodekey or -nodekeyhex to specify a private key")
+		utils.Fatalf("Use -nodekey or -nodekeyhex to specify a private key")
 	case *nodeKeyFile != "" && *nodeKeyHex != "":
-		log.Fatal("Options -nodekey and -nodekeyhex are mutually exclusive")
+		utils.Fatalf("Options -nodekey and -nodekeyhex are mutually exclusive")
 	case *nodeKeyFile != "":
 		if nodeKey, err = crypto.LoadECDSA(*nodeKeyFile); err != nil {
-			log.Fatalf("-nodekey: %v", err)
+			utils.Fatalf("-nodekey: %v", err)
 		}
 	case *nodeKeyHex != "":
 		if nodeKey, err = crypto.HexToECDSA(*nodeKeyHex); err != nil {
-			log.Fatalf("-nodekeyhex: %v", err)
+			utils.Fatalf("-nodekeyhex: %v", err)
 		}
 	}
 
 	if _, err := discover.ListenUDP(nodeKey, *listenAddr, natm, ""); err != nil {
-		log.Fatal(err)
+		utils.Fatalf("%v", err)
 	}
 	select {}
-}
-
-func writeKey(target string) {
-	key, err := crypto.GenerateKey()
-	if err != nil {
-		log.Fatal("could not generate key: %v", err)
-	}
-	b := crypto.FromECDSA(key)
-	if target == "-" {
-		fmt.Println(hex.EncodeToString(b))
-	} else {
-		if err := ioutil.WriteFile(target, b, 0600); err != nil {
-			log.Fatal("write error: ", err)
-		}
-	}
 }

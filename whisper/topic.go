@@ -1,21 +1,21 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Contains the Whisper protocol Topic element. For formal details please see
-// the specs at https://github.com/shiftcurrency/wiki/wiki/Whisper-PoC-1-Protocol-Spec#topics.
+// the specs at https://github.com/shift/wiki/wiki/Whisper-PoC-1-Protocol-Spec#topics.
 
 package whisper
 
@@ -31,7 +31,7 @@ type Topic [4]byte
 // Note, empty topics are considered the wildcard, and cannot be used in messages.
 func NewTopic(data []byte) Topic {
 	prefix := [4]byte{}
-	copy(prefix[:], crypto.Sha3(data)[:4])
+	copy(prefix[:], crypto.Keccak256(data)[:4])
 	return Topic(prefix)
 }
 

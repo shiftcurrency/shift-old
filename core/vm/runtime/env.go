@@ -1,4 +1,4 @@
-// Copyright 2014 The go-ethereum Authors
+// Copyright 2015 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -27,11 +27,12 @@ import (
 
 // Env is a basic runtime environment required for running the EVM.
 type Env struct {
-	depth int
-	state *state.StateDB
+	ruleSet vm.RuleSet
+	depth   int
+	state   *state.StateDB
 
 	origin   common.Address
-	shiftbase common.Address
+	coinbase common.Address
 
 	number     *big.Int
 	time       *big.Int
@@ -41,19 +42,33 @@ type Env struct {
 	logs []vm.StructLog
 
 	getHashFn func(uint64) common.Hash
+
+	evm *vm.EVM
 }
 
 // NewEnv returns a new vm.Environment
 func NewEnv(cfg *Config, state *state.StateDB) vm.Environment {
-	return &Env{
+	env := &Env{
+		ruleSet:    cfg.RuleSet,
 		state:      state,
 		origin:     cfg.Origin,
-		shiftbase:   cfg.Coinbase,
+		coinbase:   cfg.Coinbase,
 		number:     cfg.BlockNumber,
 		time:       cfg.Time,
 		difficulty: cfg.Difficulty,
 		gasLimit:   cfg.GasLimit,
 	}
+	env.evm = vm.New(env, vm.Config{
+		Debug:     cfg.Debug,
+		EnableJit: !cfg.DisableJit,
+		ForceJit:  !cfg.DisableJit,
+
+		Logger: vm.LogConfig{
+			Collector: env,
+		},
+	})
+
+	return env
 }
 
 func (self *Env) StructLogs() []vm.StructLog {
@@ -64,9 +79,11 @@ func (self *Env) AddStructLog(log vm.StructLog) {
 	self.logs = append(self.logs, log)
 }
 
+func (self *Env) RuleSet() vm.RuleSet      { return self.ruleSet }
+func (self *Env) Vm() vm.Vm                { return self.evm }
 func (self *Env) Origin() common.Address   { return self.origin }
 func (self *Env) BlockNumber() *big.Int    { return self.number }
-func (self *Env) Coinbase() common.Address { return self.shiftbase }
+func (self *Env) Coinbase() common.Address { return self.coinbase }
 func (self *Env) Time() *big.Int           { return self.time }
 func (self *Env) Difficulty() *big.Int     { return self.difficulty }
 func (self *Env) Db() vm.Database          { return self.state }

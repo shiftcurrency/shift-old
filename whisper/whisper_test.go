@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package whisper
 
@@ -33,7 +33,7 @@ func startTestCluster(n int) []*Whisper {
 	whispers := make([]*Whisper, n)
 	for i := 0; i < n; i++ {
 		whispers[i] = New()
-		whispers[i].Start()
+		whispers[i].Start(nil)
 	}
 	// Wire all the peers to the root one
 	for i := 1; i < n; i++ {
@@ -179,9 +179,7 @@ func TestMessageExpiration(t *testing.T) {
 	node := startTestCluster(1)[0]
 
 	message := NewMessage([]byte("expiring message"))
-	envelope, err := message.Wrap(DefaultPoW, Options{
-		TTL: time.Second,
-	})
+	envelope, err := message.Wrap(DefaultPoW, Options{TTL: time.Second})
 	if err != nil {
 		t.Fatalf("failed to wrap message: %v", err)
 	}
@@ -197,14 +195,22 @@ func TestMessageExpiration(t *testing.T) {
 		t.Fatalf("message not found in cache")
 	}
 	// Wait for expiration and check cache again
-	time.Sleep(time.Second)     // wait for expiration
-	time.Sleep(expirationCycle) // wait for cleanup cycle
+	time.Sleep(time.Second)         // wait for expiration
+	time.Sleep(2 * expirationCycle) // wait for cleanup cycle
 
 	node.poolMu.RLock()
 	_, found = node.messages[envelope.Hash()]
 	node.poolMu.RUnlock()
-
 	if found {
 		t.Fatalf("message not expired from cache")
+	}
+
+	// Check that adding an expired envelope doesn't do anything.
+	node.add(envelope)
+	node.poolMu.RLock()
+	_, found = node.messages[envelope.Hash()]
+	node.poolMu.RUnlock()
+	if found {
+		t.Fatalf("message was added to cache")
 	}
 }

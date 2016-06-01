@@ -1,58 +1,53 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package shf implements the Shift protocol.
+// Package eth implements the Shift protocol.
 package shf
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"syscall"
 	"time"
 
-	"github.com/shiftcurrency/ethash"
+	"github.com/ethereum/ethash"
 	"github.com/shiftcurrency/shift/accounts"
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/common/compiler"
 	"github.com/shiftcurrency/shift/common/httpclient"
+	"github.com/shiftcurrency/shift/common/registrar/ethreg"
 	"github.com/shiftcurrency/shift/core"
-	"github.com/shiftcurrency/shift/core/state"
 	"github.com/shiftcurrency/shift/core/types"
 	"github.com/shiftcurrency/shift/core/vm"
-	"github.com/shiftcurrency/shift/crypto"
 	"github.com/shiftcurrency/shift/shf/downloader"
+	"github.com/shiftcurrency/shift/shf/filters"
 	"github.com/shiftcurrency/shift/ethdb"
 	"github.com/shiftcurrency/shift/event"
 	"github.com/shiftcurrency/shift/logger"
 	"github.com/shiftcurrency/shift/logger/glog"
 	"github.com/shiftcurrency/shift/miner"
+	"github.com/shiftcurrency/shift/node"
 	"github.com/shiftcurrency/shift/p2p"
-	"github.com/shiftcurrency/shift/p2p/discover"
-	"github.com/shiftcurrency/shift/p2p/nat"
 	"github.com/shiftcurrency/shift/rlp"
-	"github.com/shiftcurrency/shift/whisper"
-    "github.com/shiftcurrency/shift/pow"
+	"github.com/shiftcurrency/shift/rpc"
 )
 
 const (
@@ -64,72 +59,33 @@ const (
 )
 
 var (
-	jsonlogger = logger.NewJsonLogger()
-
 	datadirInUseErrnos = map[uint]bool{11: true, 32: true, 35: true}
 	portInUseErrRE     = regexp.MustCompile("address already in use")
-
-	defaultBootNodes = []*discover.Node{
-        // London
-        discover.MustParseNode("enode://4c8635f108dae8a997697d9c22ddca36969e7f9bc57d9fc01102d7e7d9633231331ae7f7307aceb1aa19130b5bdd4afe397db616c76e7ffc1c69302ba0d09a39@45.32.182.61:53900"),
-        // Paris
-        discover.MustParseNode("enode://80d0ce5c992f8cc83cdbfd6d832b2dff2e82fee1f8b58762cd858eaacfcc99d5a8a837648bd28a2d508cc1da305c15cf4e531546034ed1a8ccd07ff51a71abd6@108.61.177.0:53900"),
-        // Seattle
-        discover.MustParseNode("enode://f019da062a635a4e9e89ec93edc7ca11c06fdfec0574f1cb001126a82dc6ffa6ca05f924a683934ff5d01fc5d4b0ac9507349a945c97121b2a355d39b1781cd7@104.238.157.156:53900"),
-	}
-
-	defaultTestNetBootNodes = []*discover.Node{
-	}
-
-	staticNodes  = "static-nodes.json"  // Path within <datadir> to search for the static node list
-	trustedNodes = "trusted-nodes.json" // Path within <datadir> to search for the trusted node list
 )
 
 type Config struct {
-	DevMode bool
-	TestNet bool
+	ChainConfig *core.ChainConfig // chain configuration
 
-	Name         string
-	NetworkId    int
-	GenesisFile  string
-	GenesisBlock *types.Block // used by block tests
-	FastSync     bool
-	Olympic      bool
+	NetworkId int    // Network ID to use for selecting peers to connect to
+	Genesis   string // Genesis JSON to seed the chain database with
+	FastSync  bool   // Enables the state download based fast synchronisation algorithm
 
 	BlockChainVersion  int
 	SkipBcVersionCheck bool // e.g. blockchain export
 	DatabaseCache      int
+	DatabaseHandles    int
 
-	DataDir   string
-	LogFile   string
-	Verbosity int
-	VmDebug   bool
 	NatSpec   bool
 	DocRoot   string
 	AutoDAG   bool
 	PowTest   bool
+	PowShared bool
 	ExtraData []byte
 
-	MaxPeers        int
-	MaxPendingPeers int
-	Discovery       bool
-	Port            string
-
-	// Space-separated list of discovery node URLs
-	BootNodes string
-
-	// This key is used to identify the node on the network.
-	// If nil, an ephemeral key is used.
-	NodeKey *ecdsa.PrivateKey
-
-	NAT  nat.Interface
-	Shh  bool
-	Dial bool
-
+	AccountManager *accounts.Manager
 	Shiftbase      common.Address
 	GasPrice       *big.Int
 	MinerThreads   int
-	AccountManager *accounts.Manager
 	SolcPath       string
 
 	GpoMinGasPrice          *big.Int
@@ -139,90 +95,15 @@ type Config struct {
 	GpobaseStepUp           int
 	GpobaseCorrectionFactor int
 
-	// NewDB is used to create databases.
-	// If nil, the default is to create leveldb databases on disk.
-	NewDB func(path string) (ethdb.Database, error)
-}
+	EnableJit bool
+	ForceJit  bool
 
-func (cfg *Config) parseBootNodes() []*discover.Node {
-	if cfg.BootNodes == "" {
-		if cfg.TestNet {
-			return defaultTestNetBootNodes
-		}
-
-		return defaultBootNodes
-	}
-	var ns []*discover.Node
-	for _, url := range strings.Split(cfg.BootNodes, " ") {
-		if url == "" {
-			continue
-		}
-		n, err := discover.ParseNode(url)
-		if err != nil {
-			glog.V(logger.Error).Infof("Bootstrap URL %s: %v\n", url, err)
-			continue
-		}
-		ns = append(ns, n)
-	}
-	return ns
-}
-
-// parseNodes parses a list of discovery node URLs loaded from a .json file.
-func (cfg *Config) parseNodes(file string) []*discover.Node {
-	// Short circuit if no node config is present
-	path := filepath.Join(cfg.DataDir, file)
-	if _, err := os.Stat(path); err != nil {
-		return nil
-	}
-	// Load the nodes from the config file
-	blob, err := ioutil.ReadFile(path)
-	if err != nil {
-		glog.V(logger.Error).Infof("Failed to access nodes: %v", err)
-		return nil
-	}
-	nodelist := []string{}
-	if err := json.Unmarshal(blob, &nodelist); err != nil {
-		glog.V(logger.Error).Infof("Failed to load nodes: %v", err)
-		return nil
-	}
-	// Interpret the list as a discovery node array
-	var nodes []*discover.Node
-	for _, url := range nodelist {
-		if url == "" {
-			continue
-		}
-		node, err := discover.ParseNode(url)
-		if err != nil {
-			glog.V(logger.Error).Infof("Node URL %s: %v\n", url, err)
-			continue
-		}
-		nodes = append(nodes, node)
-	}
-	return nodes
-}
-
-func (cfg *Config) nodeKey() (*ecdsa.PrivateKey, error) {
-	// use explicit key from command line args if set
-	if cfg.NodeKey != nil {
-		return cfg.NodeKey, nil
-	}
-	// use persistent key if present
-	keyfile := filepath.Join(cfg.DataDir, "nodekey")
-	key, err := crypto.LoadECDSA(keyfile)
-	if err == nil {
-		return key, nil
-	}
-	// no persistent key, generate and store a new one
-	if key, err = crypto.GenerateKey(); err != nil {
-		return nil, fmt.Errorf("could not generate server key: %v", err)
-	}
-	if err := crypto.SaveECDSA(keyfile, key); err != nil {
-		glog.V(logger.Error).Infoln("could not persist nodekey: ", err)
-	}
-	return key, nil
+	TestGenesisBlock *types.Block   // Genesis block to seed the chain database with (testing only!)
+	TestGenesisState ethdb.Database // Genesis state to seed the database with (testing only!)
 }
 
 type Shift struct {
+	chainConfig *core.ChainConfig
 	// Channel for shutting down the shift
 	shutdownChan chan bool
 
@@ -233,13 +114,12 @@ type Shift struct {
 	// Handlers
 	txPool          *core.TxPool
 	blockchain      *core.BlockChain
-    chainManager    *pow.ChainManager
 	accountManager  *accounts.Manager
-	whisper         *whisper.Whisper
 	pow             *ethash.Ethash
 	protocolManager *ProtocolManager
 	SolcPath        string
 	solc            *compiler.Solidity
+	gpo             *GasPriceOracle
 
 	GpoMinGasPrice          *big.Int
 	GpoMaxGasPrice          *big.Int
@@ -250,47 +130,28 @@ type Shift struct {
 
 	httpclient *httpclient.HTTPClient
 
-	net      *p2p.Server
 	eventMux *event.TypeMux
 	miner    *miner.Miner
-
-	// logger logger.LogSystem
 
 	Mining        bool
 	MinerThreads  int
 	NatSpec       bool
-	DataDir       string
 	AutoDAG       bool
 	PowTest       bool
 	autodagquit   chan bool
 	shiftbase     common.Address
-	clientVersion string
 	netVersionId  int
-	shhVersionId  int
+	netRPCService *PublicNetAPI
 }
 
-func New(config *Config) (*Shift, error) {
-	logger.New(config.DataDir, config.LogFile, config.Verbosity)
-
-	// Let the database take 3/4 of the max open files (TODO figure out a way to get the actual limit of the open files)
-	const dbCount = 3
-	ethdb.OpenFileLimit = 128 / (dbCount + 1)
-
-	newdb := config.NewDB
-	if newdb == nil {
-		newdb = func(path string) (ethdb.Database, error) { return ethdb.NewLDBDatabase(path, config.DatabaseCache) }
-	}
-
+func New(ctx *node.ServiceContext, config *Config) (*Shift, error) {
 	// Open the chain database and perform any upgrades needed
-	chainDb, err := newdb(filepath.Join(config.DataDir, "chaindata"))
+	chainDb, err := ctx.OpenDatabase("chaindata", config.DatabaseCache, config.DatabaseHandles)
 	if err != nil {
-		if errno, ok := err.(syscall.Errno); ok && datadirInUseErrnos[uint(errno)] {
-			err = fmt.Errorf("%v (check if another instance of geth is already running with the same data directory '%s')", err, config.DataDir)
-		}
-		return nil, fmt.Errorf("blockchain db err: %v", err)
+		return nil, err
 	}
 	if db, ok := chainDb.(*ethdb.LDBDatabase); ok {
-		db.Meter("eth/db/chaindata/")
+		db.Meter("shf/db/chaindata/")
 	}
 	if err := upgradeChainDatabase(chainDb); err != nil {
 		return nil, err
@@ -299,65 +160,41 @@ func New(config *Config) (*Shift, error) {
 		return nil, err
 	}
 
-	dappDb, err := newdb(filepath.Join(config.DataDir, "dapp"))
+	dappDb, err := ctx.OpenDatabase("dapp", config.DatabaseCache, config.DatabaseHandles)
 	if err != nil {
-		if errno, ok := err.(syscall.Errno); ok && datadirInUseErrnos[uint(errno)] {
-			err = fmt.Errorf("%v (check if another instance of geth is already running with the same data directory '%s')", err, config.DataDir)
-		}
-		return nil, fmt.Errorf("dapp db err: %v", err)
+		return nil, err
 	}
 	if db, ok := dappDb.(*ethdb.LDBDatabase); ok {
-		db.Meter("eth/db/dapp/")
+		db.Meter("shf/db/dapp/")
 	}
-
-	nodeDb := filepath.Join(config.DataDir, "nodes")
 	glog.V(logger.Info).Infof("Protocol Versions: %v, Network Id: %v", ProtocolVersions, config.NetworkId)
 
-	if len(config.GenesisFile) > 0 {
-		fr, err := os.Open(config.GenesisFile)
+	// Load up any custom genesis block if requested
+	if len(config.Genesis) > 0 {
+		block, err := core.WriteGenesisBlock(chainDb, strings.NewReader(config.Genesis))
 		if err != nil {
 			return nil, err
 		}
-
-		block, err := core.WriteGenesisBlock(chainDb, fr)
-		if err != nil {
-			return nil, err
-		}
-		glog.V(logger.Info).Infof("Successfully wrote genesis block. New genesis hash = %x\n", block.Hash())
+		glog.V(logger.Info).Infof("Successfully wrote custom genesis block: %x", block.Hash())
 	}
 
-	// different modes
-	switch {
-	case config.Olympic:
-		glog.V(logger.Error).Infoln("Starting Olympic network")
-		fallthrough
-	case config.DevMode:
-		_, err := core.WriteOlympicGenesisBlock(chainDb, 42)
-		if err != nil {
-			return nil, err
-		}
-	case config.TestNet:
-		state.StartingNonce = 1048576 // (2**20)
-		_, err := core.WriteTestNetGenesisBlock(chainDb, 0x6d6f7264656e)
-		if err != nil {
-			return nil, err
-		}
+	// Load up a test setup if directly injected
+	if config.TestGenesisState != nil {
+		chainDb = config.TestGenesisState
 	}
-	// This is for testing only.
-	if config.GenesisBlock != nil {
-		core.WriteTd(chainDb, config.GenesisBlock.Hash(), config.GenesisBlock.Difficulty())
-		core.WriteBlock(chainDb, config.GenesisBlock)
-		core.WriteCanonicalHash(chainDb, config.GenesisBlock.Hash(), config.GenesisBlock.NumberU64())
-		core.WriteHeadBlockHash(chainDb, config.GenesisBlock.Hash())
+	if config.TestGenesisBlock != nil {
+		core.WriteTd(chainDb, config.TestGenesisBlock.Hash(), config.TestGenesisBlock.Difficulty())
+		core.WriteBlock(chainDb, config.TestGenesisBlock)
+		core.WriteCanonicalHash(chainDb, config.TestGenesisBlock.Hash(), config.TestGenesisBlock.NumberU64())
+		core.WriteHeadBlockHash(chainDb, config.TestGenesisBlock.Hash())
 	}
 
 	if !config.SkipBcVersionCheck {
-		b, _ := chainDb.Get([]byte("BlockchainVersion"))
-		bcVersion := int(common.NewValue(b).Uint())
+		bcVersion := core.GetBlockChainVersion(chainDb)
 		if bcVersion != config.BlockChainVersion && bcVersion != 0 {
 			return nil, fmt.Errorf("Blockchain DB version mismatch (%d / %d). Run gshift upgradedb.\n", bcVersion, config.BlockChainVersion)
 		}
-		saveBlockchainVersion(chainDb, config.BlockChainVersion)
+		core.WriteBlockChainVersion(chainDb, config.BlockChainVersion)
 	}
 	glog.V(logger.Info).Infof("Blockchain DB Version: %d", config.BlockChainVersion)
 
@@ -365,11 +202,9 @@ func New(config *Config) (*Shift, error) {
 		shutdownChan:            make(chan bool),
 		chainDb:                 chainDb,
 		dappDb:                  dappDb,
-		eventMux:                &event.TypeMux{},
+		eventMux:                ctx.EventMux,
 		accountManager:          config.AccountManager,
-		DataDir:                 config.DataDir,
 		shiftbase:               config.Shiftbase,
-		clientVersion:           config.Name, // TODO should separate from Name
 		netVersionId:            config.NetworkId,
 		NatSpec:                 config.NatSpec,
 		MinerThreads:            config.MinerThreads,
@@ -384,74 +219,141 @@ func New(config *Config) (*Shift, error) {
 		GpobaseCorrectionFactor: config.GpobaseCorrectionFactor,
 		httpclient:              httpclient.New(config.DocRoot),
 	}
-
-	if config.PowTest {
+	switch {
+	case config.PowTest:
 		glog.V(logger.Info).Infof("ethash used in test mode")
 		shf.pow, err = ethash.NewForTesting()
 		if err != nil {
 			return nil, err
 		}
-	} else {
+	case config.PowShared:
+		glog.V(logger.Info).Infof("ethash used in shared mode")
+		shf.pow = ethash.NewShared()
+
+	default:
 		shf.pow = ethash.New()
 	}
-	//genesis := core.GenesisBlock(uint64(config.GenesisNonce), stateDb)
-	shf.blockchain, err = core.NewBlockChain(chainDb, shf.pow, shf.EventMux())
+
+	// load the genesis block or write a new one if no genesis
+	// block is prenent in the database.
+	genesis := core.GetBlock(chainDb, core.GetCanonicalHash(chainDb, 0))
+	if genesis == nil {
+		genesis, err = core.WriteDefaultGenesisBlock(chainDb)
+		if err != nil {
+			return nil, err
+		}
+		glog.V(logger.Info).Infoln("WARNING: Wrote default shift genesis block")
+	}
+
+	if config.ChainConfig == nil {
+		return nil, errors.New("missing chain config")
+	}
+	shf.chainConfig = config.ChainConfig
+	shf.chainConfig.VmConfig = vm.Config{
+		EnableJit: config.EnableJit,
+		ForceJit:  config.ForceJit,
+	}
+
+	shf.blockchain, err = core.NewBlockChain(chainDb, shf.chainConfig, shf.pow, shf.EventMux())
 	if err != nil {
 		if err == core.ErrNoGenesis {
-			return nil, fmt.Errorf(`Genesis block not found. Please supply a genesis block with the "--genesis /path/to/file" argument`)
+			return nil, fmt.Errorf(`No chain found. Please initialise a new chain using the "init" subcommand.`)
 		}
 		return nil, err
 	}
-	newPool := core.NewTxPool(shf.EventMux(), shf.blockchain.State, shf.blockchain.GasLimit)
+	shf.gpo = NewGasPriceOracle(shf)
+
+	newPool := core.NewTxPool(shf.chainConfig, shf.EventMux(), shf.blockchain.State, shf.blockchain.GasLimit)
 	shf.txPool = newPool
 
-	if shf.protocolManager, err = NewProtocolManager(config.FastSync, config.NetworkId, shf.eventMux, shf.txPool, shf.pow, shf.blockchain, chainDb); err != nil {
+	if shf.protocolManager, err = NewProtocolManager(shf.chainConfig, config.FastSync, config.NetworkId, shf.eventMux, shf.txPool, shf.pow, shf.blockchain, chainDb); err != nil {
 		return nil, err
 	}
-	shf.miner = miner.New(shf, shf.EventMux(), shf.pow)
+	shf.miner = miner.New(shf, shf.chainConfig, shf.EventMux(), shf.pow)
 	shf.miner.SetGasPrice(config.GasPrice)
 	shf.miner.SetExtra(config.ExtraData)
-
-	if config.Shh {
-		shf.whisper = whisper.New()
-		shf.shhVersionId = int(shf.whisper.Version())
-	}
-
-	netprv, err := config.nodeKey()
-	if err != nil {
-		return nil, err
-	}
-	protocols := append([]p2p.Protocol{}, shf.protocolManager.SubProtocols...)
-	if config.Shh {
-		protocols = append(protocols, shf.whisper.Protocol())
-	}
-	shf.net = &p2p.Server{
-		PrivateKey:      netprv,
-		Name:            config.Name,
-		MaxPeers:        config.MaxPeers,
-		MaxPendingPeers: config.MaxPendingPeers,
-		Discovery:       config.Discovery,
-		Protocols:       protocols,
-		NAT:             config.NAT,
-		NoDial:          !config.Dial,
-		BootstrapNodes:  config.parseBootNodes(),
-		StaticNodes:     config.parseNodes(staticNodes),
-		TrustedNodes:    config.parseNodes(trustedNodes),
-		NodeDatabase:    nodeDb,
-	}
-	if len(config.Port) > 0 {
-		shf.net.ListenAddr = ":" + config.Port
-	}
-
-	vm.Debug = config.VmDebug
 
 	return shf, nil
 }
 
-// Network retrieves the underlying P2P network server. This should eventually
-// be moved out into a protocol independent package, but for now use an accessor.
-func (s *Shift) Network() *p2p.Server {
-	return s.net
+// APIs returns the collection of RPC services the shift package offers.
+// NOTE, some of these services probably need to be moved to somewhere else.
+func (s *Shift) APIs() []rpc.API {
+	return []rpc.API{
+		{
+			Namespace: "shf",
+			Version:   "1.0",
+			Service:   NewPublicShiftAPI(s),
+			Public:    true,
+		}, {
+			Namespace: "shf",
+			Version:   "1.0",
+			Service:   NewPublicAccountAPI(s.accountManager),
+			Public:    true,
+		}, {
+			Namespace: "personal",
+			Version:   "1.0",
+			Service:   NewPrivateAccountAPI(s.accountManager),
+			Public:    false,
+		}, {
+			Namespace: "shf",
+			Version:   "1.0",
+			Service:   NewPublicBlockChainAPI(s.chainConfig, s.blockchain, s.miner, s.chainDb, s.gpo, s.eventMux, s.accountManager),
+			Public:    true,
+		}, {
+			Namespace: "shf",
+			Version:   "1.0",
+			Service:   NewPublicTransactionPoolAPI(s),
+			Public:    true,
+		}, {
+			Namespace: "shf",
+			Version:   "1.0",
+			Service:   NewPublicMinerAPI(s),
+			Public:    true,
+		}, {
+			Namespace: "shf",
+			Version:   "1.0",
+			Service:   downloader.NewPublicDownloaderAPI(s.protocolManager.downloader, s.eventMux),
+			Public:    true,
+		}, {
+			Namespace: "miner",
+			Version:   "1.0",
+			Service:   NewPrivateMinerAPI(s),
+			Public:    false,
+		}, {
+			Namespace: "txpool",
+			Version:   "1.0",
+			Service:   NewPublicTxPoolAPI(s),
+			Public:    true,
+		}, {
+			Namespace: "shf",
+			Version:   "1.0",
+			Service:   filters.NewPublicFilterAPI(s.chainDb, s.eventMux),
+			Public:    true,
+		}, {
+			Namespace: "admin",
+			Version:   "1.0",
+			Service:   NewPrivateAdminAPI(s),
+		}, {
+			Namespace: "debug",
+			Version:   "1.0",
+			Service:   NewPublicDebugAPI(s),
+			Public:    true,
+		}, {
+			Namespace: "debug",
+			Version:   "1.0",
+			Service:   NewPrivateDebugAPI(s.chainConfig, s),
+		}, {
+			Namespace: "net",
+			Version:   "1.0",
+			Service:   s.netRPCService,
+			Public:    true,
+		}, {
+			Namespace: "admin",
+			Version:   "1.0",
+			Service:   ethreg.NewPrivateRegistarAPI(s.chainConfig, s.blockchain, s.chainDb, s.txPool, s.accountManager),
+		},
+	}
 }
 
 func (s *Shift) ResetWithGenesisBlock(gb *types.Block) {
@@ -461,13 +363,13 @@ func (s *Shift) ResetWithGenesisBlock(gb *types.Block) {
 func (s *Shift) Shiftbase() (eb common.Address, err error) {
 	eb = s.shiftbase
 	if (eb == common.Address{}) {
-		addr, e := s.AccountManager().AddressByIndex(0)
-		if e != nil {
-			err = fmt.Errorf("shiftbase address must be explicitly specified")
+		firstAccount, err := s.AccountManager().AccountByIndex(0)
+		eb = firstAccount.Address
+		if err != nil {
+			return eb, fmt.Errorf("shiftbase address must be explicitly specified")
 		}
-		eb = common.HexToAddress(addr)
 	}
-	return
+	return eb, nil
 }
 
 // set in js console via admin interface or wrapper from cli flags
@@ -476,92 +378,54 @@ func (self *Shift) SetShiftbase(shiftbase common.Address) {
 	self.miner.SetShiftbase(shiftbase)
 }
 
-
 func (s *Shift) StopMining()         { s.miner.Stop() }
 func (s *Shift) IsMining() bool      { return s.miner.Mining() }
 func (s *Shift) Miner() *miner.Miner { return s.miner }
 
-// func (s *Shift) Logger() logger.LogSystem             { return s.logger }
-func (s *Shift) Name() string                       { return s.net.Name }
 func (s *Shift) AccountManager() *accounts.Manager  { return s.accountManager }
-func (s *Shift) ChainManager()     *pow.ChainManager { return s.chainManager }
 func (s *Shift) BlockChain() *core.BlockChain       { return s.blockchain }
 func (s *Shift) TxPool() *core.TxPool               { return s.txPool }
-func (s *Shift) Whisper() *whisper.Whisper          { return s.whisper }
 func (s *Shift) EventMux() *event.TypeMux           { return s.eventMux }
 func (s *Shift) ChainDb() ethdb.Database            { return s.chainDb }
 func (s *Shift) DappDb() ethdb.Database             { return s.dappDb }
 func (s *Shift) IsListening() bool                  { return true } // Always listening
-func (s *Shift) PeerCount() int                     { return s.net.PeerCount() }
-func (s *Shift) Peers() []*p2p.Peer                 { return s.net.Peers() }
-func (s *Shift) MaxPeers() int                      { return s.net.MaxPeers }
-func (s *Shift) ClientVersion() string              { return s.clientVersion }
-func (s *Shift) EthVersion() int                    { return int(s.protocolManager.SubProtocols[0].Version) }
+func (s *Shift) ShfVersion() int                    { return int(s.protocolManager.SubProtocols[0].Version) }
 func (s *Shift) NetVersion() int                    { return s.netVersionId }
-func (s *Shift) ShhVersion() int                    { return s.shhVersionId }
 func (s *Shift) Downloader() *downloader.Downloader { return s.protocolManager.downloader }
 
-// Start the ethereum
-func (s *Shift) Start() error {
-	jsonlogger.LogJson(&logger.LogStarting{
-		ClientString:    s.net.Name,
-		ProtocolVersion: s.EthVersion(),
-	})
-	err := s.net.Start()
-	if err != nil {
-		if portInUseErrRE.MatchString(err.Error()) {
-			err = fmt.Errorf("%v (possibly another instance of geth is using the same port)", err)
-		}
-		return err
-	}
+// Protocols implements node.Service, returning all the currently configured
+// network protocols to start.
+func (s *Shift) Protocols() []p2p.Protocol {
+	return s.protocolManager.SubProtocols
+}
 
+// Start implements node.Service, starting all internal goroutines needed by the
+// Shift protocol implementation.
+func (s *Shift) Start(srvr *p2p.Server) error {
 	if s.AutoDAG {
 		s.StartAutoDAG()
 	}
-
 	s.protocolManager.Start()
-
-	if s.whisper != nil {
-		s.whisper.Start()
-	}
-
-	glog.V(logger.Info).Infoln("Server started")
+	s.netRPCService = NewPublicNetAPI(srvr, s.NetVersion())
 	return nil
 }
 
-func (s *Shift) StartForTest() {
-	jsonlogger.LogJson(&logger.LogStarting{
-		ClientString:    s.net.Name,
-		ProtocolVersion: s.EthVersion(),
-	})
-}
-
-// AddPeer connects to the given node and maintains the connection until the
-// server is shut down. If the connection fails for any reason, the server will
-// attempt to reconnect the peer.
-func (self *Shift) AddPeer(nodeURL string) error {
-	n, err := discover.ParseNode(nodeURL)
-	if err != nil {
-		return fmt.Errorf("invalid node URL: %v", err)
-	}
-	self.net.AddPeer(n)
-	return nil
-}
-
-func (s *Shift) Stop() {
-	s.net.Stop()
+// Stop implements node.Service, terminating all internal goroutines used by the
+// Shift protocol.
+func (s *Shift) Stop() error {
 	s.blockchain.Stop()
 	s.protocolManager.Stop()
 	s.txPool.Stop()
+	s.miner.Stop()
 	s.eventMux.Stop()
-	if s.whisper != nil {
-		s.whisper.Stop()
-	}
+
 	s.StopAutoDAG()
 
 	s.chainDb.Close()
 	s.dappDb.Close()
 	close(s.shutdownChan)
+
+	return nil
 }
 
 // This function will wait for a shutdown and resumes main thread execution
@@ -632,7 +496,6 @@ func (self *Shift) StopAutoDAG() {
 	glog.V(logger.Info).Infof("Automatic pregeneration of ethash DAG OFF (ethash dir: %s)", ethash.DefaultDir)
 }
 
-
 // HTTPClient returns the light http client used for fetching offchain docs
 // (natspec, source for verification)
 func (self *Shift) HTTPClient() *httpclient.HTTPClient {
@@ -660,15 +523,6 @@ func dagFiles(epoch uint64) (string, string) {
 	seedHash, _ := ethash.GetSeedHash(epoch * epochLength)
 	dag := fmt.Sprintf("full-R%d-%x", ethashRevision, seedHash[:8])
 	return dag, "full-R" + dag
-}
-
-func saveBlockchainVersion(db ethdb.Database, bcVersion int) {
-	d, _ := db.Get([]byte("BlockchainVersion"))
-	blockchainVersion := common.NewValue(d).Uint()
-
-	if blockchainVersion == 0 {
-		db.Put([]byte("BlockchainVersion"), common.NewValue(bcVersion).Bytes())
-	}
 }
 
 // upgradeChainDatabase ensures that the chain database stores block split into
@@ -704,7 +558,7 @@ func upgradeChainDatabase(db ethdb.Database) error {
 			if err := core.WriteTd(db, block.Hash(), block.DeprecatedTd()); err != nil {
 				return err
 			}
-			if err := core.WriteBody(db, block.Hash(), &types.Body{block.Transactions(), block.Uncles()}); err != nil {
+			if err := core.WriteBody(db, block.Hash(), block.Body()); err != nil {
 				return err
 			}
 			if err := core.WriteHeader(db, block.Header()); err != nil {
@@ -720,7 +574,7 @@ func upgradeChainDatabase(db ethdb.Database) error {
 		if err := core.WriteTd(db, current.Hash(), current.DeprecatedTd()); err != nil {
 			return err
 		}
-		if err := core.WriteBody(db, current.Hash(), &types.Body{current.Transactions(), current.Uncles()}); err != nil {
+		if err := core.WriteBody(db, current.Hash(), current.Body()); err != nil {
 			return err
 		}
 		if err := core.WriteHeader(db, current.Header()); err != nil {

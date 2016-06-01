@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package miner implements Shift block creation and mining.
 package miner
@@ -42,17 +42,17 @@ type Miner struct {
 	MinAcceptedGasPrice *big.Int
 
 	threads  int
-	shiftbase common.Address
+	coinbase common.Address
 	mining   int32
-	shf      core.Backend
+	eth      core.Backend
 	pow      pow.PoW
 
 	canStart    int32 // can start indicates whether we can start the mining operation
 	shouldStart int32 // should start indicates whether we should start after sync
 }
 
-func New(shf core.Backend, mux *event.TypeMux, pow pow.PoW) *Miner {
-	miner := &Miner{shf: shf, mux: mux, pow: pow, worker: newWorker(common.Address{}, shf), canStart: 1}
+func New(eth core.Backend, config *core.ChainConfig, mux *event.TypeMux, pow pow.PoW) *Miner {
+	miner := &Miner{eth: eth, mux: mux, pow: pow, worker: newWorker(config, common.Address{}, eth), canStart: 1}
 	go miner.update()
 
 	return miner
@@ -80,7 +80,7 @@ out:
 			atomic.StoreInt32(&self.canStart, 1)
 			atomic.StoreInt32(&self.shouldStart, 0)
 			if shouldStart {
-				self.Start(self.shiftbase, self.threads)
+				self.Start(self.coinbase, self.threads)
 			}
 			// unsubscribe. we're only interested in this event once
 			events.Unsubscribe()
@@ -99,11 +99,11 @@ func (m *Miner) SetGasPrice(price *big.Int) {
 	m.worker.setGasPrice(price)
 }
 
-func (self *Miner) Start(shiftbase common.Address, threads int) {
+func (self *Miner) Start(coinbase common.Address, threads int) {
 	atomic.StoreInt32(&self.shouldStart, 1)
 	self.threads = threads
-	self.worker.shiftbase = shiftbase
-	self.shiftbase = shiftbase
+	self.worker.coinbase = coinbase
+	self.coinbase = coinbase
 
 	if atomic.LoadInt32(&self.canStart) == 0 {
 		glog.V(logger.Info).Infoln("Can not start mining operation due to network sync (starts when finished)")
@@ -164,15 +164,12 @@ func (self *Miner) SetExtra(extra []byte) error {
 	return nil
 }
 
-func (self *Miner) PendingState() *state.StateDB {
-	return self.worker.pendingState()
-}
-
-func (self *Miner) PendingBlock() *types.Block {
-	return self.worker.pendingBlock()
+// Pending returns the currently pending block and associated state.
+func (self *Miner) Pending() (*types.Block, *state.StateDB) {
+	return self.worker.pending()
 }
 
 func (self *Miner) SetShiftbase(addr common.Address) {
-	self.shiftbase = addr
+	self.coinbase = addr
 	self.worker.setShiftbase(addr)
 }

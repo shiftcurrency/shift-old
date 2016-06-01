@@ -73,7 +73,7 @@ type dataPack interface {
 	Stats() string
 }
 
-// hashPack is a batch of block hashes returned by a peer (eth/61).
+// hashPack is a batch of block hashes returned by a peer (shf/61).
 type hashPack struct {
 	peerId string
 	hashes []common.Hash
@@ -83,7 +83,7 @@ func (p *hashPack) PeerId() string { return p.peerId }
 func (p *hashPack) Items() int     { return len(p.hashes) }
 func (p *hashPack) Stats() string  { return fmt.Sprintf("%d", len(p.hashes)) }
 
-// blockPack is a batch of blocks returned by a peer (eth/61).
+// blockPack is a batch of blocks returned by a peer (shf/61).
 type blockPack struct {
 	peerId string
 	blocks []*types.Block

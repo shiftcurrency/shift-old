@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package p2p
 
@@ -94,6 +94,7 @@ func testEncHandshake(token []byte) error {
 	go func() {
 		r := result{side: "initiator"}
 		defer func() { output <- r }()
+		defer fd0.Close()
 
 		dest := &discover.Node{ID: discover.PubkeyID(&prv1.PublicKey)}
 		r.id, r.err = c0.doEncHandshake(prv0, dest)
@@ -108,6 +109,7 @@ func testEncHandshake(token []byte) error {
 	go func() {
 		r := result{side: "receiver"}
 		defer func() { output <- r }()
+		defer fd1.Close()
 
 		r.id, r.err = c1.doEncHandshake(prv1, nil)
 		if r.err != nil {
@@ -265,8 +267,8 @@ func TestRLPXFrameFake(t *testing.T) {
 	buf := new(bytes.Buffer)
 	hash := fakeHash([]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	rw := newRLPXFrameRW(buf, secrets{
-		AES:        crypto.Sha3(),
-		MAC:        crypto.Sha3(),
+		AES:        crypto.Keccak256(),
+		MAC:        crypto.Keccak256(),
 		IngressMAC: hash,
 		EgressMAC:  hash,
 	})

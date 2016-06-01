@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package vm
 
@@ -21,12 +21,8 @@ import (
 	"math/big"
 
 	"github.com/shiftcurrency/shift/common"
-	"github.com/shiftcurrency/shift/logger/glog"
 	"github.com/shiftcurrency/shift/params"
 )
-
-// Global Debug flag indicating Debug VM (full logging)
-var Debug bool
 
 // Type is the VM type accepted by **NewVm**
 type Type byte
@@ -48,19 +44,6 @@ var (
 
 	max = big.NewInt(math.MaxInt64) // Maximum 64 bit integer
 )
-
-// NewVm returns a new VM based on the Environment
-func NewVm(env Environment) VirtualMachine {
-	switch env.VmType() {
-	case JitVmTy:
-		return NewJitVm(env)
-	default:
-		glog.V(0).Infoln("unsupported vm type %d", env.VmType())
-		fallthrough
-	case StdVmTy:
-		return New(env)
-	}
-}
 
 // calculates the memory size required for a step
 func calcMemSize(off, l *big.Int) *big.Int {

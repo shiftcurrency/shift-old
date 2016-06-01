@@ -1,24 +1,23 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package ethdb
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/shiftcurrency/shift/common"
@@ -90,27 +89,7 @@ func (db *MemDatabase) Delete(key []byte) error {
 	return nil
 }
 
-func (db *MemDatabase) Print() {
-	db.lock.RLock()
-	defer db.lock.RUnlock()
-
-	for key, val := range db.db {
-		fmt.Printf("%x(%d): ", key, len(key))
-		node := common.NewValueFromBytes(val)
-		fmt.Printf("%q\n", node.Val)
-	}
-}
-
-func (db *MemDatabase) Close() {
-}
-
-func (db *MemDatabase) LastKnownTD() []byte {
-	data, _ := db.Get([]byte("LastKnownTotalDifficulty"))
-	if len(data) == 0 || data == nil {
-		data = []byte{0x0}
-	}
-	return data
-}
+func (db *MemDatabase) Close() {}
 
 func (db *MemDatabase) NewBatch() Batch {
 	return &memBatch{db: db}
@@ -128,7 +107,7 @@ func (b *memBatch) Put(key, value []byte) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
-	b.writes = append(b.writes, kv{key, common.CopyBytes(value)})
+	b.writes = append(b.writes, kv{common.CopyBytes(key), common.CopyBytes(value)})
 	return nil
 }
 

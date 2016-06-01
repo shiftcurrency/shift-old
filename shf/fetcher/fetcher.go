@@ -1,20 +1,20 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package fetcher contains the block announcement based synchonisation.
+// Package fetcher contains the block announcement based synchronisation.
 package fetcher
 
 import (
@@ -34,7 +34,7 @@ import (
 const (
 	arriveTimeout = 500 * time.Millisecond // Time allowance before an announced block is explicitly requested
 	gatherSlack   = 100 * time.Millisecond // Interval used to collate almost-expired announces with fetches
-	fetchTimeout  = 5 * time.Second        // Maximum alloted time to return an explicitly requested block
+	fetchTimeout  = 5 * time.Second        // Maximum allotted time to return an explicitly requested block
 	maxUncleDist  = 7                      // Maximum allowed backward distance from the chain head
 	maxQueueDist  = 32                     // Maximum allowed distance from the chain head to queue
 	hashLimit     = 256                    // Maximum number of unique blocks a peer may have announced
@@ -82,9 +82,9 @@ type announce struct {
 
 	origin string // Identifier of the peer originating the notification
 
-	fetch61     blockRequesterFn  // [eth/61] Fetcher function to retrieve an announced block
-	fetchHeader headerRequesterFn // [eth/62] Fetcher function to retrieve the header of an announced block
-	fetchBodies bodyRequesterFn   // [eth/62] Fetcher function to retrieve the body of an announced block
+	fetch61     blockRequesterFn  // [shf/61] Fetcher function to retrieve an announced block
+	fetchHeader headerRequesterFn // [shf/62] Fetcher function to retrieve the header of an announced block
+	fetchBodies bodyRequesterFn   // [shf/62] Fetcher function to retrieve the body of an announced block
 }
 
 // headerFilterTask represents a batch of headers needing fetcher filtering.
@@ -144,9 +144,9 @@ type Fetcher struct {
 	// Testing hooks
 	announceChangeHook func(common.Hash, bool) // Method to call upon adding or deleting a hash from the announce list
 	queueChangeHook    func(common.Hash, bool) // Method to call upon adding or deleting a block from the import queue
-	fetchingHook       func([]common.Hash)     // Method to call upon starting a block (eth/61) or header (eth/62) fetch
-	completingHook     func([]common.Hash)     // Method to call upon starting a block body fetch (eth/62)
-	importedHook       func(*types.Block)      // Method to call upon successful block import (both eth/61 and eth/62)
+	fetchingHook       func([]common.Hash)     // Method to call upon starting a block (shf/61) or header (shf/62) fetch
+	completingHook     func([]common.Hash)     // Method to call upon starting a block body fetch (shf/62)
+	importedHook       func(*types.Block)      // Method to call upon successful block import (both shf/61 and shf/62)
 }
 
 // New creates a block fetcher to retrieve blocks based on hash announcements.
@@ -176,7 +176,7 @@ func New(getBlock blockRetrievalFn, validateBlock blockValidatorFn, broadcastBlo
 	}
 }
 
-// Start boots up the announcement based synchoniser, accepting and processing
+// Start boots up the announcement based synchroniser, accepting and processing
 // hash notifications and block fetches until termination requested.
 func (f *Fetcher) Start() {
 	go f.loop()
@@ -191,7 +191,7 @@ func (f *Fetcher) Stop() {
 // Notify announces the fetcher of the potential availability of a new block in
 // the network.
 func (f *Fetcher) Notify(peer string, hash common.Hash, number uint64, time time.Time,
-	blockFetcher blockRequesterFn, // eth/61 specific whole block fetcher
+	blockFetcher blockRequesterFn, // shf/61 specific whole block fetcher
 	headerFetcher headerRequesterFn, bodyFetcher bodyRequesterFn) error {
 	block := &announce{
 		hash:        hash,
@@ -227,7 +227,7 @@ func (f *Fetcher) Enqueue(peer string, block *types.Block) error {
 // FilterBlocks extracts all the blocks that were explicitly requested by the fetcher,
 // returning those that should be handled differently.
 func (f *Fetcher) FilterBlocks(blocks types.Blocks) types.Blocks {
-	glog.V(logger.Detail).Infof("[eth/61] filtering %d blocks", len(blocks))
+	glog.V(logger.Detail).Infof("[shf/61] filtering %d blocks", len(blocks))
 
 	// Send the filter channel to the fetcher
 	filter := make(chan []*types.Block)
@@ -255,7 +255,7 @@ func (f *Fetcher) FilterBlocks(blocks types.Blocks) types.Blocks {
 // FilterHeaders extracts all the headers that were explicitly requested by the fetcher,
 // returning those that should be handled differently.
 func (f *Fetcher) FilterHeaders(headers []*types.Header, time time.Time) []*types.Header {
-	glog.V(logger.Detail).Infof("[eth/62] filtering %d headers", len(headers))
+	glog.V(logger.Detail).Infof("[shf/62] filtering %d headers", len(headers))
 
 	// Send the filter channel to the fetcher
 	filter := make(chan *headerFilterTask)
@@ -283,7 +283,7 @@ func (f *Fetcher) FilterHeaders(headers []*types.Header, time time.Time) []*type
 // FilterBodies extracts all the block bodies that were explicitly requested by
 // the fetcher, returning those that should be handled differently.
 func (f *Fetcher) FilterBodies(transactions [][]*types.Transaction, uncles [][]*types.Header, time time.Time) ([][]*types.Transaction, [][]*types.Header) {
-	glog.V(logger.Detail).Infof("[eth/62] filtering %d:%d bodies", len(transactions), len(uncles))
+	glog.V(logger.Detail).Infof("[shf/62] filtering %d:%d bodies", len(transactions), len(uncles))
 
 	// Send the filter channel to the fetcher
 	filter := make(chan *bodyFilterTask)
@@ -365,7 +365,7 @@ func (f *Fetcher) loop() {
 			// If we have a valid block number, check that it's potentially useful
 			if notification.number > 0 {
 				if dist := int64(notification.number) - int64(f.chainHeight()); dist < -maxUncleDist || dist > maxQueueDist {
-					glog.V(logger.Debug).Infof("[eth/62] Peer %s: discarded announcement #%d [%x…], distance %d", notification.origin, notification.number, notification.hash[:4], dist)
+					glog.V(logger.Debug).Infof("[shf/62] Peer %s: discarded announcement #%d [%x…], distance %d", notification.origin, notification.number, notification.hash[:4], dist)
 					propAnnounceDropMeter.Mark(1)
 					break
 				}
@@ -413,7 +413,7 @@ func (f *Fetcher) loop() {
 					}
 				}
 			}
-			// Send out all block (eth/61) or header (eth/62) requests
+			// Send out all block (shf/61) or header (shf/62) requests
 			for peer, hashes := range request {
 				if glog.V(logger.Detail) && len(hashes) > 0 {
 					list := "["
@@ -423,9 +423,9 @@ func (f *Fetcher) loop() {
 					list = list[:len(list)-2] + "]"
 
 					if f.fetching[hashes[0]].fetch61 != nil {
-						glog.V(logger.Detail).Infof("[eth/61] Peer %s: fetching blocks %s", peer, list)
+						glog.V(logger.Detail).Infof("[shf/61] Peer %s: fetching blocks %s", peer, list)
 					} else {
-						glog.V(logger.Detail).Infof("[eth/62] Peer %s: fetching headers %s", peer, list)
+						glog.V(logger.Detail).Infof("[shf/62] Peer %s: fetching headers %s", peer, list)
 					}
 				}
 				// Create a closure of the fetch and schedule in on a new thread
@@ -435,11 +435,11 @@ func (f *Fetcher) loop() {
 						f.fetchingHook(hashes)
 					}
 					if fetchBlocks != nil {
-						// Use old eth/61 protocol to retrieve whole blocks
+						// Use old shf/61 protocol to retrieve whole blocks
 						blockFetchMeter.Mark(int64(len(hashes)))
 						fetchBlocks(hashes)
 					} else {
-						// Use new eth/62 protocol to retrieve headers first
+						// Use new shf/62 protocol to retrieve headers first
 						for _, hash := range hashes {
 							headerFetchMeter.Mark(1)
 							fetchHeader(hash) // Suboptimal, but protocol doesn't allow batch header retrievals
@@ -474,7 +474,7 @@ func (f *Fetcher) loop() {
 					}
 					list = list[:len(list)-2] + "]"
 
-					glog.V(logger.Detail).Infof("[eth/62] Peer %s: fetching bodies %s", peer, list)
+					glog.V(logger.Detail).Infof("[shf/62] Peer %s: fetching bodies %s", peer, list)
 				}
 				// Create a closure of the fetch and schedule in on a new thread
 				if f.completingHook != nil {
@@ -548,7 +548,7 @@ func (f *Fetcher) loop() {
 				if announce := f.fetching[hash]; announce != nil && f.fetched[hash] == nil && f.completing[hash] == nil && f.queued[hash] == nil {
 					// If the delivered header does not match the promised number, drop the announcer
 					if header.Number.Uint64() != announce.number {
-						glog.V(logger.Detail).Infof("[eth/62] Peer %s: invalid block number for [%x…]: announced %d, provided %d", announce.origin, header.Hash().Bytes()[:4], announce.number, header.Number.Uint64())
+						glog.V(logger.Detail).Infof("[shf/62] Peer %s: invalid block number for [%x…]: announced %d, provided %d", announce.origin, header.Hash().Bytes()[:4], announce.number, header.Number.Uint64())
 						f.dropPeer(announce.origin)
 						f.forgetHash(hash)
 						continue
@@ -560,7 +560,7 @@ func (f *Fetcher) loop() {
 
 						// If the block is empty (header only), short circuit into the final import queue
 						if header.TxHash == types.DeriveSha(types.Transactions{}) && header.UncleHash == types.CalcUncleHash([]*types.Header{}) {
-							glog.V(logger.Detail).Infof("[eth/62] Peer %s: block #%d [%x…] empty, skipping body retrieval", announce.origin, header.Number.Uint64(), header.Hash().Bytes()[:4])
+							glog.V(logger.Detail).Infof("[shf/62] Peer %s: block #%d [%x…] empty, skipping body retrieval", announce.origin, header.Number.Uint64(), header.Hash().Bytes()[:4])
 
 							block := types.NewBlockWithHeader(header)
 							block.ReceivedAt = task.time
@@ -572,7 +572,7 @@ func (f *Fetcher) loop() {
 						// Otherwise add to the list of blocks needing completion
 						incomplete = append(incomplete, announce)
 					} else {
-						glog.V(logger.Detail).Infof("[eth/62] Peer %s: block #%d [%x…] already imported, discarding header", announce.origin, header.Number.Uint64(), header.Hash().Bytes()[:4])
+						glog.V(logger.Detail).Infof("[shf/62] Peer %s: block #%d [%x…] already imported, discarding header", announce.origin, header.Number.Uint64(), header.Hash().Bytes()[:4])
 						f.forgetHash(hash)
 					}
 				} else {

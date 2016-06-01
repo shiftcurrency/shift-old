@@ -1,22 +1,23 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package vm
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -61,6 +62,21 @@ func (l *Log) DecodeRLP(s *rlp.Stream) error {
 
 func (l *Log) String() string {
 	return fmt.Sprintf(`log: %x %x %x %x %d %x %d`, l.Address, l.Topics, l.Data, l.TxHash, l.TxIndex, l.BlockHash, l.Index)
+}
+
+func (r *Log) MarshalJSON() ([]byte, error) {
+	fields := map[string]interface{}{
+		"address":          r.Address,
+		"data":             fmt.Sprintf("%#x", r.Data),
+		"blockNumber":      fmt.Sprintf("%#x", r.BlockNumber),
+		"logIndex":         fmt.Sprintf("%#x", r.Index),
+		"blockHash":        r.BlockHash,
+		"transactionHash":  r.TxHash,
+		"transactionIndex": fmt.Sprintf("%#x", r.TxIndex),
+		"topics":           r.Topics,
+	}
+
+	return json.Marshal(fields)
 }
 
 type Logs []*Log

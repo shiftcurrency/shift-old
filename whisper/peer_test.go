@@ -1,18 +1,18 @@
-// Copyright 2015 The shift Authors
-// This file is part of the shift library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package whisper
 
@@ -37,7 +37,7 @@ func startTestPeer() *testPeer {
 
 	// Create a whisper client and connect with it to the tester peer
 	client := New()
-	client.Start()
+	client.Start(nil)
 
 	termed := make(chan struct{})
 	go func() {
@@ -239,14 +239,17 @@ func TestPeerMessageExpiration(t *testing.T) {
 	}
 	payload := []interface{}{envelope}
 	if err := p2p.ExpectMsg(tester.stream, messagesCode, payload); err != nil {
-		t.Fatalf("message mismatch: %v", err)
+		// A premature empty message may have been broadcast, check the next too
+		if err := p2p.ExpectMsg(tester.stream, messagesCode, payload); err != nil {
+			t.Fatalf("message mismatch: %v", err)
+		}
 	}
 	// Check that the message is inside the cache
 	if !peer.known.Has(envelope.Hash()) {
 		t.Fatalf("message not found in cache")
 	}
 	// Discard messages until expiration and check cache again
-	exp := time.Now().Add(time.Second + expirationCycle)
+	exp := time.Now().Add(time.Second + 2*expirationCycle + 100*time.Millisecond)
 	for time.Now().Before(exp) {
 		if err := p2p.ExpectMsg(tester.stream, messagesCode, []interface{}{}); err != nil {
 			t.Fatalf("message mismatch: %v", err)

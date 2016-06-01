@@ -1,23 +1,24 @@
-// Copyright 2014 The go-ethereum Authors && Copyright 2015 shift Authors
-// This file is part of the shift library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The shift library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The shift library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the shift library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package state provides a caching layer atop the Shift state trie.
 package state
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/shiftcurrency/shift/common"
@@ -25,6 +26,7 @@ import (
 	"github.com/shiftcurrency/shift/ethdb"
 	"github.com/shiftcurrency/shift/logger"
 	"github.com/shiftcurrency/shift/logger/glog"
+	"github.com/shiftcurrency/shift/rlp"
 	"github.com/shiftcurrency/shift/trie"
 )
 
@@ -32,8 +34,7 @@ import (
 // created.
 var StartingNonce uint64
 
-// StateDBs within the ethereum protocol are used to store anything
-
+// StateDBs within the shift protocol are used to store anything
 // within the merkle trie. StateDBs take care of caching and storing
 // nested states. It's the general query interface to retrieve:
 // * Contracts
@@ -205,13 +206,12 @@ func (self *StateDB) Delete(addr common.Address) bool {
 
 // Update the given state object and apply it to state trie
 func (self *StateDB) UpdateStateObject(stateObject *StateObject) {
-	//addr := stateObject.Address()
-
-	if len(stateObject.CodeHash()) > 0 {
-		self.db.Put(stateObject.CodeHash(), stateObject.code)
-	}
 	addr := stateObject.Address()
-	self.trie.Update(addr[:], stateObject.RlpEncode())
+	data, err := rlp.EncodeToBytes(stateObject)
+	if err != nil {
+		panic(fmt.Errorf("can't encode object at %x: %v", addr[:], err))
+	}
+	self.trie.Update(addr[:], data)
 }
 
 // Delete the given state object and delete it from the state trie
@@ -238,10 +238,12 @@ func (self *StateDB) GetStateObject(addr common.Address) (stateObject *StateObje
 	if len(data) == 0 {
 		return nil
 	}
-
-	stateObject = NewStateObjectFromBytes(addr, []byte(data), self.db)
+	stateObject, err := DecodeObject(addr, self.db, data)
+	if err != nil {
+		glog.Errorf("can't decode object at %x: %v", addr[:], err)
+		return nil
+	}
 	self.SetStateObject(stateObject)
-
 	return stateObject
 }
 
@@ -348,7 +350,8 @@ func (s *StateDB) IntermediateRoot() common.Hash {
 
 // Commit commits all state changes to the database.
 func (s *StateDB) Commit() (root common.Hash, err error) {
-	return s.commit(s.db)
+	root, batch := s.CommitBatch()
+	return root, batch.Write()
 }
 
 // CommitBatch commits all state changes to a write batch but does not
@@ -369,8 +372,15 @@ func (s *StateDB) commit(db trie.DatabaseWriter) (common.Hash, error) {
 			// and just mark it for deletion in the trie.
 			s.DeleteStateObject(stateObject)
 		} else {
+			// Write any contract code associated with the state object
+			if len(stateObject.code) > 0 {
+				if err := db.Put(stateObject.codeHash, stateObject.code); err != nil {
+					return common.Hash{}, err
+				}
+			}
 			// Write any storage changes in the state object to its trie.
 			stateObject.Update()
+
 			// Commit the trie of the object to the batch.
 			// This updates the trie root internally, so
 			// getting the root hash of the storage trie

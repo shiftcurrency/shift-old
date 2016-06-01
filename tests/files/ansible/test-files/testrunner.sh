@@ -10,7 +10,7 @@ do
 	TEST="$(docker run --rm --entrypoint=\"/cpp-shift/build/test/createRandomStateTest\" shift/cppjit-testrunner)"
 	# echo "$TEST"
 	
-	# test pyethereum
+	# test pyshift
 	OUTPUT_PYTHON="$(docker run --rm shift/python-testrunner --notrace <<< "$TEST")"
 	RESULT_PYTHON=$?
 

@@ -19,10 +19,10 @@ package common
 import "testing"
 
 /* More test vectors:
-https://github.com/ethereum/web3.js/blob/master/test/iban.fromAddress.js
-https://github.com/ethereum/web3.js/blob/master/test/iban.toAddress.js
-https://github.com/ethereum/web3.js/blob/master/test/iban.isValid.js
-https://github.com/ethereum/libethereum/blob/develop/test/libethcore/icap.cpp
+https://github.com/shift/web3.js/blob/master/test/iban.fromAddress.js
+https://github.com/shift/web3.js/blob/master/test/iban.toAddress.js
+https://github.com/shift/web3.js/blob/master/test/iban.isValid.js
+https://github.com/shift/libshift/blob/develop/test/libethcore/icap.cpp
 */
 
 type icapTest struct {
