@@ -5318,13 +5318,13 @@ var methods = function () {
 
     var submitWork = new Method({
         name: 'submitWork',
-        call: 'shf_submitWork',
+        call: 'eth_submitWork',
         params: 3
     });
 
     var getWork = new Method({
         name: 'getWork',
-        call: 'shf_getWork',
+        call: 'eth_getWork',
         params: 0
     });
 
