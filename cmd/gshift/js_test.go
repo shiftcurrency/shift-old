@@ -55,14 +55,14 @@ var (
 	testGenesis    = `{"` + testAddress[2:] + `": {"balance": "` + testBalance + `"}}`
 )
 
-type testjshfre struct {
+type testjethre struct {
 	*jsre
 	lastConfirm string
 	client      *httpclient.HTTPClient
 }
 
 // Temporary disabled while natspec hasn't been migrated
-//func (self *testjshfre) ConfirmTransaction(tx string) bool {
+//func (self *testjethre) ConfirmTransaction(tx string) bool {
 //	var shift *shf.Shift
 //	self.stack.Service(&shift)
 //
@@ -72,11 +72,11 @@ type testjshfre struct {
 //	return true
 //}
 
-func testJShfRE(t *testing.T) (string, *testjshfre, *node.Node) {
+func testJShfRE(t *testing.T) (string, *testjethre, *node.Node) {
 	return testREPL(t, nil)
 }
 
-func testREPL(t *testing.T, config func(*shf.Config)) (string, *testjshfre, *node.Node) {
+func testREPL(t *testing.T, config func(*shf.Config)) (string, *testjethre, *node.Node) {
 	tmp, err := ioutil.TempDir("", "gshift-test")
 	if err != nil {
 		t.Fatal(err)
@@ -129,7 +129,7 @@ func testREPL(t *testing.T, config func(*shf.Config)) (string, *testjshfre, *nod
 	if err != nil {
 		t.Fatalf("failed to attach to node: %v", err)
 	}
-	tf := &testjshfre{client: shift.HTTPClient()}
+	tf := &testjethre{client: shift.HTTPClient()}
 	repl := newJSRE(stack, assetPath, "", client, false)
 	tf.jsre = repl
 	return tmp, tf, stack
@@ -152,7 +152,7 @@ func TestAccounts(t *testing.T) {
 
 	checkEvalJSON(t, repl, `shf.accounts`, `["`+testAddress+`"]`)
 	checkEvalJSON(t, repl, `shf.coinbase`, `"`+testAddress+`"`)
-	val, err := repl.re.Run(`jshf.newAccount("password")`)
+	val, err := repl.re.Run(`jeth.newAccount("password")`)
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
 	}
@@ -419,7 +419,7 @@ multiply7 = Multiply7.at(contractaddress);
 	}
 }
 
-func pendingTransactions(repl *testjshfre, t *testing.T) (txc int64, err error) {
+func pendingTransactions(repl *testjethre, t *testing.T) (txc int64, err error) {
 	var shift *shf.Shift
 	repl.stack.Service(&shift)
 
@@ -427,7 +427,7 @@ func pendingTransactions(repl *testjshfre, t *testing.T) (txc int64, err error) 
 	return int64(len(txs)), nil
 }
 
-func processTxs(repl *testjshfre, t *testing.T, expTxc int) bool {
+func processTxs(repl *testjethre, t *testing.T, expTxc int) bool {
 	var txc int64
 	var err error
 	for i := 0; i < 50; i++ {
@@ -485,7 +485,7 @@ func processTxs(repl *testjshfre, t *testing.T, expTxc int) bool {
 	return true
 }
 
-func checkEvalJSON(t *testing.T, re *testjshfre, expr, want string) error {
+func checkEvalJSON(t *testing.T, re *testjethre, expr, want string) error {
 	val, err := re.re.Run("JSON.stringify(" + expr + ")")
 	if err == nil && val.String() != want {
 		err = fmt.Errorf("Output mismatch for `%s`:\ngot:  %s\nwant: %s", expr, val.String(), want)

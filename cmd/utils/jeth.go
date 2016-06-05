@@ -27,18 +27,18 @@ import (
 	"github.com/robertkrimen/otto"
 )
 
-type Jshf struct {
+type Jeth struct {
 	re     *jsre.JSRE
 	client rpc.Client
 }
 
-// NewJshf create a new backend for the JSRE console
-func NewJshf(re *jsre.JSRE, client rpc.Client) *Jshf {
-	return &Jshf{re, client}
+// NewJeth create a new backend for the JSRE console
+func NewJeth(re *jsre.JSRE, client rpc.Client) *Jeth {
+	return &Jeth{re, client}
 }
 
 // err returns an error object for the given error code and message.
-func (self *Jshf) err(call otto.FunctionCall, code int, msg string, id interface{}) (response otto.Value) {
+func (self *Jeth) err(call otto.FunctionCall, code int, msg string, id interface{}) (response otto.Value) {
 	m := rpc.JSONErrResponse{
 		Version: "2.0",
 		Id:      id,
@@ -57,11 +57,11 @@ func (self *Jshf) err(call otto.FunctionCall, code int, msg string, id interface
 	return res
 }
 
-// UnlockAccount asks the user for the password and than executes the jshf.UnlockAccount callback in the jsre.
+// UnlockAccount asks the user for the password and than executes the jeth.UnlockAccount callback in the jsre.
 // It will need the public address for the account to unlock as first argument.
 // The second argument is an optional string with the password. If not given the user is prompted for the password.
 // The third argument is an optional integer which specifies for how long the account will be unlocked (in seconds).
-func (self *Jshf) UnlockAccount(call otto.FunctionCall) (response otto.Value) {
+func (self *Jeth) UnlockAccount(call otto.FunctionCall) (response otto.Value) {
 	var account, passwd otto.Value
 	duration := otto.NullValue()
 
@@ -96,8 +96,8 @@ func (self *Jshf) UnlockAccount(call otto.FunctionCall) (response otto.Value) {
 		duration = call.Argument(2)
 	}
 
-	// jshf.unlockAccount will send the request to the backend.
-	if val, err := call.Otto.Call("jshf.unlockAccount", nil, account, passwd, duration); err == nil {
+	// jeth.unlockAccount will send the request to the backend.
+	if val, err := call.Otto.Call("jeth.unlockAccount", nil, account, passwd, duration); err == nil {
 		return val
 	} else {
 		throwJSExeception(err.Error())
@@ -106,8 +106,8 @@ func (self *Jshf) UnlockAccount(call otto.FunctionCall) (response otto.Value) {
 	return otto.FalseValue()
 }
 
-// NewAccount asks the user for the password and than executes the jshf.newAccount callback in the jsre
-func (self *Jshf) NewAccount(call otto.FunctionCall) (response otto.Value) {
+// NewAccount asks the user for the password and than executes the jeth.newAccount callback in the jsre
+func (self *Jeth) NewAccount(call otto.FunctionCall) (response otto.Value) {
 	var passwd string
 	if len(call.ArgumentList) == 0 {
 		var err error
@@ -131,7 +131,7 @@ func (self *Jshf) NewAccount(call otto.FunctionCall) (response otto.Value) {
 		return otto.FalseValue()
 	}
 
-	ret, err := call.Otto.Call("jshf.newAccount", nil, passwd)
+	ret, err := call.Otto.Call("jeth.newAccount", nil, passwd)
 	if err == nil {
 		return ret
 	}
@@ -140,7 +140,7 @@ func (self *Jshf) NewAccount(call otto.FunctionCall) (response otto.Value) {
 }
 
 // Send will serialize the first argument, send it to the node and returns the response.
-func (self *Jshf) Send(call otto.FunctionCall) (response otto.Value) {
+func (self *Jeth) Send(call otto.FunctionCall) (response otto.Value) {
 	// verify we got a batch request (array) or a single request (object)
 	ro := call.Argument(0).Object()
 	if ro == nil || (ro.Class() != "Array" && ro.Class() != "Object") {
@@ -234,7 +234,7 @@ func throwJSExeception(msg interface{}) otto.Value {
 }
 
 // Sleep will halt the console for arg[0] seconds.
-func (self *Jshf) Sleep(call otto.FunctionCall) (response otto.Value) {
+func (self *Jeth) Sleep(call otto.FunctionCall) (response otto.Value) {
 	if len(call.ArgumentList) >= 1 {
 		if call.Argument(0).IsNumber() {
 			sleep, _ := call.Argument(0).ToInteger()
@@ -247,7 +247,7 @@ func (self *Jshf) Sleep(call otto.FunctionCall) (response otto.Value) {
 
 // SleepBlocks will wait for a specified number of new blocks or max for a
 // given of seconds. sleepBlocks(nBlocks[, maxSleep]).
-func (self *Jshf) SleepBlocks(call otto.FunctionCall) (response otto.Value) {
+func (self *Jeth) SleepBlocks(call otto.FunctionCall) (response otto.Value) {
 	nBlocks := int64(0)
 	maxSleep := int64(9999999999999999) // indefinitely
 

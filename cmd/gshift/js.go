@@ -168,13 +168,13 @@ func (js *jsre) apiBindings() error {
 		apiNames = append(apiNames, a)
 	}
 
-	jshf := utils.NewJshf(js.re, js.client)
-	js.re.Set("jshf", struct{}{})
-	t, _ := js.re.Get("jshf")
-	jshfObj := t.Object()
+	jeth := utils.NewJeth(js.re, js.client)
+	js.re.Set("jeth", struct{}{})
+	t, _ := js.re.Get("jeth")
+	jethObj := t.Object()
 
-	jshfObj.Set("send", jshf.Send)
-	jshfObj.Set("sendAsync", jshf.Send)
+	jethObj.Set("send", jeth.Send)
+	jethObj.Set("sendAsync", jeth.Send)
 
 	err = js.re.Compile("bignumber.js", re.BigNumber_JS)
 	if err != nil {
@@ -191,7 +191,7 @@ func (js *jsre) apiBindings() error {
 		utils.Fatalf("Error requiring web3: %v", err)
 	}
 
-	_, err = js.re.Run("var web3 = new Web3(jshf);")
+	_, err = js.re.Run("var web3 = new Web3(jeth);")
 	if err != nil {
 		utils.Fatalf("Error setting web3 provider: %v", err)
 	}
@@ -227,21 +227,21 @@ func (js *jsre) apiBindings() error {
 	}
 
 	// Override the unlockAccount and newAccount methods on the personal object since these require user interaction.
-	// Assign the jshf.unlockAccount and jshf.newAccount in the jsre the original web3 callbacks. These will be called
-	// by the jshf.* methods after they got the password from the user and send the original web3 request to the backend.
+	// Assign the jeth.unlockAccount and jeth.newAccount in the jsre the original web3 callbacks. These will be called
+	// by the jeth.* methods after they got the password from the user and send the original web3 request to the backend.
 	if persObj := p.Object(); persObj != nil { // make sure the personal api is enabled over the interface
-		js.re.Run(`jshf.unlockAccount = personal.unlockAccount;`)
-		persObj.Set("unlockAccount", jshf.UnlockAccount)
-		js.re.Run(`jshf.newAccount = personal.newAccount;`)
-		persObj.Set("newAccount", jshf.NewAccount)
+		js.re.Run(`jeth.unlockAccount = personal.unlockAccount;`)
+		persObj.Set("unlockAccount", jeth.UnlockAccount)
+		js.re.Run(`jeth.newAccount = personal.newAccount;`)
+		persObj.Set("newAccount", jeth.NewAccount)
 	}
 
 	// The admin.sleep and admin.sleepBlocks are offered by the console and not by the RPC layer.
 	// Bind these if the admin module is available.
 	if a, err := js.re.Get("admin"); err == nil {
 		if adminObj := a.Object(); adminObj != nil {
-			adminObj.Set("sleepBlocks", jshf.SleepBlocks)
-			adminObj.Set("sleep", jshf.Sleep)
+			adminObj.Set("sleepBlocks", jeth.SleepBlocks)
+			adminObj.Set("sleep", jeth.Sleep)
 		}
 	}
 
