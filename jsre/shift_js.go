@@ -2494,7 +2494,7 @@ module.exports={
 
 var RequestManager = require('./web3/requestmanager');
 var Iban = require('./web3/iban');
-var Shf = require('./web3/methods/shf');
+var Eth = require('./web3/methods/eth');
 var DB = require('./web3/methods/db');
 var Shh = require('./web3/methods/shh');
 var Net = require('./web3/methods/net');
@@ -2514,7 +2514,7 @@ var IpcProvider = require('./web3/ipcprovider');
 function Web3 (provider) {
     this._requestManager = new RequestManager(provider);
     this.currentProvider = provider;
-    this.shf = new Shf(this);
+    this.eth = new Eth(this);
     this.db = new DB(this);
     this.shh = new Shh(this);
     this.net = new Net(this);
@@ -2612,7 +2612,7 @@ Web3.prototype.createBatch = function () {
 module.exports = Web3;
 
 
-},{"./utils/sha3":19,"./utils/utils":20,"./version.json":21,"./web3/batch":24,"./web3/extend":28,"./web3/httpprovider":32,"./web3/iban":33,"./web3/ipcprovider":34,"./web3/methods/db":37,"./web3/methods/shf":38,"./web3/methods/net":39,"./web3/methods/personal":40,"./web3/methods/shh":41,"./web3/property":44,"./web3/requestmanager":45,"./web3/settings":46}],23:[function(require,module,exports){
+},{"./utils/sha3":19,"./utils/utils":20,"./version.json":21,"./web3/batch":24,"./web3/extend":28,"./web3/httpprovider":32,"./web3/iban":33,"./web3/ipcprovider":34,"./web3/methods/db":37,"./web3/methods/eth":38,"./web3/methods/net":39,"./web3/methods/personal":40,"./web3/methods/shh":41,"./web3/property":44,"./web3/requestmanager":45,"./web3/settings":46}],23:[function(require,module,exports){
 /*
     This file is part of web3.js.
 
@@ -2691,7 +2691,7 @@ AllSolidityEvents.prototype.execute = function (options, callback) {
 
     var o = this.encode(options);
     var formatter = this.decode.bind(this);
-    return new Filter(this._requestManager, o, watches.shf(), formatter, callback);
+    return new Filter(this._requestManager, o, watches.eth(), formatter, callback);
 };
 
 AllSolidityEvents.prototype.attachToContract = function (contract) {
@@ -2829,7 +2829,7 @@ var addFunctionsToContract = function (contract) {
     contract.abi.filter(function (json) {
         return json.type === 'function';
     }).map(function (json) {
-        return new SolidityFunction(contract._shf, json, contract.address);
+        return new SolidityFunction(contract._eth, json, contract.address);
     }).forEach(function (f) {
         f.attachToContract(contract);
     });
@@ -2847,11 +2847,11 @@ var addEventsToContract = function (contract) {
         return json.type === 'event';
     });
 
-    var All = new AllEvents(contract._shf._requestManager, events, contract.address);
+    var All = new AllEvents(contract._eth._requestManager, events, contract.address);
     All.attachToContract(contract);
 
     events.map(function (json) {
-        return new SolidityEvent(contract._shf._requestManager, json, contract.address);
+        return new SolidityEvent(contract._eth._requestManager, json, contract.address);
     }).forEach(function (e) {
         e.attachToContract(contract);
     });
@@ -2871,7 +2871,7 @@ var checkForContractAddress = function(contract, callback){
         callbackFired = false;
 
     // wait for receipt
-    var filter = contract._shf.filter('latest', function(e){
+    var filter = contract._eth.filter('latest', function(e){
         if (!e && !callbackFired) {
             count++;
 
@@ -2889,10 +2889,10 @@ var checkForContractAddress = function(contract, callback){
 
             } else {
 
-                contract._shf.getTransactionReceipt(contract.transactionHash, function(e, receipt){
+                contract._eth.getTransactionReceipt(contract.transactionHash, function(e, receipt){
                     if(receipt && !callbackFired) {
 
-                        contract._shf.getCode(receipt.contractAddress, function(e, code){
+                        contract._eth.getCode(receipt.contractAddress, function(e, code){
                             /*jshint maxcomplexity: 6 */
 
                             if(callbackFired || !code)
@@ -2935,8 +2935,8 @@ var checkForContractAddress = function(contract, callback){
  * @method ContractFactory
  * @param {Array} abi
  */
-var ContractFactory = function (shf, abi) {
-    this.shf = shf;
+var ContractFactory = function (eth, abi) {
+    this.eth = eth;
     this.abi = abi;
 
     /**
@@ -2950,7 +2950,7 @@ var ContractFactory = function (shf, abi) {
      * @returns {Contract} returns contract instance
      */
     this.new = function () {
-        var contract = new Contract(this.shf, this.abi);
+        var contract = new Contract(this.eth, this.abi);
 
         // parse arguments
         var options = {}; // required!
@@ -2972,7 +2972,7 @@ var ContractFactory = function (shf, abi) {
         if (callback) {
 
             // wait for the contract address adn check if the code was deployed
-            this.shf.sendTransaction(options, function (err, hash) {
+            this.eth.sendTransaction(options, function (err, hash) {
                 if (err) {
                     callback(err);
                 } else {
@@ -2986,7 +2986,7 @@ var ContractFactory = function (shf, abi) {
                 }
             });
         } else {
-            var hash = this.shf.sendTransaction(options);
+            var hash = this.eth.sendTransaction(options);
             // add the transaction hash
             contract.transactionHash = hash;
             checkForContractAddress(contract);
@@ -3021,7 +3021,7 @@ var ContractFactory = function (shf, abi) {
  * otherwise calls callback function (err, contract)
  */
 ContractFactory.prototype.at = function (address, callback) {
-    var contract = new Contract(this.shf, this.abi, address);
+    var contract = new Contract(this.eth, this.abi, address);
 
     // this functions are not part of prototype,
     // because we dont want to spoil the interface
@@ -3061,8 +3061,8 @@ ContractFactory.prototype.getData = function () {
  * @param {Array} abi
  * @param {Address} contract address
  */
-var Contract = function (shf, abi, address) {
-    this._shf = shf;
+var Contract = function (eth, abi, address) {
+    this._eth = eth;
     this.transactionHash = null;
     this.address = address;
     this.abi = abi;
@@ -3299,7 +3299,7 @@ SolidityEvent.prototype.execute = function (indexed, options, callback) {
 
     var o = this.encode(indexed, options);
     var formatter = this.decode.bind(this);
-    return new Filter(this._requestManager, o, watches.shf(), formatter, callback);
+    return new Filter(this._requestManager, o, watches.eth(), formatter, callback);
 };
 
 /**
@@ -3939,8 +3939,8 @@ var sha3 = require('../utils/sha3');
 /**
  * This prototype should be used to call/sendTransaction to solidity functions
  */
-var SolidityFunction = function (shf, json, address) {
-    this._shf = shf;
+var SolidityFunction = function (eth, json, address) {
+    this._eth = eth;
     this._inputTypes = json.inputs.map(function (i) {
         return i.type;
     });
@@ -4020,12 +4020,12 @@ SolidityFunction.prototype.call = function () {
 
 
     if (!callback) {
-        var output = this._shf.call(payload, defaultBlock);
+        var output = this._eth.call(payload, defaultBlock);
         return this.unpackOutput(output);
     }
 
     var self = this;
-    this._shf.call(payload, defaultBlock, function (error, output) {
+    this._eth.call(payload, defaultBlock, function (error, output) {
         callback(error, self.unpackOutput(output));
     });
 };
@@ -4041,10 +4041,10 @@ SolidityFunction.prototype.sendTransaction = function () {
     var payload = this.toPayload(args);
 
     if (!callback) {
-        return this._shf.sendTransaction(payload);
+        return this._eth.sendTransaction(payload);
     }
 
-    this._shf.sendTransaction(payload, callback);
+    this._eth.sendTransaction(payload, callback);
 };
 
 /**
@@ -4058,10 +4058,10 @@ SolidityFunction.prototype.estimateGas = function () {
     var payload = this.toPayload(args);
 
     if (!callback) {
-        return this._shf.estimateGas(payload);
+        return this._eth.estimateGas(payload);
     }
 
-    this._shf.estimateGas(payload, callback);
+    this._eth.estimateGas(payload, callback);
 };
 
 /**
@@ -5130,7 +5130,7 @@ var uncleCountCall = function (args) {
     return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'shf_getUncleCountByBlockHash' : 'shf_getUncleCountByBlockNumber';
 };
 
-function Shf(web3) {
+function Eth(web3) {
     this._requestManager = web3._requestManager;
 
     var self = this;
@@ -5150,7 +5150,7 @@ function Shf(web3) {
     this.sendIBANTransaction = transfer.bind(null, this);
 }
 
-Object.defineProperty(Shf.prototype, 'defaultBlock', {
+Object.defineProperty(Eth.prototype, 'defaultBlock', {
     get: function () {
         return c.defaultBlock;
     },
@@ -5160,7 +5160,7 @@ Object.defineProperty(Shf.prototype, 'defaultBlock', {
     }
 });
 
-Object.defineProperty(Shf.prototype, 'defaultAccount', {
+Object.defineProperty(Eth.prototype, 'defaultAccount', {
     get: function () {
         return c.defaultAccount;
     },
@@ -5392,28 +5392,28 @@ var properties = function () {
     ];
 };
 
-Shf.prototype.contract = function (abi) {
+Eth.prototype.contract = function (abi) {
     var factory = new Contract(this, abi);
     return factory;
 };
 
-Shf.prototype.filter = function (fil, callback) {
-    return new Filter(this._requestManager, fil, watches.shf(), formatters.outputLogFormatter, callback);
+Eth.prototype.filter = function (fil, callback) {
+    return new Filter(this._requestManager, fil, watches.eth(), formatters.outputLogFormatter, callback);
 };
 
-Shf.prototype.namereg = function () {
+Eth.prototype.namereg = function () {
     return this.contract(namereg.global.abi).at(namereg.global.address);
 };
 
-Shf.prototype.icapNamereg = function () {
+Eth.prototype.icapNamereg = function () {
     return this.contract(namereg.icap.abi).at(namereg.icap.address);
 };
 
-Shf.prototype.isSyncing = function (callback) {
+Eth.prototype.isSyncing = function (callback) {
     return new IsSyncing(this._requestManager, callback);
 };
 
-module.exports = Shf;
+module.exports = Eth;
 
 
 },{"../../utils/config":18,"../../utils/utils":20,"../contract":25,"../filter":29,"../formatters":30,"../iban":33,"../method":36,"../namereg":43,"../property":44,"../syncing":47,"../transfer":48,"./watches":42}],39:[function(require,module,exports){
@@ -5453,7 +5453,7 @@ var Net = function (web3) {
     });
 };
 
-/// @returns an array of objects describing web3.shf api properties
+/// @returns an array of objects describing web3.eth api properties
 var properties = function () {
     return [
         new Property({
@@ -5670,8 +5670,8 @@ module.exports = Shh;
 
 var Method = require('../method');
 
-/// @returns an array of objects describing web3.shf.filter api methods
-var shf = function () {
+/// @returns an array of objects describing web3.eth.filter api methods
+var eth = function () {
     var newFilterCall = function (args) {
         var type = args[0];
 
@@ -5756,7 +5756,7 @@ var shh = function () {
 };
 
 module.exports = {
-    shf: shf,
+    eth: eth,
     shh: shh
 };
 
@@ -6356,23 +6356,23 @@ var exchangeAbi = require('../contracts/SmartExchange.json');
  * @param {Value} value to be tranfered
  * @param {Function} callback, callback
  */
-var transfer = function (shf, from, to, value, callback) {
+var transfer = function (eth, from, to, value, callback) {
     var iban = new Iban(to);
     if (!iban.isValid()) {
         throw new Error('invalid iban address');
     }
 
     if (iban.isDirect()) {
-        return transferToAddress(shf, from, iban.address(), value, callback);
+        return transferToAddress(eth, from, iban.address(), value, callback);
     }
 
     if (!callback) {
-        var address = shf.icapNamereg().addr(iban.institution());
-        return deposit(shf, from, address, value, iban.client());
+        var address = eth.icapNamereg().addr(iban.institution());
+        return deposit(eth, from, address, value, iban.client());
     }
 
-    shf.icapNamereg().addr(iban.institution(), function (err, address) {
-        return deposit(shf, from, address, value, iban.client(), callback);
+    eth.icapNamereg().addr(iban.institution(), function (err, address) {
+        return deposit(eth, from, address, value, iban.client(), callback);
     });
 
 };
@@ -6386,8 +6386,8 @@ var transfer = function (shf, from, to, value, callback) {
  * @param {Value} value to be tranfered
  * @param {Function} callback, callback
  */
-var transferToAddress = function (shf, from, to, value, callback) {
-    return shf.sendTransaction({
+var transferToAddress = function (eth, from, to, value, callback) {
+    return eth.sendTransaction({
         address: to,
         from: from,
         value: value
@@ -6404,9 +6404,9 @@ var transferToAddress = function (shf, from, to, value, callback) {
  * @param {String} client unique identifier
  * @param {Function} callback, callback
  */
-var deposit = function (shf, from, to, value, client, callback) {
+var deposit = function (eth, from, to, value, client, callback) {
     var abi = exchangeAbi;
-    return shf.contract(abi).at(to).deposit(client, {
+    return eth.contract(abi).at(to).deposit(client, {
         from: from,
         value: value
     }, callback);
