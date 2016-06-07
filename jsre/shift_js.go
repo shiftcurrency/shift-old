@@ -5358,8 +5358,8 @@ var methods = function () {
 var properties = function () {
     return [
         new Property({
-            name: 'coinbase',
-            getter: 'shf_coinbase'
+            name: 'shiftbase',
+            getter: 'shf_shiftbase'
         }),
         new Property({
             name: 'mining',

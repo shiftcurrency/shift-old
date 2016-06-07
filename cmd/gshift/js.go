@@ -138,7 +138,7 @@ func (self *jsre) welcome() {
 	self.re.Run(`
     (function () {
       console.log('instance: ' + web3.version.node);
-      console.log("coinbase: " + shf.coinbase);
+      console.log("coinbase: " + eth.shiftbase);
       var ts = 1000 * shf.getBlock(shf.blockNumber).timestamp;
       console.log("at block: " + shf.blockNumber + " (" + new Date(ts) + ")");
       console.log(' datadir: ' + admin.datadir);
