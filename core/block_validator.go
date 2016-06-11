@@ -32,7 +32,7 @@ import (
 
 var (
 	ExpDiffPeriod = big.NewInt(100000)
-	big10         = big.NewInt(10)
+	big10         = big.NewInt(10) // Nice one.
 	bigMinus99    = big.NewInt(-99)
 )
 
