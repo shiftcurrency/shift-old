@@ -84,6 +84,10 @@
 			"ImportPath": "github.com/jackpal/go-nat-pmp",
 			"Rev": "46523a463303c6ede3ddfe45bde1c7ed52ebaacd"
 		},
+        {
+            "ImportPath": "github.com/mattn/go-sqlite",
+            "Rev": "38ee283dabf11c9cbdb968eebd79b1fa7acbabe6"
+        },
 		{
 			"ImportPath": "github.com/mattn/go-colorable",
 			"Rev": "9fdad7c47650b7d2e1da50644c1f4ba7f172f252"
