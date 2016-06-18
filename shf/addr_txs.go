@@ -54,7 +54,7 @@ func NewAddrTxSyncer(datadir string, chainDB ethdb.Database, bc *core.BlockChain
 	}
 
 	createStmt := `
-	CREATE TABLE IF NOT EXISTS txs (hash CHARACTER(40) PRIMARY KEY NOT NULL, blocknumber INT4, sender CHARACTER(40), recipient CHARACTER(40));
+	CREATE TABLE IF NOT EXISTS txs (hash CHARACTER(40) PRIMARY KEY NOT NULL, blocknumber INT4, sender CHARACTER(40), recipient CHARACTER(40), amount INT4);
 
 	CREATE INDEX IF NOT EXISTS from_index ON txs (sender);
 	CREATE INDEX IF NOT EXISTS to_index ON txs (recipient);
@@ -157,7 +157,7 @@ func (s *AddrTxSyncer) SyncAddrTxs() error {
 		for _, tx := range block.Transactions() {
 			from, _ := tx.From() // already validated
 			h := tx.Hash()
-			err := insertTx(s.txDB, &h, bn, &from, tx.To())
+			err := insertTx(s.txDB, &h, bn, &from, tx.To(), tx.Value())
 			if err != nil {
 				return err
 			}
@@ -179,7 +179,7 @@ func (s *AddrTxSyncer) SyncAddrTxs() error {
 	return nil
 }
 
-func insertTx(db *sql.DB, hash *common.Hash, blockNumber *big.Int, from, to *common.Address) error {
+func insertTx(db *sql.DB, hash *common.Hash, blockNumber *big.Int, from, to *common.Address, value *big.Int) error {
 	// no to addr in contract deployment txs
 	toStr := "NULL"
 	if to != nil {
@@ -189,11 +189,12 @@ func insertTx(db *sql.DB, hash *common.Hash, blockNumber *big.Int, from, to *com
 	// primary key collisions are ignored, can happen if interrupting
 	// sync - then all txs in the last block are re-inserted
 	sqlStmt :=
-		fmt.Sprintf("INSERT OR IGNORE INTO txs(hash, blocknumber, sender, recipient) VALUES('%s', '%v', '%s', '%s');",
+		fmt.Sprintf("INSERT OR IGNORE INTO txs(hash, blocknumber, sender, recipient, amount) VALUES('%s', '%v', '%s', '%s', '%v');",
 			common.Bytes2Hex(hash[:]),
 			blockNumber,
 			common.Bytes2Hex(from[:]),
-			toStr)
+			toStr,
+            value)
 	//fmt.Printf("FUNKY: sqlStmt:\n%s\n", sqlStmt)
 
 	//t0 := time.Now()
