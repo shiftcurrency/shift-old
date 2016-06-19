@@ -24,7 +24,7 @@ import (
 const (
 	DefaultIPCSocket = "gshift.ipc"  // Default (relative) name of the IPC RPC socket
 	DefaultHTTPHost  = "localhost" // Default host interface for the HTTP RPC server
-	DefaultHTTPPort  = 53901        // Default TCP port for the HTTP RPC server
+	DefaultHTTPPort  = 54901        // Default TCP port for the HTTP RPC server
 	DefaultWSHost    = "localhost" // Default host interface for the websocket RPC server
 	DefaultWSPort    = 53902        // Default TCP port for the websocket RPC server
 )

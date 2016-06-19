@@ -16,7 +16,7 @@ RUN cd pyshift && curl https://bootstrap.pypa.io/bootstrap-buildout.py | python
 RUN cd pyshift && bin/buildout
 
 #default port for incoming requests
-EXPOSE 53900
+EXPOSE 54900
 
 WORKDIR /pyshift 
 

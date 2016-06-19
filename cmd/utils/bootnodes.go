@@ -21,11 +21,9 @@ import "github.com/shiftcurrency/shift/p2p/discover"
 // FrontierBootNodes are the enode URLs of the P2P bootstrap nodes running on
 // the Frontier network.
 var FrontierBootNodes = []*discover.Node{
-        discover.MustParseNode("enode://4c8635f108dae8a997697d9c22ddca36969e7f9bc57d9fc01102d7e7d9633231331ae7f7307aceb1aa19130b5bdd4afe397db616c76e7ffc1c69302ba0d09a39@45.32.182.61:53900"),
+        discover.MustParseNode("enode://3ff38d26ff93db0c340acfae3999595c52c170fa8a360baca38533eaf6cbec4c7b9cd9f3da4a59bfa27dfa26ab856a5b8f3f3f0f91a61b98da6774e986800747@45.32.95.111:54900"),
         // Paris
-        discover.MustParseNode("enode://80d0ce5c992f8cc83cdbfd6d832b2dff2e82fee1f8b58762cd858eaacfcc99d5a8a837648bd28a2d508cc1da305c15cf4e531546034ed1a8ccd07ff51a71abd6@108.61.177.0:53900"),
-        // Seattle
-        discover.MustParseNode("enode://f019da062a635a4e9e89ec93edc7ca11c06fdfec0574f1cb001126a82dc6ffa6ca05f924a683934ff5d01fc5d4b0ac9507349a945c97121b2a355d39b1781cd7@104.238.157.156:53900"),
+        discover.MustParseNode("enode://7eff1768d648c0df27ca6b808af28a6ab5e2a30fda34a0c1c6ffb637c09f85499571329dcd13bd434912ba2f8e4af3a38eb51b5b0dcf8320e2d795b561214bf3@45.32.155.17:54900"),
 
 }
 

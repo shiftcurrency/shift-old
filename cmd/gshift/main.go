@@ -47,7 +47,7 @@ import (
 )
 
 const (
-	clientIdentifier = "Gshift"   // Client identifier to advertise over the network
+	clientIdentifier = "Gshift-testnet"   // Client identifier to advertise over the network
 	versionMajor     = 2        // Major version component of the current release
 	versionMinor     = 7        // Minor version component of the current release
 	versionPatch     = 0        // Patch version component of the current release

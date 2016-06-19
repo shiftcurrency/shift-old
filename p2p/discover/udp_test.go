@@ -118,7 +118,7 @@ func newUDPTest(t *testing.T) *udpTest {
 		pipe:       newpipe(),
 		localkey:   newkey(),
 		remotekey:  newkey(),
-		remoteaddr: &net.UDPAddr{IP: net.IP{1, 2, 3, 4}, Port: 53900},
+		remoteaddr: &net.UDPAddr{IP: net.IP{1, 2, 3, 4}, Port: 54900},
 	}
 	test.table, test.udp, _ = newUDP(test.localkey, test.pipe, nil, "")
 	return test

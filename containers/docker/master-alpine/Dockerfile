@@ -8,7 +8,7 @@ RUN \
   apk del go git make gcc musl-dev gmp-dev              && \
   rm -rf /shift && rm -rf /var/cache/apk/*
 
-EXPOSE 53901
-EXPOSE 53900
+EXPOSE 54901
+EXPOSE 54900
 
 ENTRYPOINT ["/gshift"]
