@@ -31,10 +31,11 @@ import (
 )
 
 var (
-	ExpDiffPeriod = big.NewInt(100000)
-	big10         = big.NewInt(10) // Nice one.
-	bigMinus99    = big.NewInt(-99)
+    ExpDiffPeriod = big.NewInt(100000)
+    big10         = big.NewInt(10) // Nice one.
+    bigMinus99    = big.NewInt(-99)
 )
+
 
 // BlockValidator is responsible for validating block headers, uncles and
 // processed state.

@@ -21,6 +21,7 @@ import (
 
 	"github.com/shiftcurrency/shift/core/state"
 	"github.com/shiftcurrency/shift/core/types"
+    "github.com/shiftcurrency/shift/params"
 	"github.com/shiftcurrency/shift/core/vm"
 	"github.com/shiftcurrency/shift/crypto"
 	"github.com/shiftcurrency/shift/logger"
@@ -115,7 +116,16 @@ func ApplyTransaction(config *ChainConfig, bc *BlockChain, gp *GasPool, statedb 
 // and rewards for included uncles. The coinbase of each uncle block is
 // also rewarded.
 func AccumulateRewards(statedb *state.StateDB, header *types.Header, uncles []*types.Header) {
-	reward := new(big.Int).Set(BlockReward)
+
+    var bl = header.Number
+
+    if bl.Cmp(params.HardFork1) <= 0 {
+        BlockReward=big.NewInt(2e+18)
+    } else {
+        BlockReward=big.NewInt(1e+18)
+    }
+
+    reward := new(big.Int).Set(BlockReward)
 	r := new(big.Int)
 	for _, uncle := range uncles {
 		r.Add(uncle.Number, big8)
