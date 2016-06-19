@@ -276,6 +276,16 @@ func calcDifficultyHomestead(time, parentTime uint64, parentNumber, parentDiff *
 	x := new(big.Int)
 	y := new(big.Int)
 
+    blknum := new(big.Int)
+    blknum.Add(parentNumber,big.NewInt(1))
+
+    if blknum.Cmp(params.HardFork1) <= 0 {
+        big10 = big.NewInt(10)
+    } else {
+        big10 = big.NewInt(40)
+    }
+
+
 	// 1 - (block_timestamp -parent_timestamp) // 10
 	x.Sub(bigTime, bigParentTime)
 	x.Div(x, big10)
