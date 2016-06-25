@@ -54,7 +54,7 @@ func NewAddrTxSyncer(datadir string, chainDB ethdb.Database, bc *core.BlockChain
 	}
 
 	createStmt := `
-	CREATE TABLE IF NOT EXISTS txs (hash CHARACTER(40) PRIMARY KEY NOT NULL, blocknumber INT4, sender CHARACTER(40), recipient CHARACTER(40), amount INT4);
+	CREATE TABLE IF NOT EXISTS txs (hash CHARACTER(40) PRIMARY KEY NOT NULL, blocknumber INT4, sender CHARACTER(40), recipient CHARACTER(40), amount INT4, datetime INT4);
 
 	CREATE INDEX IF NOT EXISTS from_index ON txs (sender);
 	CREATE INDEX IF NOT EXISTS to_index ON txs (recipient);
@@ -118,6 +118,7 @@ func (s *AddrTxSyncer) SyncAddrTxs() error {
 	var blockHash common.Hash
 	var block *types.Block
 	var bn *big.Int
+    var datetime *big.Int
 
 	blockHash = core.GetHeadBlockHash(s.chainDB)
 	headBlock := core.GetBlock(s.chainDB, blockHash)
@@ -155,9 +156,10 @@ func (s *AddrTxSyncer) SyncAddrTxs() error {
 			return nil
 		}
 		for _, tx := range block.Transactions() {
+            datetime = block.Time()
 			from, _ := tx.From() // already validated
 			h := tx.Hash()
-			err := insertTx(s.txDB, &h, bn, &from, tx.To(), tx.Value())
+			err := insertTx(s.txDB, &h, bn, &from, tx.To(), tx.Value(), datetime)
 			if err != nil {
 				return err
 			}
@@ -179,7 +181,7 @@ func (s *AddrTxSyncer) SyncAddrTxs() error {
 	return nil
 }
 
-func insertTx(db *sql.DB, hash *common.Hash, blockNumber *big.Int, from, to *common.Address, value *big.Int) error {
+func insertTx(db *sql.DB, hash *common.Hash, blockNumber *big.Int, from, to *common.Address, value *big.Int, datetime *big.Int) error {
 	// no to addr in contract deployment txs
 	toStr := "NULL"
 	if to != nil {
@@ -189,12 +191,13 @@ func insertTx(db *sql.DB, hash *common.Hash, blockNumber *big.Int, from, to *com
 	// primary key collisions are ignored, can happen if interrupting
 	// sync - then all txs in the last block are re-inserted
 	sqlStmt :=
-		fmt.Sprintf("INSERT OR IGNORE INTO txs(hash, blocknumber, sender, recipient, amount) VALUES('%s', '%v', '%s', '%s', '%v');",
+		fmt.Sprintf("INSERT OR IGNORE INTO txs(hash, blocknumber, sender, recipient, amount, datetime) VALUES('%s', '%v', '%s', '%s', '%v', '%v');",
 			common.Bytes2Hex(hash[:]),
 			blockNumber,
 			common.Bytes2Hex(from[:]),
 			toStr,
-            value)
+            value,
+            datetime)
 	//fmt.Printf("FUNKY: sqlStmt:\n%s\n", sqlStmt)
 
 	//t0 := time.Now()
