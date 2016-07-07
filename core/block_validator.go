@@ -31,10 +31,11 @@ import (
 )
 
 var (
-	ExpDiffPeriod = big.NewInt(100000)
-	big10         = big.NewInt(10) // Nice one.
-	bigMinus99    = big.NewInt(-99)
+    ExpDiffPeriod = big.NewInt(100000)
+    big10         = big.NewInt(10) // Nice one.
+    bigMinus99    = big.NewInt(-99)
 )
+
 
 // BlockValidator is responsible for validating block headers, uncles and
 // processed state.
@@ -274,6 +275,16 @@ func calcDifficultyHomestead(time, parentTime uint64, parentNumber, parentDiff *
 	// holds intermediate values to make the algo easier to read & audit
 	x := new(big.Int)
 	y := new(big.Int)
+
+    blknum := new(big.Int)
+    blknum.Add(parentNumber,big.NewInt(1))
+
+    if blknum.Cmp(params.HardFork1) <= 0 {
+        big10 = big.NewInt(10)
+    } else {
+        big10 = big.NewInt(40)
+    }
+
 
 	// 1 - (block_timestamp -parent_timestamp) // 10
 	x.Sub(bigTime, bigParentTime)
