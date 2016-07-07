@@ -39,7 +39,7 @@ var (
 	CallStipend            = big.NewInt(2300)   // Free gas given at beginning of call.
 	EcrecoverGas           = big.NewInt(3000)   //
 	Sha256WordGas          = big.NewInt(12)     //
-    HardFork1              = big.NewInt(551950) // Reward 1. Block time 25s.
+    HardFork1              = big.NewInt(551950)     // 1 reward. 25s.
 
 	MinGasLimit     = big.NewInt(5000)                  // Minimum the gas limit may ever be.
 	GenesisGasLimit = big.NewInt(31415926)               // Gas limit of the Genesis block.
