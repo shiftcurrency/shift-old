@@ -282,7 +282,7 @@ func calcDifficultyHomestead(time, parentTime uint64, parentNumber, parentDiff *
     if blknum.Cmp(params.HardFork1) <= 0 {
         big10 = big.NewInt(10)
     } else {
-        big10 = big.NewInt(40)
+        big10 = big.NewInt(25)
     }
 
 
