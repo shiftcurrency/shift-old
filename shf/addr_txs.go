@@ -32,7 +32,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const sqliteDBName = "shift.db"
+const sqliteDBName = "shift_tx.db"
 
 type AddrTxSyncer struct {
 	txDB         *sql.DB
