@@ -50,7 +50,7 @@ func ReportBlock(block *types.Block, err error) {
 			"vmtrace":  "NYI",
 		},
 	}
-	jsonStr, _ := json.Marshal(map[string]interface{}{"method": "shf_badBlock", "params": []interface{}{data}, "id": "1", "jsonrpc": "2.0"})
+	jsonStr, _ := json.Marshal(map[string]interface{}{"method": "eth_badBlock", "params": []interface{}{data}, "id": "1", "jsonrpc": "2.0"})
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")

@@ -99,12 +99,6 @@ func stateAndBlockByNumber(m *miner.Miner, bc *core.BlockChain, blockNr rpc.Bloc
 	return stateDb, block, err
 }
 
-// ListTransactions returns the list of txs for the given address
-func (s *PublicShiftAPI) ListTransactions(addr common.Address) ([]common.Hash, error) {
-   return s.e.addrTxSyncer.ListTransactions(addr)
-}
-
-
 // PublicShiftAPI provides an API to access Shift related information.
 // It offers only methods that operate on public data that is freely available to anyone.
 type PublicShiftAPI struct {

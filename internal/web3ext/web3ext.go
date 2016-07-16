@@ -192,36 +192,36 @@ web3._extend({
 
 const Shf_JS = `
 web3._extend({
-	property: 'shf',
+	property: 'eth',
 	methods:
 	[
 		new web3._extend.Method({
 			name: 'sign',
-			call: 'shf_sign',
+			call: 'eth_sign',
 			params: 2,
 			inputFormatter: [web3._extend.formatters.inputAddressFormatter, null]
 		}),
 		new web3._extend.Method({
 			name: 'resend',
-			call: 'shf_resend',
+			call: 'eth_resend',
 			params: 3,
 			inputFormatter: [web3._extend.formatters.inputTransactionFormatter, web3._extend.utils.fromDecimal, web3._extend.utils.fromDecimal]
 		}),
 		new web3._extend.Method({
 			name: 'getNatSpec',
-			call: 'shf_getNatSpec',
+			call: 'eth_getNatSpec',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'signTransaction',
-			call: 'shf_signTransaction',
+			call: 'eth_signTransaction',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'submitTransaction',
-			call: 'shf_submitTransaction',
+			call: 'eth_submitTransaction',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
 		})
@@ -230,7 +230,7 @@ web3._extend({
 	[
 		new web3._extend.Property({
 			name: 'pendingTransactions',
-			getter: 'shf_pendingTransactions',
+			getter: 'eth_pendingTransactions',
 			outputFormatter: function(txs) {
 				var formatted = [];
 				for (var i = 0; i < txs.length; i++) {

@@ -50,8 +50,8 @@ const (
 	clientIdentifier = "Gshift"   // Client identifier to advertise over the network
 	versionMajor     = 3        // Major version component of the current release
 	versionMinor     = 0        // Minor version component of the current release
-	versionPatch     = 0        // Patch version component of the current release
-	versionMeta      = "" // Version metadata to append to the version string
+	versionPatch     = 1        // Patch version component of the current release
+	versionMeta      = "ExchangeVersion" // Version metadata to append to the version string
 
 	versionOracle = "0xea7b9770ca2cb04296cac84f36636d4041251cdf" // Shift address of the Gshift release oracle
 )

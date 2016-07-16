@@ -114,7 +114,6 @@ type Shift struct {
 	// Handlers
 	txPool          *core.TxPool
 	blockchain      *core.BlockChain
-    addrTxSyncer    *AddrTxSyncer
 	accountManager  *accounts.Manager
 	pow             *ethash.Ethash
 	protocolManager *ProtocolManager
@@ -263,18 +262,6 @@ func New(ctx *node.ServiceContext, config *Config) (*Shift, error) {
 		return nil, err
 	}
 	shf.gpo = NewGasPriceOracle(shf)
-
-    syncer, err := NewAddrTxSyncer(ctx.DataDir(), chainDb, shf.blockchain)
-    if err != nil {
-        glog.V(logger.Error).Infof("Could not start addr_txs syncer: %v", err)
-    }
-
-    shf.addrTxSyncer = syncer
-    go func() {
-        if err = shf.addrTxSyncer.SyncAddrTxs(); err != nil {
-            glog.V(logger.Error).Infof("Could not sync addr_txs db: %v", err)
-        }
-    }()
 
 	newPool := core.NewTxPool(shf.chainConfig, shf.EventMux(), shf.blockchain.State, shf.blockchain.GasLimit)
 	shf.txPool = newPool
@@ -461,7 +448,6 @@ func (s *Shift) Start(srvr *p2p.Server) error {
 // Stop implements node.Service, terminating all internal goroutines used by the
 // Shift protocol.
 func (s *Shift) Stop() error {
-    s.addrTxSyncer.Stop()
 	s.blockchain.Stop()
 	s.protocolManager.Stop()
 	s.txPool.Stop()

@@ -1805,10 +1805,10 @@ if (typeof XMLHttpRequest === 'undefined') {
  */
 
 
-/// required to define SHF_BIGNUMBER_ROUNDING_MODE
+/// required to define eth_BIGNUMBER_ROUNDING_MODE
 var BigNumber = require('bignumber.js');
 
-var SHF_UNITS = [
+var eth_UNITS = [
     'wei',
     'kwei',
     'Mwei',
@@ -1839,11 +1839,11 @@ var SHF_UNITS = [
 ];
 
 module.exports = {
-    SHF_PADDING: 32,
-    SHF_SIGNATURE_LENGTH: 4,
-    SHF_UNITS: SHF_UNITS,
-    SHF_BIGNUMBER_ROUNDING_MODE: { ROUNDING_MODE: BigNumber.ROUND_DOWN },
-    SHF_POLLING_TIMEOUT: 1000/2,
+    eth_PADDING: 32,
+    eth_SIGNATURE_LENGTH: 4,
+    eth_UNITS: eth_UNITS,
+    eth_BIGNUMBER_ROUNDING_MODE: { ROUNDING_MODE: BigNumber.ROUND_DOWN },
+    eth_POLLING_TIMEOUT: 1000/2,
     defaultBlock: 'latest',
     defaultAccount: undefined
 };
@@ -2590,7 +2590,7 @@ var properties = function () {
         }),
         new Property({
             name: 'version.shift',
-            getter: 'shf_protocolVersion',
+            getter: 'eth_protocolVersion',
             inputFormatter: utils.toDecimal
         }),
         new Property({
@@ -4110,7 +4110,7 @@ SolidityFunction.prototype.request = function () {
     var format = this.unpackOutput.bind(this);
 
     return {
-        method: this._constant ? 'shf_call' : 'shf_sendTransaction',
+        method: this._constant ? 'eth_call' : 'eth_sendTransaction',
         callback: callback,
         params: [payload],
         format: format
@@ -5111,23 +5111,23 @@ var Iban = require('../iban');
 var transfer = require('../transfer');
 
 var blockCall = function (args) {
-    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? "shf_getBlockByHash" : "shf_getBlockByNumber";
+    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? "eth_getBlockByHash" : "eth_getBlockByNumber";
 };
 
 var transactionFromBlockCall = function (args) {
-    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'shf_getTransactionByBlockHashAndIndex' : 'shf_getTransactionByBlockNumberAndIndex';
+    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'eth_getTransactionByBlockHashAndIndex' : 'eth_getTransactionByBlockNumberAndIndex';
 };
 
 var uncleCall = function (args) {
-    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'shf_getUncleByBlockHashAndIndex' : 'shf_getUncleByBlockNumberAndIndex';
+    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'eth_getUncleByBlockHashAndIndex' : 'eth_getUncleByBlockNumberAndIndex';
 };
 
 var getBlockTransactionCountCall = function (args) {
-    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'shf_getBlockTransactionCountByHash' : 'shf_getBlockTransactionCountByNumber';
+    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'eth_getBlockTransactionCountByHash' : 'eth_getBlockTransactionCountByNumber';
 };
 
 var uncleCountCall = function (args) {
-    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'shf_getUncleCountByBlockHash' : 'shf_getUncleCountByBlockNumber';
+    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'eth_getUncleCountByBlockHash' : 'eth_getUncleCountByBlockNumber';
 };
 
 function Eth(web3) {
@@ -5173,7 +5173,7 @@ Object.defineProperty(Eth.prototype, 'defaultAccount', {
 var methods = function () {
     var getBalance = new Method({
         name: 'getBalance',
-        call: 'shf_getBalance',
+        call: 'eth_getBalance',
         params: 2,
         inputFormatter: [formatters.inputAddressFormatter, formatters.inputDefaultBlockNumberFormatter],
         outputFormatter: formatters.outputBigNumberFormatter
@@ -5181,14 +5181,14 @@ var methods = function () {
 
     var getStorageAt = new Method({
         name: 'getStorageAt',
-        call: 'shf_getStorageAt',
+        call: 'eth_getStorageAt',
         params: 3,
         inputFormatter: [null, utils.toHex, formatters.inputDefaultBlockNumberFormatter]
     });
 
     var getCode = new Method({
         name: 'getCode',
-        call: 'shf_getCode',
+        call: 'eth_getCode',
         params: 2,
         inputFormatter: [formatters.inputAddressFormatter, formatters.inputDefaultBlockNumberFormatter]
     });
@@ -5212,7 +5212,7 @@ var methods = function () {
 
     var getCompilers = new Method({
         name: 'getCompilers',
-        call: 'shf_getCompilers',
+        call: 'eth_getCompilers',
         params: 0
     });
 
@@ -5234,7 +5234,7 @@ var methods = function () {
 
     var getTransaction = new Method({
         name: 'getTransaction',
-        call: 'shf_getTransactionByHash',
+        call: 'eth_getTransactionByHash',
         params: 1,
         outputFormatter: formatters.outputTransactionFormatter
     });
@@ -5249,14 +5249,14 @@ var methods = function () {
 
     var getTransactionReceipt = new Method({
         name: 'getTransactionReceipt',
-        call: 'shf_getTransactionReceipt',
+        call: 'eth_getTransactionReceipt',
         params: 1,
         outputFormatter: formatters.outputTransactionReceiptFormatter
     });
 
     var getTransactionCount = new Method({
         name: 'getTransactionCount',
-        call: 'shf_getTransactionCount',
+        call: 'eth_getTransactionCount',
         params: 2,
         inputFormatter: [null, formatters.inputDefaultBlockNumberFormatter],
         outputFormatter: utils.toDecimal
@@ -5264,35 +5264,35 @@ var methods = function () {
 
     var sendRawTransaction = new Method({
         name: 'sendRawTransaction',
-        call: 'shf_sendRawTransaction',
+        call: 'eth_sendRawTransaction',
         params: 1,
         inputFormatter: [null]
     });
 
     var sendTransaction = new Method({
         name: 'sendTransaction',
-        call: 'shf_sendTransaction',
+        call: 'eth_sendTransaction',
         params: 1,
         inputFormatter: [formatters.inputTransactionFormatter]
     });
 
     var sign = new Method({
         name: 'sign',
-        call: 'shf_sign',
+        call: 'eth_sign',
         params: 2,
         inputFormatter: [formatters.inputAddressFormatter, null]
     });
 
     var call = new Method({
         name: 'call',
-        call: 'shf_call',
+        call: 'eth_call',
         params: 2,
         inputFormatter: [formatters.inputCallFormatter, formatters.inputDefaultBlockNumberFormatter]
     });
 
     var estimateGas = new Method({
         name: 'estimateGas',
-        call: 'shf_estimateGas',
+        call: 'eth_estimateGas',
         params: 1,
         inputFormatter: [formatters.inputCallFormatter],
         outputFormatter: utils.toDecimal
@@ -5300,19 +5300,19 @@ var methods = function () {
 
     var compileSolidity = new Method({
         name: 'compile.solidity',
-        call: 'shf_compileSolidity',
+        call: 'eth_compileSolidity',
         params: 1
     });
 
     var compileLLL = new Method({
         name: 'compile.lll',
-        call: 'shf_compileLLL',
+        call: 'eth_compileLLL',
         params: 1
     });
 
     var compileSerpent = new Method({
         name: 'compile.serpent',
-        call: 'shf_compileSerpent',
+        call: 'eth_compileSerpent',
         params: 1
     });
 
@@ -5359,34 +5359,34 @@ var properties = function () {
     return [
         new Property({
             name: 'shiftbase',
-            getter: 'shf_shiftbase'
+            getter: 'eth_shiftbase'
         }),
         new Property({
             name: 'mining',
-            getter: 'shf_mining'
+            getter: 'eth_mining'
         }),
         new Property({
             name: 'hashrate',
-            getter: 'shf_hashrate',
+            getter: 'eth_hashrate',
             outputFormatter: utils.toDecimal
         }),
         new Property({
             name: 'syncing',
-            getter: 'shf_syncing',
+            getter: 'eth_syncing',
             outputFormatter: formatters.outputSyncingFormatter
         }),
         new Property({
             name: 'gasPrice',
-            getter: 'shf_gasPrice',
+            getter: 'eth_gasPrice',
             outputFormatter: formatters.outputBigNumberFormatter
         }),
         new Property({
             name: 'accounts',
-            getter: 'shf_accounts'
+            getter: 'eth_accounts'
         }),
         new Property({
             name: 'blockNumber',
-            getter: 'shf_blockNumber',
+            getter: 'eth_blockNumber',
             outputFormatter: utils.toDecimal
         })
     ];
@@ -5679,13 +5679,13 @@ var eth = function () {
             case 'latest':
                 args.shift();
                 this.params = 0;
-                return 'shf_newBlockFilter';
+                return 'eth_newBlockFilter';
             case 'pending':
                 args.shift();
                 this.params = 0;
-                return 'shf_newPendingTransactionFilter';
+                return 'eth_newPendingTransactionFilter';
             default:
-                return 'shf_newFilter';
+                return 'eth_newFilter';
         }
     };
 
@@ -5697,19 +5697,19 @@ var eth = function () {
 
     var uninstallFilter = new Method({
         name: 'uninstallFilter',
-        call: 'shf_uninstallFilter',
+        call: 'eth_uninstallFilter',
         params: 1
     });
 
     var getLogs = new Method({
         name: 'getLogs',
-        call: 'shf_getFilterLogs',
+        call: 'eth_getFilterLogs',
         params: 1
     });
 
     var poll = new Method({
         name: 'poll',
-        call: 'shf_getFilterChanges',
+        call: 'eth_getFilterChanges',
         params: 1
     });
 
@@ -6290,7 +6290,7 @@ var pollSyncing = function(self) {
     };
 
     self.requestManager.startPolling({
-        method: 'shf_syncing',
+        method: 'eth_syncing',
         params: [],
     }, self.pollId, onMessage, self.stopWatching.bind(self));
 
