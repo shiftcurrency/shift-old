@@ -119,10 +119,10 @@ func AccumulateRewards(statedb *state.StateDB, header *types.Header, uncles []*t
 
     var bl = header.Number
 
-    if bl.Cmp(params.HardFork1) <= 0 {
-        BlockReward=big.NewInt(2e+18)
-    } else {
+    if bl.Cmp(params.HardFork2) <= 0 {
         BlockReward=big.NewInt(1e+18)
+    } else {
+        BlockReward=big.NewInt(2e+18)
     }
 
     reward := new(big.Int).Set(BlockReward)
