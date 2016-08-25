@@ -24,7 +24,7 @@ import (
 
 	"github.com/shiftcurrency/shift/accounts/abi/bind"
 	"github.com/shiftcurrency/shift/common"
-	"github.com/shiftcurrency/shift/eth"
+	"github.com/shiftcurrency/shift/shf"
 	"github.com/shiftcurrency/shift/logger"
 	"github.com/shiftcurrency/shift/logger/glog"
 	"github.com/shiftcurrency/shift/node"

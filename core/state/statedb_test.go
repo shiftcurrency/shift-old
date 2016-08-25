@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/shiftcurrency/shift/common"
-	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/shfdb"
 )
 
 // Tests that updating a state trie does not leak any database writes prior to

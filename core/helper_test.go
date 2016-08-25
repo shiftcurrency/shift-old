@@ -23,7 +23,7 @@ import (
 	"github.com/shiftcurrency/shift/core/types"
 	// "github.com/shiftcurrency/shift/crypto"
 
-	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/shfdb"
 	"github.com/shiftcurrency/shift/event"
 )
 

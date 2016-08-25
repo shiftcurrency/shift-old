@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/shiftcurrency/shift/common"
-	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/shfdb"
 )
 
 // Tests that the node iterator indeed walks over the entire database contents.

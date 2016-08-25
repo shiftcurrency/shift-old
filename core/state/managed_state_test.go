@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/shiftcurrency/shift/common"
-	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/shfdb"
 )
 
 var addr = common.BytesToAddress([]byte("test"))

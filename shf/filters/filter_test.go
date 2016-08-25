@@ -27,7 +27,7 @@ import (
 	"github.com/shiftcurrency/shift/core/types"
 	"github.com/shiftcurrency/shift/core/vm"
 	"github.com/shiftcurrency/shift/crypto"
-	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/shfdb"
 )
 
 func makeReceipt(addr common.Address) *types.Receipt {

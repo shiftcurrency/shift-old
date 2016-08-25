@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/shfdb"
 	"github.com/shiftcurrency/shift/event"
 	"github.com/shiftcurrency/shift/p2p"
 	"github.com/shiftcurrency/shift/rpc"

@@ -25,7 +25,7 @@ import (
 
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core/types"
-	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/shfdb"
 	"github.com/shiftcurrency/shift/logger"
 	"github.com/shiftcurrency/shift/logger/glog"
 	"github.com/shiftcurrency/shift/rlp"

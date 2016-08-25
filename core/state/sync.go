@@ -21,7 +21,7 @@ import (
 	"math/big"
 
 	"github.com/shiftcurrency/shift/common"
-	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/shfdb"
 	"github.com/shiftcurrency/shift/rlp"
 	"github.com/shiftcurrency/shift/trie"
 )

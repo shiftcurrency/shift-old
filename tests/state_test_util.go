@@ -30,7 +30,7 @@ import (
 	"github.com/shiftcurrency/shift/core/state"
 	"github.com/shiftcurrency/shift/core/vm"
 	"github.com/shiftcurrency/shift/crypto"
-	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/shfdb"
 	"github.com/shiftcurrency/shift/logger/glog"
 )
 

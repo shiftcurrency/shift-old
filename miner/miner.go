@@ -26,7 +26,7 @@ import (
 	"github.com/shiftcurrency/shift/core"
 	"github.com/shiftcurrency/shift/core/state"
 	"github.com/shiftcurrency/shift/core/types"
-	"github.com/shiftcurrency/shift/eth/downloader"
+	"github.com/shiftcurrency/shift/shf/downloader"
 	"github.com/shiftcurrency/shift/event"
 	"github.com/shiftcurrency/shift/logger"
 	"github.com/shiftcurrency/shift/logger/glog"

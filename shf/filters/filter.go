@@ -24,7 +24,7 @@ import (
 	"github.com/shiftcurrency/shift/core"
 	"github.com/shiftcurrency/shift/core/types"
 	"github.com/shiftcurrency/shift/core/vm"
-	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/shfdb"
 )
 
 type AccountChange struct {

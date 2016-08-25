@@ -23,7 +23,7 @@ import (
 
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core/state"
-	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/shfdb"
 	"github.com/shiftcurrency/shift/trie"
 	"golang.org/x/net/context"
 )

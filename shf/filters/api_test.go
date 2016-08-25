@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/shiftcurrency/shift/common"
-	"github.com/shiftcurrency/shift/eth/filters"
+	"github.com/shiftcurrency/shift/shf/filters"
 	"github.com/shiftcurrency/shift/rpc"
 )
 

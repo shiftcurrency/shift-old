@@ -24,7 +24,7 @@ import (
 	checker "gopkg.in/check.v1"
 
 	"github.com/shiftcurrency/shift/common"
-	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/shfdb"
 )
 
 type StateSuite struct {

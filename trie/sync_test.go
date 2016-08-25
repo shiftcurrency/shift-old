@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/shiftcurrency/shift/common"
-	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/shfdb"
 )
 
 // makeTestTrie create a sample test trie to test node-wise reconstruction.

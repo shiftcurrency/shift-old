@@ -31,7 +31,7 @@ import (
 	"github.com/shiftcurrency/shift/accounts"
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core"
-	"github.com/shiftcurrency/shift/eth"
+	"github.com/shiftcurrency/shift/shf"
 	"github.com/shiftcurrency/shift/internal/jsre"
 	"github.com/shiftcurrency/shift/node"
 )

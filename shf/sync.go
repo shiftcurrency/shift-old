@@ -23,7 +23,7 @@ import (
 
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core/types"
-	"github.com/shiftcurrency/shift/eth/downloader"
+	"github.com/shiftcurrency/shift/shf/downloader"
 	"github.com/shiftcurrency/shift/logger"
 	"github.com/shiftcurrency/shift/logger/glog"
 	"github.com/shiftcurrency/shift/p2p/discover"

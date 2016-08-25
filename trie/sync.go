@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/shiftcurrency/shift/common"
-	"github.com/shiftcurrency/shift/ethdb"
+	"github.com/shiftcurrency/shift/shfdb"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
 )
 
