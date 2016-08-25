@@ -209,7 +209,7 @@ func RecoverPubkey(msg []byte, sig []byte) ([]byte, error) {
 		this slice is used for both the recoverable signature and the
 		resulting serialized pubkey (both types in libsecp256k1 are 65
 		bytes). this saves one allocation of 65 bytes, which is nice as
-		pubkey recovery is one bottleneck during load in Shift
+		pubkey recovery is one bottleneck during load in Ethereum
 	*/
 	bytes65 := make([]byte, 65)
 	pubkey_ptr := (*C.secp256k1_pubkey)(unsafe.Pointer(&pubkey[0]))

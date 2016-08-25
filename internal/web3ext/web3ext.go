@@ -14,47 +14,20 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// package web3ext contains gshift specific web3.js extensions.
+// package web3ext contains geth specific web3.js extensions.
 package web3ext
 
 var Modules = map[string]string{
-	"txpool":   TxPool_JS,
 	"admin":    Admin_JS,
-	"personal": Personal_JS,
+	"debug":    Debug_JS,
 	"shf":      Shf_JS,
 	"miner":    Miner_JS,
-	"debug":    Debug_JS,
 	"net":      Net_JS,
+	"personal": Personal_JS,
+	"rpc":      RPC_JS,
+	"shh":      Shh_JS,
+	"txpool":   TxPool_JS,
 }
-
-const TxPool_JS = `
-web3._extend({
-	property: 'txpool',
-	methods:
-	[
-	],
-	properties:
-	[
-		new web3._extend.Property({
-			name: 'content',
-			getter: 'txpool_content'
-		}),
-		new web3._extend.Property({
-			name: 'inspect',
-			getter: 'txpool_inspect'
-		}),
-		new web3._extend.Property({
-			name: 'status',
-			getter: 'txpool_status',
-			outputFormatter: function(status) {
-				status.pending = web3._extend.utils.toDecimal(status.pending);
-				status.queued = web3._extend.utils.toDecimal(status.queued);
-				return status;
-			}
-		})
-	]
-});
-`
 
 const Admin_JS = `
 web3._extend({
@@ -171,88 +144,6 @@ web3._extend({
 		new web3._extend.Property({
 			name: 'datadir',
 			getter: 'admin_datadir'
-		})
-	]
-});
-`
-
-const Personal_JS = `
-web3._extend({
-	property: 'personal',
-	methods:
-	[
-		new web3._extend.Method({
-			name: 'importRawKey',
-			call: 'personal_importRawKey',
-			params: 2
-		})
-	]
-});
-`
-
-const Shf_JS = `
-web3._extend({
-	property: 'eth',
-	methods:
-	[
-		new web3._extend.Method({
-			name: 'sign',
-			call: 'eth_sign',
-			params: 2,
-			inputFormatter: [web3._extend.formatters.inputAddressFormatter, null]
-		}),
-		new web3._extend.Method({
-			name: 'resend',
-			call: 'eth_resend',
-			params: 3,
-			inputFormatter: [web3._extend.formatters.inputTransactionFormatter, web3._extend.utils.fromDecimal, web3._extend.utils.fromDecimal]
-		}),
-		new web3._extend.Method({
-			name: 'getNatSpec',
-			call: 'eth_getNatSpec',
-			params: 1,
-			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
-		}),
-		new web3._extend.Method({
-			name: 'signTransaction',
-			call: 'eth_signTransaction',
-			params: 1,
-			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
-		}),
-		new web3._extend.Method({
-			name: 'submitTransaction',
-			call: 'eth_submitTransaction',
-			params: 1,
-			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
-		})
-	],
-	properties:
-	[
-		new web3._extend.Property({
-			name: 'pendingTransactions',
-			getter: 'eth_pendingTransactions',
-			outputFormatter: function(txs) {
-				var formatted = [];
-				for (var i = 0; i < txs.length; i++) {
-					formatted.push(web3._extend.formatters.outputTransactionFormatter(txs[i]));
-					formatted[i].blockHash = null;
-				}
-				return formatted;
-			}
-		})
-	]
-});
-`
-
-const Net_JS = `
-web3._extend({
-	property: 'net',
-	methods: [],
-	properties:
-	[
-		new web3._extend.Property({
-			name: 'version',
-			getter: 'net_version'
 		})
 	]
 });
@@ -410,6 +301,60 @@ web3._extend({
 });
 `
 
+const Shf_JS = `
+web3._extend({
+	property: 'eth',
+	methods:
+	[
+		new web3._extend.Method({
+			name: 'sign',
+			call: 'eth_sign',
+			params: 2,
+			inputFormatter: [web3._extend.formatters.inputAddressFormatter, null]
+		}),
+		new web3._extend.Method({
+			name: 'resend',
+			call: 'eth_resend',
+			params: 3,
+			inputFormatter: [web3._extend.formatters.inputTransactionFormatter, web3._extend.utils.fromDecimal, web3._extend.utils.fromDecimal]
+		}),
+		new web3._extend.Method({
+			name: 'getNatSpec',
+			call: 'eth_getNatSpec',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'signTransaction',
+			call: 'eth_signTransaction',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'submitTransaction',
+			call: 'eth_submitTransaction',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
+		})
+	],
+	properties:
+	[
+		new web3._extend.Property({
+			name: 'pendingTransactions',
+			getter: 'eth_pendingTransactions',
+			outputFormatter: function(txs) {
+				var formatted = [];
+				for (var i = 0; i < txs.length; i++) {
+					formatted.push(web3._extend.formatters.outputTransactionFormatter(txs[i]));
+					formatted[i].blockHash = null;
+				}
+				return formatted;
+			}
+		})
+	]
+});
+`
+
 const Miner_JS = `
 web3._extend({
 	property: 'miner',
@@ -427,7 +372,7 @@ web3._extend({
 		}),
 		new web3._extend.Method({
 			name: 'setShiftbase',
-			call: 'miner_setShiftbase',
+			call: 'miner_setEtherbase',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputAddressFormatter]
 		}),
@@ -440,7 +385,7 @@ web3._extend({
 			name: 'setGasPrice',
 			call: 'miner_setGasPrice',
 			params: 1,
-			inputFormatter: [web3._extend.utils.fromDecial]
+			inputFormatter: [web3._extend.utils.fromDecimal]
 		}),
 		new web3._extend.Method({
 			name: 'startAutoDAG',
@@ -463,6 +408,54 @@ web3._extend({
 });
 `
 
+const Net_JS = `
+web3._extend({
+	property: 'net',
+	methods: [],
+	properties:
+	[
+		new web3._extend.Property({
+			name: 'version',
+			getter: 'net_version'
+		})
+	]
+});
+`
+
+const Personal_JS = `
+web3._extend({
+	property: 'personal',
+	methods:
+	[
+		new web3._extend.Method({
+			name: 'importRawKey',
+			call: 'personal_importRawKey',
+			params: 2
+		}),
+		new web3._extend.Method({
+			name: 'signAndSendTransaction',
+			call: 'personal_signAndSendTransaction',
+			params: 2,
+			inputFormatter: [web3._extend.formatters.inputTransactionFormatter, null]
+		})
+	]
+});
+`
+
+const RPC_JS = `
+web3._extend({
+	property: 'rpc',
+	methods: [],
+	properties:
+	[
+		new web3._extend.Property({
+			name: 'modules',
+			getter: 'rpc_modules'
+		})
+	]
+});
+`
+
 const Shh_JS = `
 web3._extend({
 	property: 'shh',
@@ -471,7 +464,35 @@ web3._extend({
 	[
 		new web3._extend.Property({
 			name: 'version',
-			getter: 'shh_version'
+			getter: 'shh_version',
+			outputFormatter: web3._extend.utils.toDecimal
+		})
+	]
+});
+`
+
+const TxPool_JS = `
+web3._extend({
+	property: 'txpool',
+	methods: [],
+	properties:
+	[
+		new web3._extend.Property({
+			name: 'content',
+			getter: 'txpool_content'
+		}),
+		new web3._extend.Property({
+			name: 'inspect',
+			getter: 'txpool_inspect'
+		}),
+		new web3._extend.Property({
+			name: 'status',
+			getter: 'txpool_status',
+			outputFormatter: function(status) {
+				status.pending = web3._extend.utils.toDecimal(status.pending);
+				status.queued = web3._extend.utils.toDecimal(status.queued);
+				return status;
+			}
 		})
 	]
 });

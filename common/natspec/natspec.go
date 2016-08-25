@@ -45,7 +45,7 @@ type NatSpec struct {
 // the implementation is frontend friendly in that it always gives back
 // a notice that is safe to display
 // :FIXME: the second return value is an error, which can be used to fine-tune bahaviour
-func GetNotice(xeth *xshf.XEth, tx string, http *httpclient.HTTPClient) (notice string) {
+func GetNotice(xeth *xeth.XEth, tx string, http *httpclient.HTTPClient) (notice string) {
 	ns, err := New(xeth, tx, http)
 	if err != nil {
 		if ns == nil {
@@ -85,7 +85,7 @@ type contractInfo struct {
 	DeveloperDoc  json.RawMessage `json:"developerDoc"`
 }
 
-func New(xeth *xshf.XEth, jsontx string, http *httpclient.HTTPClient) (self *NatSpec, err error) {
+func New(xeth *xeth.XEth, jsontx string, http *httpclient.HTTPClient) (self *NatSpec, err error) {
 
 	// extract contract address from tx
 	var tx jsonTx
@@ -106,10 +106,10 @@ func New(xeth *xshf.XEth, jsontx string, http *httpclient.HTTPClient) (self *Nat
 }
 
 // also called by admin.contractInfo.get
-func FetchDocsForContract(contractAddress string, xeth *xshf.XEth, client *httpclient.HTTPClient) (content []byte, err error) {
+func FetchDocsForContract(contractAddress string, xeth *xeth.XEth, client *httpclient.HTTPClient) (content []byte, err error) {
 	// retrieve contract hash from state
-	codehex := xshf.CodeAt(contractAddress)
-	codeb := xshf.CodeAtBytes(contractAddress)
+	codehex := xeth.CodeAt(contractAddress)
+	codeb := xeth.CodeAtBytes(contractAddress)
 
 	if codehex == "0x" {
 		err = fmt.Errorf("contract (%v) not found", contractAddress)
@@ -202,7 +202,7 @@ func (self *NatSpec) makeAbi2method(abiKey [8]byte) (meth *method) {
 		copy(key[:], hash[:8])
 		if bytes.Equal(key[:], abiKey[:]) {
 			meth = m
-			mshf.name = name
+			meth.name = name
 			return
 		}
 	}
@@ -222,7 +222,7 @@ func (self *NatSpec) Notice() (notice string, err error) {
 		err = fmt.Errorf("abi key does not match any method")
 		return
 	}
-	notice, err = self.noticeForMethod(self.tx, mshf.name, mshf.Notice)
+	notice, err = self.noticeForMethod(self.tx, meth.name, meth.Notice)
 	return
 }
 

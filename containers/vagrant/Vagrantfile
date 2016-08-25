@@ -8,13 +8,13 @@ Vagrant.configure(2) do |config|
     vb.memory = "2048"
   end
 
-  config.vm.synced_folder "../../", "/home/vagrant/go/src/github.com/shiftcurrency/shift"
+  config.vm.synced_folder "../../", "/home/vagrant/go/src/github.com/ethereum/go-ethereum"
   config.vm.synced_folder ".", "/vagrant", disabled: true
 
   config.vm.provision "shell", inline: <<-SHELL
     sudo apt-get install software-properties-common
-    sudo add-apt-repository -y ppa:shift/shift
-    sudo add-apt-repository -y ppa:shift/shift-dev
+    sudo add-apt-repository -y ppa:ethereum/ethereum
+    sudo add-apt-repository -y ppa:ethereum/ethereum-dev
     sudo apt-get update
 
     sudo apt-get install -y build-essential golang git-all

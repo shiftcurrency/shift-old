@@ -19,7 +19,6 @@ package shf
 import (
 	"math/big"
 
-	"github.com/shiftcurrency/shift/accounts/abi/bind"
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core/types"
 	"github.com/shiftcurrency/shift/rlp"
@@ -27,7 +26,7 @@ import (
 )
 
 // ContractBackend implements bind.ContractBackend with direct calls to Shift
-// internals to support operating on contracts within subprotocols like eth and
+// internals to support operating on contracts within subprotocols like shf and
 // swarm.
 //
 // Internally this backend uses the already exposed API endpoints of the Shift
@@ -40,13 +39,24 @@ type ContractBackend struct {
 }
 
 // NewContractBackend creates a new native contract backend using an existing
-// Etheruem object.
+// Shift object.
 func NewContractBackend(shf *Shift) *ContractBackend {
 	return &ContractBackend{
 		eapi:  NewPublicShiftAPI(shf),
 		bcapi: NewPublicBlockChainAPI(shf.chainConfig, shf.blockchain, shf.miner, shf.chainDb, shf.gpo, shf.eventMux, shf.accountManager),
 		txapi: NewPublicTransactionPoolAPI(shf),
 	}
+}
+
+// HasCode implements bind.ContractVerifier.HasCode by retrieving any code associated
+// with the contract from the local API, and checking its size.
+func (b *ContractBackend) HasCode(contract common.Address, pending bool) (bool, error) {
+	block := rpc.LatestBlockNumber
+	if pending {
+		block = rpc.PendingBlockNumber
+	}
+	out, err := b.bcapi.GetCode(contract, block)
+	return len(common.FromHex(out)) > 0, err
 }
 
 // ContractCall implements bind.ContractCaller executing an Shift contract
@@ -64,9 +74,6 @@ func (b *ContractBackend) ContractCall(contract common.Address, data []byte, pen
 	}
 	// Execute the call and convert the output back to Go types
 	out, err := b.bcapi.Call(args, block)
-	if err == errNoCode {
-		err = bind.ErrNoCode
-	}
 	return common.FromHex(out), err
 }
 
@@ -95,9 +102,6 @@ func (b *ContractBackend) EstimateGasLimit(sender common.Address, contract *comm
 		Value: *rpc.NewHexNumber(value),
 		Data:  common.ToHex(data),
 	})
-	if err == errNoCode {
-		err = bind.ErrNoCode
-	}
 	return out.BigInt(), err
 }
 

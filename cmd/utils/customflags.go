@@ -24,7 +24,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/codegangsta/cli"
+	"gopkg.in/urfave/cli.v1"
 )
 
 // Custom type which is registered in the flags library which cli uses for
@@ -44,7 +44,7 @@ func (self *DirectoryString) Set(value string) error {
 }
 
 // Custom cli.Flag type which expand the received string to an absolute path.
-// e.g. ~/.shift -> /home/username/.shift
+// e.g. ~/.gshift -> /home/username/.gshift
 type DirectoryFlag struct {
 	cli.GenericFlag
 	Name   string

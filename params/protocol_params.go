@@ -33,17 +33,15 @@ var (
 	DifficultyBoundDivisor = big.NewInt(2048)   // The bound divisor of the difficulty, used in the update calculations.
 	QuadCoeffDiv           = big.NewInt(512)    // Divisor for the quadratic particle of the memory cost equation.
 	GenesisDifficulty      = big.NewInt(131072) // Difficulty of the Genesis block.
-	DurationLimit          = big.NewInt(60)     // The decision boundary on the blocktime duration used to determine whether difficulty should go up or not.
+	DurationLimit          = big.NewInt(13)     // The decision boundary on the blocktime duration used to determine whether difficulty should go up or not.
 	SstoreSetGas           = big.NewInt(20000)  // Once per SLOAD operation.
 	LogDataGas             = big.NewInt(8)      // Per byte in a LOG* operation's data.
 	CallStipend            = big.NewInt(2300)   // Free gas given at beginning of call.
 	EcrecoverGas           = big.NewInt(3000)   //
 	Sha256WordGas          = big.NewInt(12)     //
-    HardFork1              = big.NewInt(593000) // 1 reward. 25s.
-    HardFork2              = big.NewInt(674100) // 2 reward. 35s.
 
 	MinGasLimit     = big.NewInt(5000)                  // Minimum the gas limit may ever be.
-	GenesisGasLimit = big.NewInt(31415926)               // Gas limit of the Genesis block.
+	GenesisGasLimit = big.NewInt(4712388)               // Gas limit of the Genesis block.
 	TargetGasLimit  = new(big.Int).Set(GenesisGasLimit) // The artificial target
 
 	Sha3Gas              = big.NewInt(30)     // Once per SHA3 operation.

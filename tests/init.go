@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package tests implements execution of Shift JSON tests.
+// Package tests implements execution of Ethereum JSON tests.
 package tests
 
 import (
@@ -25,8 +25,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-
-	"github.com/shiftcurrency/shift/core"
 )
 
 var (
@@ -58,11 +56,6 @@ var (
 	StateSkipTests = []string{}
 	VmSkipTests    = []string{}
 )
-
-// Disable reporting bad blocks for the tests
-func init() {
-	core.DisableBadBlockReporting = true
-}
 
 func readJson(reader io.Reader, value interface{}) error {
 	data, err := ioutil.ReadAll(reader)

@@ -3,12 +3,12 @@
 
 # Ethash
 
-For details on this project, please see the Shift wiki:
-https://github.com/shift/wiki/wiki/Ethash
+For details on this project, please see the Ethereum wiki:
+https://github.com/ethereum/wiki/wiki/Ethash
 
 ### Coding Style for C++ code:
 
-Follow the same exact style as in [cpp-shift](https://github.com/shift/cpp-shift/blob/develop/CodingStandards.txt)
+Follow the same exact style as in [cpp-ethereum](https://github.com/ethereum/cpp-ethereum/blob/develop/CodingStandards.txt)
 
 ### Coding Style for C code:
 

@@ -10,23 +10,22 @@ fi
 # Create fake Go workspace if it doesn't exist yet.
 workspace="$PWD/build/_workspace"
 root="$PWD"
-shfdir="$workspace/src/github.com/shiftcurrency"
-if [ ! -L "$shfdir/shift" ]; then
-    mkdir -p "$shfdir"
-    cd "$shfdir"
-    ln -s ../../../../../. shift
+ethdir="$workspace/src/github.com/ethereum"
+if [ ! -L "$ethdir/go-ethereum" ]; then
+    mkdir -p "$ethdir"
+    cd "$ethdir"
+    ln -s ../../../../../. go-ethereum
     cd "$root"
 fi
 
 # Set up the environment to use the workspace.
 # Also add Godeps workspace so we build using canned dependencies.
-GOPATH="$shfdir/shift/Godeps/_workspace:$workspace"
-GOBIN="$PWD/build/bin"
-export GOPATH GOBIN
+GOPATH="$workspace"
+export GOPATH
 
 # Run the command inside the workspace.
-cd "$shfdir/shift"
-PWD="$shfdir/shift"
+cd "$ethdir/go-ethereum"
+PWD="$ethdir/go-ethereum"
 
 # Launch the arguments with the configured environment.
 exec "$@"

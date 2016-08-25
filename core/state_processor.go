@@ -21,7 +21,6 @@ import (
 
 	"github.com/shiftcurrency/shift/core/state"
 	"github.com/shiftcurrency/shift/core/types"
-    "github.com/shiftcurrency/shift/params"
 	"github.com/shiftcurrency/shift/core/vm"
 	"github.com/shiftcurrency/shift/crypto"
 	"github.com/shiftcurrency/shift/logger"
@@ -50,7 +49,7 @@ func NewStateProcessor(config *ChainConfig, bc *BlockChain) *StateProcessor {
 	}
 }
 
-// Process processes the state changes according to the Shift rules by running
+// Process processes the state changes according to the Ethereum rules by running
 // the transaction messages using the statedb and applying any rewards to both
 // the processor (coinbase) and any included uncles.
 //
@@ -66,7 +65,8 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		allLogs      vm.Logs
 		gp           = new(GasPool).AddGas(block.GasLimit())
 	)
-
+	// Mutate the the block and state according to any hard-fork specs
+	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {
 		statedb.StartRecord(tx.Hash(), block.Hash(), i)
 		receipt, logs, _, err := ApplyTransaction(p.config, p.bc, gp, statedb, header, tx, totalUsedGas, cfg)
@@ -116,18 +116,7 @@ func ApplyTransaction(config *ChainConfig, bc *BlockChain, gp *GasPool, statedb 
 // and rewards for included uncles. The coinbase of each uncle block is
 // also rewarded.
 func AccumulateRewards(statedb *state.StateDB, header *types.Header, uncles []*types.Header) {
-
-    var bl = header.Number
-
-    if bl.Cmp(params.HardFork1) <= 0 {
-        BlockReward=big.NewInt(2e+18)
-    } else if bl.Cmp(params.HardFork2) <= 0 {
-        BlockReward=big.NewInt(1e+18)
-    } else {
-        BlockReward=big.NewInt(2e+18)
-    }
-
-    reward := new(big.Int).Set(BlockReward)
+	reward := new(big.Int).Set(BlockReward)
 	r := new(big.Int)
 	for _, uncle := range uncles {
 		r.Add(uncle.Number, big8)

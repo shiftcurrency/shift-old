@@ -31,11 +31,10 @@ import (
 )
 
 var (
-    ExpDiffPeriod = big.NewInt(100000)
-    big10         = big.NewInt(10) // Nice one.
-    bigMinus99    = big.NewInt(-99)
+	ExpDiffPeriod = big.NewInt(100000)
+	big10         = big.NewInt(10)
+	bigMinus99    = big.NewInt(-99)
 )
-
 
 // BlockValidator is responsible for validating block headers, uncles and
 // processed state.
@@ -135,7 +134,7 @@ func (v *BlockValidator) ValidateState(block, parent *types.Block, statedb *stat
 	return nil
 }
 
-// VerifyUncles verifies the given block's uncles and applies the Shift
+// VerifyUncles verifies the given block's uncles and applies the Ethereum
 // consensus rules to the various block headers included; it will return an
 // error if any of the included uncle headers were invalid. It returns an error
 // if the validation failed.
@@ -263,7 +262,7 @@ func CalcDifficulty(config *ChainConfig, time, parentTime uint64, parentNumber, 
 }
 
 func calcDifficultyHomestead(time, parentTime uint64, parentNumber, parentDiff *big.Int) *big.Int {
-	// https://github.com/shift/EIPs/blob/master/EIPS/eip-2.mediawiki
+	// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2.mediawiki
 	// algorithm:
 	// diff = (parent_diff +
 	//         (parent_diff / 2048 * max(1 - (block_timestamp - parent_timestamp) // 10, -99))
@@ -275,16 +274,6 @@ func calcDifficultyHomestead(time, parentTime uint64, parentNumber, parentDiff *
 	// holds intermediate values to make the algo easier to read & audit
 	x := new(big.Int)
 	y := new(big.Int)
-
-    blknum := new(big.Int)
-    blknum.Add(parentNumber,big.NewInt(1))
-
-    if blknum.Cmp(params.HardFork1) <= 0 {
-        big10 = big.NewInt(10)
-    } else {
-        big10 = big.NewInt(25)
-    }
-
 
 	// 1 - (block_timestamp -parent_timestamp) // 10
 	x.Sub(bigTime, bigParentTime)

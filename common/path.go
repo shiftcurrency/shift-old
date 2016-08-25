@@ -25,7 +25,7 @@ import (
 	"strings"
 )
 
-// MakeName creates a node name that follows the shift convention
+// MakeName creates a node name that follows the ethereum convention
 // for such names. It adds the operation system name and Go runtime version
 // the name.
 func MakeName(name, version string) string {

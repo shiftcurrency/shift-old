@@ -24,7 +24,7 @@ import (
 
 	"github.com/shiftcurrency/shift/accounts/abi/bind"
 	"github.com/shiftcurrency/shift/common"
-	"github.com/shiftcurrency/shift/shf"
+	"github.com/shiftcurrency/shift/eth"
 	"github.com/shiftcurrency/shift/logger"
 	"github.com/shiftcurrency/shift/logger/glog"
 	"github.com/shiftcurrency/shift/node"
@@ -37,7 +37,7 @@ const releaseRecheckInterval = time.Hour
 
 // Config contains the configurations of the release service.
 type Config struct {
-	Oracle common.Address // Shift address of the release oracle
+	Oracle common.Address // Shift address of the release oracle (not yet set)
 	Major  uint32         // Major version component of the release
 	Minor  uint32         // Minor version component of the release
 	Patch  uint32         // Patch version component of the release

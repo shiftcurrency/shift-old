@@ -30,14 +30,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/codegangsta/cli"
 	"github.com/ethereum/ethash"
 	"github.com/shiftcurrency/shift/accounts"
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core"
 	"github.com/shiftcurrency/shift/core/state"
 	"github.com/shiftcurrency/shift/crypto"
-	"github.com/shiftcurrency/shift/shf"
+	"github.com/shiftcurrency/shift/eth"
 	"github.com/shiftcurrency/shift/ethdb"
 	"github.com/shiftcurrency/shift/event"
 	"github.com/shiftcurrency/shift/logger"
@@ -51,6 +50,7 @@ import (
 	"github.com/shiftcurrency/shift/release"
 	"github.com/shiftcurrency/shift/rpc"
 	"github.com/shiftcurrency/shift/whisper"
+	"gopkg.in/urfave/cli.v1"
 )
 
 func init() {
@@ -126,10 +126,6 @@ var (
 		Name:  "dev",
 		Usage: "Developer mode: pre-configured private network with several debugging flags",
 	}
-	GenesisFileFlag = cli.StringFlag{
-		Name:  "genesis",
-		Usage: "Insert/overwrite the genesis block (JSON format)",
-	}
 	IdentityFlag = cli.StringFlag{
 		Name:  "identity",
 		Usage: "Custom node name",
@@ -185,7 +181,7 @@ var (
 		Name:  "autodag",
 		Usage: "Enable automatic DAG pregeneration",
 	}
-	ShiftbaseFlag = cli.StringFlag{
+	shiftbaseFlag = cli.StringFlag{
 		Name:  "shiftbase",
 		Usage: "Public address for block mining rewards (default = first account created)",
 		Value: "0",
@@ -302,7 +298,7 @@ var (
 		Name:  "exec",
 		Usage: "Execute JavaScript statement (only in combination with console/attach)",
 	}
-	PreLoadJSFlag = cli.StringFlag{
+	PreloadJSFlag = cli.StringFlag{
 		Name:  "preload",
 		Usage: "Comma separated list of JavaScript files to preload into the console",
 	}
@@ -311,7 +307,7 @@ var (
 	MaxPeersFlag = cli.IntFlag{
 		Name:  "maxpeers",
 		Usage: "Maximum number of network peers (network disabled if set to 0)",
-		Value: 100,
+		Value: 25,
 	}
 	MaxPendingPeersFlag = cli.IntFlag{
 		Name:  "maxpendpeers",
@@ -321,7 +317,7 @@ var (
 	ListenPortFlag = cli.IntFlag{
 		Name:  "port",
 		Usage: "Network listening port",
-		Value: 53900,
+		Value: 30303,
 	}
 	BootnodesFlag = cli.StringFlag{
 		Name:  "bootnodes",
@@ -534,20 +530,6 @@ func MakeWSRpcHost(ctx *cli.Context) string {
 	return ctx.GlobalString(WSListenAddrFlag.Name)
 }
 
-// MakeGenesisBlock loads up a genesis block from an input file specified in the
-// command line, or returns the empty string if none set.
-func MakeGenesisBlock(ctx *cli.Context) string {
-	genesis := ctx.GlobalString(GenesisFileFlag.Name)
-	if genesis == "" {
-		return ""
-	}
-	data, err := ioutil.ReadFile(genesis)
-	if err != nil {
-		Fatalf("Failed to load custom genesis file: %v", err)
-	}
-	return string(data)
-}
-
 // MakeDatabaseHandles raises out the number of allowed file handles per process
 // for Gshift and returns half of the allowance to assign to the database.
 func MakeDatabaseHandles() int {
@@ -593,22 +575,22 @@ func MakeAddress(accman *accounts.Manager, account string) (accounts.Account, er
 	return accman.AccountByIndex(index)
 }
 
-// MakeShiftbase retrieves the shiftbase either from the directly specified
+// Makeshiftbase retrieves the shiftbase either from the directly specified
 // command line flags or from the keystore if CLI indexed.
-func MakeShiftbase(accman *accounts.Manager, ctx *cli.Context) common.Address {
+func Makeshiftbase(accman *accounts.Manager, ctx *cli.Context) common.Address {
 	accounts := accman.Accounts()
-	if !ctx.GlobalIsSet(ShiftbaseFlag.Name) && len(accounts) == 0 {
+	if !ctx.GlobalIsSet(shiftbaseFlag.Name) && len(accounts) == 0 {
 		glog.V(logger.Error).Infoln("WARNING: No shiftbase set and no accounts found as default")
 		return common.Address{}
 	}
-	shiftbase := ctx.GlobalString(ShiftbaseFlag.Name)
+	shiftbase := ctx.GlobalString(shiftbaseFlag.Name)
 	if shiftbase == "" {
 		return common.Address{}
 	}
 	// If the specified shiftbase is a valid address, return it
 	account, err := MakeAddress(accman, shiftbase)
 	if err != nil {
-		Fatalf("Option %q: %v", ShiftbaseFlag.Name, err)
+		Fatalf("Option %q: %v", shiftbaseFlag.Name, err)
 	}
 	return account.Address
 }
@@ -674,7 +656,7 @@ func MakeSystemNode(name, version string, relconf release.Config, extra []byte, 
 		WSOrigins:       ctx.GlobalString(WSAllowedOriginsFlag.Name),
 		WSModules:       MakeRPCModules(ctx.GlobalString(WSApiFlag.Name)),
 	}
-	// Configure the Shift service
+	// Configure the Gshift service
 	accman := MakeAccountManager(ctx)
 
 	// initialise new random number generator
@@ -683,20 +665,19 @@ func MakeSystemNode(name, version string, relconf release.Config, extra []byte, 
 	jitEnabled := ctx.GlobalBool(VMEnableJitFlag.Name)
 	// if the jit is not enabled enable it for 10 pct of the people
 	if !jitEnabled && rand.Float64() < 0.1 {
-		jitEnabled = true
+		jitEnabled = false
 		glog.V(logger.Info).Infoln("You're one of the lucky few that will try out the JIT VM (random). If you get a consensus failure please be so kind to report this incident with the block hash that failed. You can switch to the regular VM by setting --jitvm=false")
 	}
 
-	ethConf := &shf.Config{
+	shfConf := &shf.Config{
 		ChainConfig:             MustMakeChainConfig(ctx),
-		Genesis:                 MakeGenesisBlock(ctx),
 		FastSync:                ctx.GlobalBool(FastSyncFlag.Name),
 		BlockChainVersion:       ctx.GlobalInt(BlockchainVersionFlag.Name),
 		DatabaseCache:           ctx.GlobalInt(CacheFlag.Name),
 		DatabaseHandles:         MakeDatabaseHandles(),
 		NetworkId:               ctx.GlobalInt(NetworkIdFlag.Name),
 		AccountManager:          accman,
-		Shiftbase:               MakeShiftbase(accman, ctx),
+		shiftbase:               Makeshiftbase(accman, ctx),
 		MinerThreads:            ctx.GlobalInt(MinerThreadsFlag.Name),
 		ExtraData:               MakeMinerExtra(extra, ctx),
 		NatSpec:                 ctx.GlobalBool(NatspecEnabledFlag.Name),
@@ -720,25 +701,21 @@ func MakeSystemNode(name, version string, relconf release.Config, extra []byte, 
 	switch {
 	case ctx.GlobalBool(OlympicFlag.Name):
 		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
-			ethConf.NetworkId = 1
+			shfConf.NetworkId = 1
 		}
-		if !ctx.GlobalIsSet(GenesisFileFlag.Name) {
-			ethConf.Genesis = core.OlympicGenesisBlock()
-		}
+		shfConf.Genesis = core.OlympicGenesisBlock()
 
 	case ctx.GlobalBool(TestNetFlag.Name):
 		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
-			ethConf.NetworkId = 2
+			shfConf.NetworkId = 2
 		}
-		if !ctx.GlobalIsSet(GenesisFileFlag.Name) {
-			ethConf.Genesis = core.TestNetGenesisBlock()
-		}
+		shfConf.Genesis = core.TestNetGenesisBlock()
 		state.StartingNonce = 1048576 // (2**20)
 
 	case ctx.GlobalBool(DevModeFlag.Name):
 		// Override the base network stack configs
 		if !ctx.GlobalIsSet(DataDirFlag.Name) {
-			stackConf.DataDir = filepath.Join(os.TempDir(), "/shift_dev_mode")
+			stackConf.DataDir = filepath.Join(os.TempDir(), "/gshift_dev_mode")
 		}
 		if !ctx.GlobalIsSet(MaxPeersFlag.Name) {
 			stackConf.MaxPeers = 0
@@ -746,17 +723,15 @@ func MakeSystemNode(name, version string, relconf release.Config, extra []byte, 
 		if !ctx.GlobalIsSet(ListenPortFlag.Name) {
 			stackConf.ListenAddr = ":0"
 		}
-		// Override the Shift protocol configs
-		if !ctx.GlobalIsSet(GenesisFileFlag.Name) {
-			ethConf.Genesis = core.OlympicGenesisBlock()
-		}
+		// Override the Gshift protocol configs
+		shfConf.Genesis = core.OlympicGenesisBlock()
 		if !ctx.GlobalIsSet(GasPriceFlag.Name) {
-			ethConf.GasPrice = new(big.Int)
+			shfConf.GasPrice = new(big.Int)
 		}
 		if !ctx.GlobalIsSet(WhisperEnabledFlag.Name) {
 			shhEnable = true
 		}
-		ethConf.PowTest = true
+		shfConf.PowTest = true
 	}
 	// Assemble and return the protocol stack
 	stack, err := node.New(stackConf)
@@ -764,9 +739,9 @@ func MakeSystemNode(name, version string, relconf release.Config, extra []byte, 
 		Fatalf("Failed to create the protocol stack: %v", err)
 	}
 	if err := stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
-		return shf.New(ctx, ethConf)
+		return shf.New(ctx, shfConf)
 	}); err != nil {
-		Fatalf("Failed to register the Shift service: %v", err)
+		Fatalf("Failed to register the Gshift service: %v", err)
 	}
 	if shhEnable {
 		if err := stack.Register(func(*node.ServiceContext) (node.Service, error) { return whisper.New(), nil }); err != nil {
@@ -790,7 +765,7 @@ func SetupNetwork(ctx *cli.Context) {
 		params.MinGasLimit = big.NewInt(125000)
 		params.MaximumExtraDataSize = big.NewInt(1024)
 		NetworkIdFlag.Value = 0
-		core.BlockReward = big.NewInt(2e+18)
+		core.BlockReward = big.NewInt(1.5e+18)
 		core.ExpDiffPeriod = big.NewInt(math.MaxInt64)
 	}
 	params.TargetGasLimit = common.String2Big(ctx.GlobalString(TargetGasLimitFlag.Name))
@@ -806,24 +781,30 @@ func MustMakeChainConfig(ctx *cli.Context) *core.ChainConfig {
 
 // MustMakeChainConfigFromDb reads the chain configuration from the given database.
 func MustMakeChainConfigFromDb(ctx *cli.Context, db ethdb.Database) *core.ChainConfig {
-	genesis := core.GetBlock(db, core.GetCanonicalHash(db, 0))
+	// If the chain is already initialized, use any existing chain configs
+	config := new(core.ChainConfig)
 
+	genesis := core.GetBlock(db, core.GetCanonicalHash(db, 0))
 	if genesis != nil {
-		// Existing genesis block, use stored config if available.
 		storedConfig, err := core.GetChainConfig(db, genesis.Hash())
-		if err == nil {
-			return storedConfig
-		} else if err != core.ChainConfigNotFoundErr {
+		switch err {
+		case nil:
+			config = storedConfig
+		case core.ChainConfigNotFoundErr:
+			// No configs found, use empty, will populate below
+		default:
 			Fatalf("Could not make chain configuration: %v", err)
 		}
 	}
-	var homesteadBlockNo *big.Int
-	if ctx.GlobalBool(TestNetFlag.Name) {
-		homesteadBlockNo = params.TestNetHomesteadBlock
-	} else {
-		homesteadBlockNo = params.MainNetHomesteadBlock
+	// Set any missing fields due to them being unset or system upgrade
+	if config.HomesteadBlock == nil {
+		if ctx.GlobalBool(TestNetFlag.Name) {
+			config.HomesteadBlock = params.TestNetHomesteadBlock
+		} else {
+			config.HomesteadBlock = params.MainNetHomesteadBlock
+		}
 	}
-	return &core.ChainConfig{HomesteadBlock: homesteadBlockNo}
+	return config
 }
 
 // MakeChainDatabase open an LevelDB using the flags passed to the client and will hard crash if it fails.
@@ -863,4 +844,21 @@ func MakeChain(ctx *cli.Context) (chain *core.BlockChain, chainDb ethdb.Database
 		Fatalf("Could not start chainmanager: %v", err)
 	}
 	return chain, chainDb
+}
+
+// MakeConsolePreloads retrieves the absolute paths for the console JavaScript
+// scripts to preload before starting.
+func MakeConsolePreloads(ctx *cli.Context) []string {
+	// Skip preloading if there's nothing to preload
+	if ctx.GlobalString(PreloadJSFlag.Name) == "" {
+		return nil
+	}
+	// Otherwise resolve absolute paths and return them
+	preloads := []string{}
+
+	assets := ctx.GlobalString(JSpathFlag.Name)
+	for _, file := range strings.Split(ctx.GlobalString(PreloadJSFlag.Name), ",") {
+		preloads = append(preloads, common.AbsolutePath(assets, strings.TrimSpace(file)))
+	}
+	return preloads
 }

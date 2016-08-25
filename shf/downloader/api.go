@@ -68,7 +68,7 @@ func (api *PublicDownloaderAPI) run() {
 	}
 }
 
-// Progress gives progress indications when the node is synchronising with the Shift network.
+// Progress gives progress indications when the node is synchronising with the Ethereum network.
 type Progress struct {
 	Origin  uint64 `json:"startingBlock"`
 	Current uint64 `json:"currentBlock"`
@@ -83,7 +83,7 @@ type SyncingResult struct {
 	Status  Progress `json:"status"`
 }
 
-// Syncing provides information when this nodes starts synchronising with the Shift network and when it's finished.
+// Syncing provides information when this nodes starts synchronising with the Ethereum network and when it's finished.
 func (api *PublicDownloaderAPI) Syncing(ctx context.Context) (rpc.Subscription, error) {
 	notifier, supported := rpc.NotifierFromContext(ctx)
 	if !supported {

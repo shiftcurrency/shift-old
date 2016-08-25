@@ -1,12 +1,12 @@
-// Copyright 2015 The go-ethereum Authors
+// Copyright 2015 The go-gshift Authors
 // This file is part of go-ethereum.
 //
-// go-ethereum is free software: you can redistribute it and/or modify
+// go-gshift is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// go-ethereum is distributed in the hope that it will be useful,
+// go-gshift is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
@@ -23,14 +23,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/codegangsta/cli"
 	"github.com/shiftcurrency/shift/cmd/utils"
 	"github.com/shiftcurrency/shift/common"
+	"github.com/shiftcurrency/shift/console"
 	"github.com/shiftcurrency/shift/core"
 	"github.com/shiftcurrency/shift/core/state"
 	"github.com/shiftcurrency/shift/core/types"
 	"github.com/shiftcurrency/shift/ethdb"
 	"github.com/shiftcurrency/shift/logger/glog"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -66,12 +67,12 @@ if already existing.
 		Usage:  `dump a specific block from storage`,
 		Description: `
 The arguments are interpreted as block numbers or hashes.
-Use "shift dump 0" to dump the genesis block.
+Use "gshift dump 0" to dump the genesis block.
 `,
 	}
 )
 
-func importChain(ctx *cli.Context) {
+func importChain(ctx *cli.Context) error {
 	if len(ctx.Args()) != 1 {
 		utils.Fatalf("This command requires an argument.")
 	}
@@ -83,9 +84,10 @@ func importChain(ctx *cli.Context) {
 		utils.Fatalf("Import error: %v", err)
 	}
 	fmt.Printf("Import done in %v", time.Since(start))
+	return nil
 }
 
-func exportChain(ctx *cli.Context) {
+func exportChain(ctx *cli.Context) error {
 	if len(ctx.Args()) < 1 {
 		utils.Fatalf("This command requires an argument.")
 	}
@@ -113,10 +115,11 @@ func exportChain(ctx *cli.Context) {
 		utils.Fatalf("Export error: %v\n", err)
 	}
 	fmt.Printf("Export done in %v", time.Since(start))
+	return nil
 }
 
-func removeDB(ctx *cli.Context) {
-	confirm, err := utils.Stdin.ConfirmPrompt("Remove local database?")
+func removeDB(ctx *cli.Context) error {
+	confirm, err := console.Stdin.PromptConfirm("Remove local database?")
 	if err != nil {
 		utils.Fatalf("%v", err)
 	}
@@ -131,9 +134,10 @@ func removeDB(ctx *cli.Context) {
 	} else {
 		fmt.Println("Operation aborted")
 	}
+	return nil
 }
 
-func upgradeDB(ctx *cli.Context) {
+func upgradeDB(ctx *cli.Context) error {
 	glog.Infoln("Upgrading blockchain database")
 
 	chain, chainDb := utils.MakeChain(ctx)
@@ -162,9 +166,10 @@ func upgradeDB(ctx *cli.Context) {
 		os.Remove(exportFile)
 		glog.Infoln("Import finished")
 	}
+	return nil
 }
 
-func dump(ctx *cli.Context) {
+func dump(ctx *cli.Context) error {
 	chain, chainDb := utils.MakeChain(ctx)
 	for _, arg := range ctx.Args() {
 		var block *types.Block
@@ -181,12 +186,12 @@ func dump(ctx *cli.Context) {
 			state, err := state.New(block.Root(), chainDb)
 			if err != nil {
 				utils.Fatalf("could not create new state: %v", err)
-				return
 			}
 			fmt.Printf("%s\n", state.Dump())
 		}
 	}
 	chainDb.Close()
+	return nil
 }
 
 // hashish returns true for strings that look like hashes.

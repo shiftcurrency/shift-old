@@ -28,7 +28,7 @@ import (
 )
 
 // The values in those tests are from the Transaction Tests
-// at github.com/shift/tests.
+// at github.com/ethereum/tests.
 
 var (
 	emptyTx = NewTransaction(

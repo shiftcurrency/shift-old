@@ -34,7 +34,7 @@ import (
 	"github.com/shiftcurrency/shift/logger/glog"
 )
 
-// registryAPIBackend is a backend for an Shift Registry.
+// registryAPIBackend is a backend for an Ethereum Registry.
 type registryAPIBackend struct {
 	config  *core.ChainConfig
 	bc      *core.BlockChain
@@ -43,7 +43,7 @@ type registryAPIBackend struct {
 	am      *accounts.Manager
 }
 
-// PrivateRegistarAPI offers various functions to access the Shift registry.
+// PrivateRegistarAPI offers various functions to access the Ethereum registry.
 type PrivateRegistarAPI struct {
 	config *core.ChainConfig
 	be     *registryAPIBackend

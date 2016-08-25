@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package bind generates Shift contract Go bindings.
+// Package bind generates Ethereum contract Go bindings.
 //
 // Detailed usage document and tutorial available on the go-ethereum Wiki page:
-// https://github.com/shiftcurrency/shift/wiki/Native-DApps:-Go-bindings-to-Shift-contracts
+// https://github.com/shiftcurrency/shift/wiki/Native-DApps:-Go-bindings-to-Ethereum-contracts
 package bind
 
 import (

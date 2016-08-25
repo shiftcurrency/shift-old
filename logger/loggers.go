@@ -47,7 +47,7 @@ const (
 )
 
 // A Logger prints messages prefixed by a given tag. It provides named
-// Printf and Println style methods for all loglevels. Each shift
+// Printf and Println style methods for all loglevels. Each ethereum
 // component should have its own logger with a unique prefix.
 type Logger struct {
 	tag string

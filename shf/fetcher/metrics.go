@@ -33,12 +33,9 @@ var (
 	propBroadcastDropMeter = metrics.NewMeter("shf/fetcher/prop/broadcasts/drop")
 	propBroadcastDOSMeter  = metrics.NewMeter("shf/fetcher/prop/broadcasts/dos")
 
-	blockFetchMeter  = metrics.NewMeter("shf/fetcher/fetch/blocks")
 	headerFetchMeter = metrics.NewMeter("shf/fetcher/fetch/headers")
 	bodyFetchMeter   = metrics.NewMeter("shf/fetcher/fetch/bodies")
 
-	blockFilterInMeter   = metrics.NewMeter("shf/fetcher/filter/blocks/in")
-	blockFilterOutMeter  = metrics.NewMeter("shf/fetcher/filter/blocks/out")
 	headerFilterInMeter  = metrics.NewMeter("shf/fetcher/filter/headers/in")
 	headerFilterOutMeter = metrics.NewMeter("shf/fetcher/filter/headers/out")
 	bodyFilterInMeter    = metrics.NewMeter("shf/fetcher/filter/bodies/in")

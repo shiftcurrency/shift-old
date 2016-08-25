@@ -59,8 +59,8 @@ import (
 
   References mentioned in code comments:
 
-  1. https://github.com/shift/wiki/wiki/Ethash
-  2. https://github.com/shift/cpp-shift/blob/develop/libethash-cl/ethash_cl_miner.cpp
+  1. https://github.com/ethereum/wiki/wiki/Ethash
+  2. https://github.com/ethereum/cpp-ethereum/blob/develop/libethash-cl/ethash_cl_miner.cpp
   3. https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/
   4. http://amd-dev.wpengine.netdna-cdn.com/wordpress/media/2013/12/AMD_OpenCL_Programming_User_Guide.pdf
 
@@ -187,8 +187,8 @@ func PrintDevices() {
 				idsFormat += ","
 			}
 		}
-		fmt.Printf("Found %v devices. Benchmark first GPU:       gshift gpubench 0\n", len(found))
-		fmt.Printf("Mine using all GPUs:                        gshift --minegpu %v\n", idsFormat)
+		fmt.Printf("Found %v devices. Benchmark first GPU:       geth gpubench 0\n", len(found))
+		fmt.Printf("Mine using all GPUs:                        geth --minegpu %v\n", idsFormat)
 	}
 }
 
@@ -197,14 +197,14 @@ func PrintDevices() {
 func InitCL(blockNum uint64, c *OpenCLMiner) error {
 	platforms, err := cl.GetPlatforms()
 	if err != nil {
-		return fmt.Errorf("Plaform error: %v\nCheck your OpenCL installation and then run gshift gpuinfo", err)
+		return fmt.Errorf("Plaform error: %v\nCheck your OpenCL installation and then run geth gpuinfo", err)
 	}
 
 	var devices []*cl.Device
 	for _, p := range platforms {
 		ds, err := cl.GetDevices(p, cl.DeviceTypeGPU)
 		if err != nil {
-			return fmt.Errorf("Devices error: %v\nCheck your GPU drivers and then run gshift gpuinfo", err)
+			return fmt.Errorf("Devices error: %v\nCheck your GPU drivers and then run geth gpuinfo", err)
 		}
 		for _, d := range ds {
 			devices = append(devices, d)
@@ -221,7 +221,7 @@ func InitCL(blockNum uint64, c *OpenCLMiner) error {
 
 	for _, id := range c.deviceIds {
 		if id > len(devices)-1 {
-			return fmt.Errorf("Device id not found. See available device ids with: gshift gpuinfo")
+			return fmt.Errorf("Device id not found. See available device ids with: geth gpuinfo")
 		} else {
 			err := initCLDevice(id, devices[id], c)
 			if err != nil {

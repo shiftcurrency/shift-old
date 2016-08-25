@@ -34,7 +34,7 @@ import (
 	"github.com/shiftcurrency/shift/common/registrar"
 	"github.com/shiftcurrency/shift/core"
 	"github.com/shiftcurrency/shift/crypto"
-	"github.com/shiftcurrency/shift/shf"
+	"github.com/shiftcurrency/shift/eth"
 	"github.com/shiftcurrency/shift/ethdb"
 	"github.com/shiftcurrency/shift/event"
 	"github.com/shiftcurrency/shift/node"
@@ -123,7 +123,7 @@ func (self *testFrontend) ConfirmTransaction(tx string) bool {
 	return true
 }
 
-func testEth(t *testing.T) (shift *shf.Shift, err error) {
+func testShf(t *testing.T) (shift *shf.Shift, err error) {
 
 	tmp, err := ioutil.TempDir("", "natspec-test")
 	if err != nil {
@@ -162,8 +162,8 @@ func testEth(t *testing.T) (shift *shf.Shift, err error) {
 }
 
 func testInit(t *testing.T) (self *testFrontend) {
-	// initialise and start minimal shift stack
-	shift, err := testEth(t)
+	// initialise and start minimal ethereum stack
+	shift, err := testShf(t)
 	if err != nil {
 		t.Errorf("error creating shift: %v", err)
 		return
@@ -177,7 +177,7 @@ func testInit(t *testing.T) (self *testFrontend) {
 	// mock frontend
 	self = &testFrontend{t: t, shift: shift}
 	self.xeth = xe.New(nil, self)
-	self.wait = self.xshf.UpdateState()
+	self.wait = self.xeth.UpdateState()
 	addr, _ := self.shift.Shiftbase()
 
 	// initialise the registry contracts
@@ -192,7 +192,7 @@ func testInit(t *testing.T) (self *testFrontend) {
 	if !processTxs(self, t, 1) {
 		t.Fatalf("error mining txs")
 	}
-	recG := self.xshf.GetTxReceipt(common.HexToHash(txG))
+	recG := self.xeth.GetTxReceipt(common.HexToHash(txG))
 	if recG == nil {
 		t.Fatalf("blockchain error creating GlobalRegistrar")
 	}
@@ -205,7 +205,7 @@ func testInit(t *testing.T) (self *testFrontend) {
 	if !processTxs(self, t, 1) {
 		t.Errorf("error mining txs")
 	}
-	recH := self.xshf.GetTxReceipt(common.HexToHash(txH))
+	recH := self.xeth.GetTxReceipt(common.HexToHash(txH))
 	if recH == nil {
 		t.Fatalf("blockchain error creating HashReg")
 	}
@@ -218,7 +218,7 @@ func testInit(t *testing.T) (self *testFrontend) {
 	if !processTxs(self, t, 1) {
 		t.Errorf("error mining txs")
 	}
-	recU := self.xshf.GetTxReceipt(common.HexToHash(txU))
+	recU := self.xeth.GetTxReceipt(common.HexToHash(txU))
 	if recU == nil {
 		t.Fatalf("blockchain error creating UrlHint")
 	}
@@ -241,7 +241,7 @@ func TestNatspecE2E(t *testing.T) {
 	dochash := crypto.Keccak256Hash([]byte(testContractInfo))
 
 	// take the codehash for the contract we wanna test
-	codeb := tf.xshf.CodeAtBytes(registrar.HashRegAddr)
+	codeb := tf.xeth.CodeAtBytes(registrar.HashRegAddr)
 	codehash := crypto.Keccak256Hash(codeb)
 
 	reg := registrar.New(tf.xeth)
@@ -331,7 +331,7 @@ func processTxs(repl *testFrontend, t *testing.T, expTxc int) bool {
 	defer repl.shift.StopMining()
 
 	timer := time.NewTimer(100 * time.Second)
-	height := new(big.Int).Add(repl.xshf.CurrentBlock().Number(), big.NewInt(1))
+	height := new(big.Int).Add(repl.xeth.CurrentBlock().Number(), big.NewInt(1))
 	repl.wait <- height
 	select {
 	case <-timer.C:

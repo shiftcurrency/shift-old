@@ -24,7 +24,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/codegangsta/cli"
 	"github.com/shiftcurrency/shift/cmd/utils"
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core"
@@ -33,6 +32,7 @@ import (
 	"github.com/shiftcurrency/shift/core/vm"
 	"github.com/shiftcurrency/shift/ethdb"
 	"github.com/shiftcurrency/shift/logger/glog"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -84,11 +84,16 @@ var (
 		Name:  "verbosity",
 		Usage: "sets the verbosity level",
 	}
+	CreateFlag = cli.BoolFlag{
+		Name:  "create",
+		Usage: "indicates the action should be create rather than call",
+	}
 )
 
 func init() {
 	app = utils.NewApp("0.2", "the evm command line interface")
 	app.Flags = []cli.Flag{
+		CreateFlag,
 		DebugFlag,
 		VerbosityFlag,
 		ForceJitFlag,
@@ -104,15 +109,13 @@ func init() {
 	app.Action = run
 }
 
-func run(ctx *cli.Context) {
+func run(ctx *cli.Context) error {
 	glog.SetToStderr(true)
 	glog.SetV(ctx.GlobalInt(VerbosityFlag.Name))
 
 	db, _ := ethdb.NewMemDatabase()
 	statedb, _ := state.New(common.Hash{}, db)
 	sender := statedb.CreateAccount(common.StringToAddress("sender"))
-	receiver := statedb.CreateAccount(common.StringToAddress("receiver"))
-	receiver.SetCode(common.Hex2Bytes(ctx.GlobalString(CodeFlag.Name)))
 
 	vmenv := NewEnv(statedb, common.StringToAddress("evmuser"), common.Big(ctx.GlobalString(ValueFlag.Name)), vm.Config{
 		Debug:     ctx.GlobalBool(DebugFlag.Name),
@@ -121,17 +124,37 @@ func run(ctx *cli.Context) {
 	})
 
 	tstart := time.Now()
-	ret, e := vmenv.Call(
-		sender,
-		receiver.Address(),
-		common.Hex2Bytes(ctx.GlobalString(InputFlag.Name)),
-		common.Big(ctx.GlobalString(GasFlag.Name)),
-		common.Big(ctx.GlobalString(PriceFlag.Name)),
-		common.Big(ctx.GlobalString(ValueFlag.Name)),
+
+	var (
+		ret []byte
+		err error
 	)
+
+	if ctx.GlobalBool(CreateFlag.Name) {
+		input := append(common.Hex2Bytes(ctx.GlobalString(CodeFlag.Name)), common.Hex2Bytes(ctx.GlobalString(InputFlag.Name))...)
+		ret, _, err = vmenv.Create(
+			sender,
+			input,
+			common.Big(ctx.GlobalString(GasFlag.Name)),
+			common.Big(ctx.GlobalString(PriceFlag.Name)),
+			common.Big(ctx.GlobalString(ValueFlag.Name)),
+		)
+	} else {
+		receiver := statedb.CreateAccount(common.StringToAddress("receiver"))
+		receiver.SetCode(common.Hex2Bytes(ctx.GlobalString(CodeFlag.Name)))
+		ret, err = vmenv.Call(
+			sender,
+			receiver.Address(),
+			common.Hex2Bytes(ctx.GlobalString(InputFlag.Name)),
+			common.Big(ctx.GlobalString(GasFlag.Name)),
+			common.Big(ctx.GlobalString(PriceFlag.Name)),
+			common.Big(ctx.GlobalString(ValueFlag.Name)),
+		)
+	}
 	vmdone := time.Since(tstart)
 
 	if ctx.GlobalBool(DumpFlag.Name) {
+		statedb.Commit()
 		fmt.Println(string(statedb.Dump()))
 	}
 	vm.StdErrFormat(vmenv.StructLogs())
@@ -150,10 +173,11 @@ num gc:     %d
 	}
 
 	fmt.Printf("OUT: 0x%x", ret)
-	if e != nil {
-		fmt.Printf(" error: %v", e)
+	if err != nil {
+		fmt.Printf(" error: %v", err)
 	}
 	fmt.Println()
+	return nil
 }
 
 func main() {
@@ -194,7 +218,7 @@ func NewEnv(state *state.StateDB, transactor common.Address, value *big.Int, cfg
 // ruleSet implements vm.RuleSet and will always default to the homestead rule set.
 type ruleSet struct{}
 
-func (ruleSet) IsHomestead(*big.Int) bool { return false }
+func (ruleSet) IsHomestead(*big.Int) bool { return true }
 
 func (self *VMEnv) RuleSet() vm.RuleSet        { return ruleSet{} }
 func (self *VMEnv) Vm() vm.Vm                  { return self.evm }

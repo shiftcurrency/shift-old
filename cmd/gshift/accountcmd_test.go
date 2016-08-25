@@ -44,21 +44,21 @@ func tmpDatadirWithKeystore(t *testing.T) string {
 
 func TestAccountListEmpty(t *testing.T) {
 	gshift := runGshift(t, "account")
-	gshf.expectExit()
+	gshift.expectExit()
 }
 
 func TestAccountList(t *testing.T) {
 	datadir := tmpDatadirWithKeystore(t)
 	gshift := runGshift(t, "--datadir", datadir, "account")
-	defer gshf.expectExit()
+	defer gshift.expectExit()
 	if runtime.GOOS == "windows" {
-		gshf.expect(`
+		gshift.expect(`
 Account #0: {7ef5a6135f1fd6a02593eedc869c6d41d934aef8} {{.Datadir}}\keystore\UTC--2016-03-22T12-57-55.920751759Z--7ef5a6135f1fd6a02593eedc869c6d41d934aef8
 Account #1: {f466859ead1932d743d622cb74fc058882e8648a} {{.Datadir}}\keystore\aaa
 Account #2: {289d485d9771714cce91d3393d764e1311907acc} {{.Datadir}}\keystore\zzz
 `)
 	} else {
-		gshf.expect(`
+		gshift.expect(`
 Account #0: {7ef5a6135f1fd6a02593eedc869c6d41d934aef8} {{.Datadir}}/keystore/UTC--2016-03-22T12-57-55.920751759Z--7ef5a6135f1fd6a02593eedc869c6d41d934aef8
 Account #1: {f466859ead1932d743d622cb74fc058882e8648a} {{.Datadir}}/keystore/aaa
 Account #2: {289d485d9771714cce91d3393d764e1311907acc} {{.Datadir}}/keystore/zzz
@@ -68,20 +68,20 @@ Account #2: {289d485d9771714cce91d3393d764e1311907acc} {{.Datadir}}/keystore/zzz
 
 func TestAccountNew(t *testing.T) {
 	gshift := runGshift(t, "--lightkdf", "account", "new")
-	defer gshf.expectExit()
-	gshf.expect(`
+	defer gshift.expectExit()
+	gshift.expect(`
 Your new account is locked with a password. Please give a password. Do not forget this password.
 !! Unsupported terminal, password will be echoed.
 Passphrase: {{.InputLine "foobar"}}
 Repeat passphrase: {{.InputLine "foobar"}}
 `)
-	gshf.expectRegexp(`Address: \{[0-9a-f]{40}\}\n`)
+	gshift.expectRegexp(`Address: \{[0-9a-f]{40}\}\n`)
 }
 
 func TestAccountNewBadRepeat(t *testing.T) {
 	gshift := runGshift(t, "--lightkdf", "account", "new")
-	defer gshf.expectExit()
-	gshf.expect(`
+	defer gshift.expectExit()
+	gshift.expect(`
 Your new account is locked with a password. Please give a password. Do not forget this password.
 !! Unsupported terminal, password will be echoed.
 Passphrase: {{.InputLine "something"}}
@@ -95,8 +95,8 @@ func TestAccountUpdate(t *testing.T) {
 	gshift := runGshift(t,
 		"--datadir", datadir, "--lightkdf",
 		"account", "update", "f466859ead1932d743d622cb74fc058882e8648a")
-	defer gshf.expectExit()
-	gshf.expect(`
+	defer gshift.expectExit()
+	gshift.expect(`
 Unlocking account f466859ead1932d743d622cb74fc058882e8648a | Attempt 1/3
 !! Unsupported terminal, password will be echoed.
 Passphrase: {{.InputLine "foobar"}}
@@ -108,14 +108,14 @@ Repeat passphrase: {{.InputLine "foobar2"}}
 
 func TestWalletImport(t *testing.T) {
 	gshift := runGshift(t, "--lightkdf", "wallet", "import", "testdata/guswallet.json")
-	defer gshf.expectExit()
-	gshf.expect(`
+	defer gshift.expectExit()
+	gshift.expect(`
 !! Unsupported terminal, password will be echoed.
 Passphrase: {{.InputLine "foo"}}
 Address: {d4584b5f6229b7be90727b0fc8c6b91bb427821f}
 `)
 
-	files, err := ioutil.ReadDir(filepath.Join(gshf.Datadir, "keystore"))
+	files, err := ioutil.ReadDir(filepath.Join(gshift.Datadir, "keystore"))
 	if len(files) != 1 {
 		t.Errorf("expected one key file in keystore directory, found %d files (error: %v)", len(files), err)
 	}
@@ -123,8 +123,8 @@ Address: {d4584b5f6229b7be90727b0fc8c6b91bb427821f}
 
 func TestWalletImportBadPassword(t *testing.T) {
 	gshift := runGshift(t, "--lightkdf", "wallet", "import", "testdata/guswallet.json")
-	defer gshf.expectExit()
-	gshf.expect(`
+	defer gshift.expectExit()
+	gshift.expect(`
 !! Unsupported terminal, password will be echoed.
 Passphrase: {{.InputLine "wrong"}}
 Fatal: could not decrypt key with given passphrase
@@ -137,18 +137,18 @@ func TestUnlockFlag(t *testing.T) {
 		"--datadir", datadir, "--nat", "none", "--nodiscover", "--dev",
 		"--unlock", "f466859ead1932d743d622cb74fc058882e8648a",
 		"js", "testdata/empty.js")
-	gshf.expect(`
+	gshift.expect(`
 Unlocking account f466859ead1932d743d622cb74fc058882e8648a | Attempt 1/3
 !! Unsupported terminal, password will be echoed.
 Passphrase: {{.InputLine "foobar"}}
 `)
-	gshf.expectExit()
+	gshift.expectExit()
 
 	wantMessages := []string{
 		"Unlocked account f466859ead1932d743d622cb74fc058882e8648a",
 	}
 	for _, m := range wantMessages {
-		if strings.Index(gshf.stderrText(), m) == -1 {
+		if strings.Index(gshift.stderrText(), m) == -1 {
 			t.Errorf("stderr text does not contain %q", m)
 		}
 	}
@@ -159,8 +159,8 @@ func TestUnlockFlagWrongPassword(t *testing.T) {
 	gshift := runGshift(t,
 		"--datadir", datadir, "--nat", "none", "--nodiscover", "--dev",
 		"--unlock", "f466859ead1932d743d622cb74fc058882e8648a")
-	defer gshf.expectExit()
-	gshf.expect(`
+	defer gshift.expectExit()
+	gshift.expect(`
 Unlocking account f466859ead1932d743d622cb74fc058882e8648a | Attempt 1/3
 !! Unsupported terminal, password will be echoed.
 Passphrase: {{.InputLine "wrong1"}}
@@ -179,21 +179,21 @@ func TestUnlockFlagMultiIndex(t *testing.T) {
 		"--datadir", datadir, "--nat", "none", "--nodiscover", "--dev",
 		"--unlock", "0,2",
 		"js", "testdata/empty.js")
-	gshf.expect(`
+	gshift.expect(`
 Unlocking account 0 | Attempt 1/3
 !! Unsupported terminal, password will be echoed.
 Passphrase: {{.InputLine "foobar"}}
 Unlocking account 2 | Attempt 1/3
 Passphrase: {{.InputLine "foobar"}}
 `)
-	gshf.expectExit()
+	gshift.expectExit()
 
 	wantMessages := []string{
 		"Unlocked account 7ef5a6135f1fd6a02593eedc869c6d41d934aef8",
 		"Unlocked account 289d485d9771714cce91d3393d764e1311907acc",
 	}
 	for _, m := range wantMessages {
-		if strings.Index(gshf.stderrText(), m) == -1 {
+		if strings.Index(gshift.stderrText(), m) == -1 {
 			t.Errorf("stderr text does not contain %q", m)
 		}
 	}
@@ -205,14 +205,14 @@ func TestUnlockFlagPasswordFile(t *testing.T) {
 		"--datadir", datadir, "--nat", "none", "--nodiscover", "--dev",
 		"--password", "testdata/passwords.txt", "--unlock", "0,2",
 		"js", "testdata/empty.js")
-	gshf.expectExit()
+	gshift.expectExit()
 
 	wantMessages := []string{
 		"Unlocked account 7ef5a6135f1fd6a02593eedc869c6d41d934aef8",
 		"Unlocked account 289d485d9771714cce91d3393d764e1311907acc",
 	}
 	for _, m := range wantMessages {
-		if strings.Index(gshf.stderrText(), m) == -1 {
+		if strings.Index(gshift.stderrText(), m) == -1 {
 			t.Errorf("stderr text does not contain %q", m)
 		}
 	}
@@ -223,8 +223,8 @@ func TestUnlockFlagPasswordFileWrongPassword(t *testing.T) {
 	gshift := runGshift(t,
 		"--datadir", datadir, "--nat", "none", "--nodiscover", "--dev",
 		"--password", "testdata/wrong-passwords.txt", "--unlock", "0,2")
-	defer gshf.expectExit()
-	gshf.expect(`
+	defer gshift.expectExit()
+	gshift.expect(`
 Fatal: Failed to unlock account 0 (could not decrypt key with given passphrase)
 `)
 }
@@ -235,14 +235,14 @@ func TestUnlockFlagAmbiguous(t *testing.T) {
 		"--keystore", store, "--nat", "none", "--nodiscover", "--dev",
 		"--unlock", "f466859ead1932d743d622cb74fc058882e8648a",
 		"js", "testdata/empty.js")
-	defer gshf.expectExit()
+	defer gshift.expectExit()
 
 	// Helper for the expect template, returns absolute keystore path.
-	gshf.setTemplateFunc("keypath", func(file string) string {
+	gshift.setTemplateFunc("keypath", func(file string) string {
 		abs, _ := filepath.Abs(filepath.Join(store, file))
 		return abs
 	})
-	gshf.expect(`
+	gshift.expect(`
 Unlocking account f466859ead1932d743d622cb74fc058882e8648a | Attempt 1/3
 !! Unsupported terminal, password will be echoed.
 Passphrase: {{.InputLine "foobar"}}
@@ -254,13 +254,13 @@ Your passphrase unlocked {{keypath "1"}}
 In order to avoid this warning, you need to remove the following duplicate key files:
    {{keypath "2"}}
 `)
-	gshf.expectExit()
+	gshift.expectExit()
 
 	wantMessages := []string{
 		"Unlocked account f466859ead1932d743d622cb74fc058882e8648a",
 	}
 	for _, m := range wantMessages {
-		if strings.Index(gshf.stderrText(), m) == -1 {
+		if strings.Index(gshift.stderrText(), m) == -1 {
 			t.Errorf("stderr text does not contain %q", m)
 		}
 	}
@@ -271,14 +271,14 @@ func TestUnlockFlagAmbiguousWrongPassword(t *testing.T) {
 	gshift := runGshift(t,
 		"--keystore", store, "--nat", "none", "--nodiscover", "--dev",
 		"--unlock", "f466859ead1932d743d622cb74fc058882e8648a")
-	defer gshf.expectExit()
+	defer gshift.expectExit()
 
 	// Helper for the expect template, returns absolute keystore path.
-	gshf.setTemplateFunc("keypath", func(file string) string {
+	gshift.setTemplateFunc("keypath", func(file string) string {
 		abs, _ := filepath.Abs(filepath.Join(store, file))
 		return abs
 	})
-	gshf.expect(`
+	gshift.expect(`
 Unlocking account f466859ead1932d743d622cb74fc058882e8648a | Attempt 1/3
 !! Unsupported terminal, password will be echoed.
 Passphrase: {{.InputLine "wrong"}}
@@ -288,5 +288,5 @@ Multiple key files exist for address f466859ead1932d743d622cb74fc058882e8648a:
 Testing your passphrase against all of them...
 Fatal: None of the listed files could be unlocked.
 `)
-	gshf.expectExit()
+	gshift.expectExit()
 }

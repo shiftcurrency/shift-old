@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of go-ethereum.
+// Copyright 2014 The go-shift Authors
+// This file is part of go-shift.
 //
-// go-ethereum is free software: you can redistribute it and/or modify
+// go-shift is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// go-ethereum is distributed in the hope that it will be useful,
+// go-shift is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
+// along with go-shift. If not, see <http://www.gnu.org/licenses/>.
 
 // gshift is the official command-line client for Shift.
 package main
@@ -22,19 +22,18 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/codegangsta/cli"
 	"github.com/ethereum/ethash"
 	"github.com/shiftcurrency/shift/cmd/utils"
 	"github.com/shiftcurrency/shift/common"
+	"github.com/shiftcurrency/shift/console"
 	"github.com/shiftcurrency/shift/core"
-	"github.com/shiftcurrency/shift/shf"
+	"github.com/shiftcurrency/shift/eth"
 	"github.com/shiftcurrency/shift/ethdb"
 	"github.com/shiftcurrency/shift/internal/debug"
 	"github.com/shiftcurrency/shift/logger"
@@ -44,16 +43,17 @@ import (
 	"github.com/shiftcurrency/shift/params"
 	"github.com/shiftcurrency/shift/release"
 	"github.com/shiftcurrency/shift/rlp"
+	"gopkg.in/urfave/cli.v1"
 )
 
 const (
 	clientIdentifier = "Gshift"   // Client identifier to advertise over the network
-	versionMajor     = 3        // Major version component of the current release
-	versionMinor     = 1        // Minor version component of the current release
-	versionPatch     = 2        // Patch version component of the current release
-	versionMeta      = "" // Version metadata to append to the version string
+	versionMajor     = 4        // Major version component of the current release
+	versionMinor     = 0        // Minor version component of the current release
+	versionPatch     = 0       // Patch version component of the current release
+	versionMeta      = "stable" // Version metadata to append to the version string
 
-	versionOracle = "0xea7b9770ca2cb04296cac84f36636d4041251cdf" // Shift address of the Gshift release oracle
+	versionOracle = "" // Shift address of the Gshift release oracle
 )
 
 var (
@@ -83,7 +83,7 @@ func init() {
 	copy(relConfig.Commit[:], commit)
 
 	// Initialize the CLI app and start Gshift
-	app = utils.NewApp(verString, "the gshift command line interface")
+	app = utils.NewApp(verString, "the shift command line interface")
 	app.Action = gshift
 	app.HideVersion = true // we have a command to print the version
 	app.Commands = []cli.Command{
@@ -95,6 +95,9 @@ func init() {
 		monitorCommand,
 		accountCommand,
 		walletCommand,
+		consoleCommand,
+		attachCommand,
+		javascriptCommand,
 		{
 			Action: makedag,
 			Name:   "makedag",
@@ -140,43 +143,12 @@ This is a destructive action and changes the network in which you will be
 participating.
 `,
 		},
-		{
-			Action: console,
-			Name:   "console",
-			Usage:  `Gshift Console: interactive JavaScript environment`,
-			Description: `
-The Gshift console is an interactive shell for the JavaScript runtime environment
-which exposes a node admin interface as well as the Ðapp JavaScript API.
-See https://github.com/shiftcurrency/shift/wiki/Javascipt-Console
-`,
-		},
-		{
-			Action: attach,
-			Name:   "attach",
-			Usage:  `Gshift Console: interactive JavaScript environment (connect to node)`,
-			Description: `
-		The Gshift console is an interactive shell for the JavaScript runtime environment
-		which exposes a node admin interface as well as the Ðapp JavaScript API.
-		See https://github.com/shiftcurrency/shift/wiki/Javascipt-Console.
-		This command allows to open a console on a running gshift node.
-		`,
-		},
-		{
-			Action: execScripts,
-			Name:   "js",
-			Usage:  `executes the given JavaScript files in the Gshift JavaScript VM`,
-			Description: `
-The JavaScript VM exposes a node admin interface as well as the Ðapp
-JavaScript API. See https://github.com/shiftcurrency/shift/wiki/Javascipt-Console
-`,
-		},
 	}
 
 	app.Flags = []cli.Flag{
 		utils.IdentityFlag,
 		utils.UnlockedAccountFlag,
 		utils.PasswordFileFlag,
-		utils.GenesisFileFlag,
 		utils.BootnodesFlag,
 		utils.DataDirFlag,
 		utils.KeyStoreDirFlag,
@@ -214,7 +186,7 @@ JavaScript API. See https://github.com/shiftcurrency/shift/wiki/Javascipt-Consol
 		utils.IPCApiFlag,
 		utils.IPCPathFlag,
 		utils.ExecFlag,
-		utils.PreLoadJSFlag,
+		utils.PreloadJSFlag,
 		utils.WhisperEnabledFlag,
 		utils.DevModeFlag,
 		utils.TestNetFlag,
@@ -244,20 +216,20 @@ JavaScript API. See https://github.com/shiftcurrency/shift/wiki/Javascipt-Consol
 		// Start system runtime metrics collection
 		go metrics.CollectProcessMetrics(3 * time.Second)
 
+		// This should be the only place where reporting is enabled
+		// because it is not intended to run while testing.
+		// In addition to this check, bad block reports are sent only
+		// for chains with the main network genesis block and network id 1.
+		shf.EnableBadBlockReporting = true
+
 		utils.SetupNetwork(ctx)
-
-		// Deprecation warning.
-		if ctx.GlobalIsSet(utils.GenesisFileFlag.Name) {
-			common.PrintDepricationWarning("--genesis is deprecated. Switch to use 'gshift init /path/to/file'")
-		}
-
 		return nil
 	}
 
 	app.After = func(ctx *cli.Context) error {
 		logger.Flush()
 		debug.Exit()
-		utils.Stdin.Close() // Resets terminal mode.
+		console.Stdin.Close() // Resets terminal mode.
 		return nil
 	}
 }
@@ -292,45 +264,17 @@ func makeDefaultExtra() []byte {
 // gshift is the main entry point into the system if no special subcommand is ran.
 // It creates a default node based on the command line arguments and runs it in
 // blocking mode, waiting for it to be shut down.
-func gshift(ctx *cli.Context) {
+func gshift(ctx *cli.Context) error {
 	node := utils.MakeSystemNode(clientIdentifier, verString, relConfig, makeDefaultExtra(), ctx)
 	startNode(ctx, node)
 	node.Wait()
-}
 
-// attach will connect to a running gshift instance attaching a JavaScript console and to it.
-func attach(ctx *cli.Context) {
-	// attach to a running gshift instance
-	client, err := utils.NewRemoteRPCClient(ctx)
-	if err != nil {
-		utils.Fatalf("Unable to attach to gshift: %v", err)
-	}
-
-	repl := newLightweightJSRE(
-		ctx.GlobalString(utils.JSpathFlag.Name),
-		client,
-		ctx.GlobalString(utils.DataDirFlag.Name),
-		true,
-	)
-
-	// preload user defined JS files into the console
-	err = repl.preloadJSFiles(ctx)
-	if err != nil {
-		utils.Fatalf("unable to preload JS file %v", err)
-	}
-
-	// in case the exec flag holds a JS statement execute it and return
-	if ctx.GlobalString(utils.ExecFlag.Name) != "" {
-		repl.batch(ctx.GlobalString(utils.ExecFlag.Name))
-	} else {
-		repl.welcome()
-		repl.interactive()
-	}
+	return nil
 }
 
 // initGenesis will initialise the given JSON format genesis file and writes it as
 // the zero'd block (i.e. genesis) or will fail hard if it can't succeed.
-func initGenesis(ctx *cli.Context) {
+func initGenesis(ctx *cli.Context) error {
 	genesisPath := ctx.Args().First()
 	if len(genesisPath) == 0 {
 		utils.Fatalf("must supply path to genesis JSON file")
@@ -351,77 +295,7 @@ func initGenesis(ctx *cli.Context) {
 		utils.Fatalf("failed to write genesis block: %v", err)
 	}
 	glog.V(logger.Info).Infof("successfully wrote genesis block and/or chain rule set: %x", block.Hash())
-}
-
-// console starts a new gshift node, attaching a JavaScript console to it at the
-// same time.
-func console(ctx *cli.Context) {
-	// Create and start the node based on the CLI flags
-	node := utils.MakeSystemNode(clientIdentifier, verString, relConfig, makeDefaultExtra(), ctx)
-	startNode(ctx, node)
-
-	// Attach to the newly started node, and either execute script or become interactive
-	client, err := node.Attach()
-	if err != nil {
-		utils.Fatalf("Failed to attach to the inproc gshift: %v", err)
-	}
-	repl := newJSRE(node,
-		ctx.GlobalString(utils.JSpathFlag.Name),
-		ctx.GlobalString(utils.RPCCORSDomainFlag.Name),
-		client, true)
-
-	// preload user defined JS files into the console
-	err = repl.preloadJSFiles(ctx)
-	if err != nil {
-		utils.Fatalf("%v", err)
-	}
-
-	// in case the exec flag holds a JS statement execute it and return
-	if script := ctx.GlobalString(utils.ExecFlag.Name); script != "" {
-		repl.batch(script)
-	} else {
-		repl.welcome()
-		repl.interactive()
-	}
-	node.Stop()
-}
-
-// execScripts starts a new gshift node based on the CLI flags, and executes each
-// of the JavaScript files specified as command arguments.
-func execScripts(ctx *cli.Context) {
-	// Create and start the node based on the CLI flags
-	node := utils.MakeSystemNode(clientIdentifier, verString, relConfig, makeDefaultExtra(), ctx)
-	startNode(ctx, node)
-	defer node.Stop()
-
-	// Attach to the newly started node and execute the given scripts
-	client, err := node.Attach()
-	if err != nil {
-		utils.Fatalf("Failed to attach to the inproc gshift: %v", err)
-	}
-	repl := newJSRE(node,
-		ctx.GlobalString(utils.JSpathFlag.Name),
-		ctx.GlobalString(utils.RPCCORSDomainFlag.Name),
-		client, false)
-
-	// Run all given files.
-	for _, file := range ctx.Args() {
-		if err = repl.re.Exec(file); err != nil {
-			break
-		}
-	}
-	if err != nil {
-		utils.Fatalf("JavaScript Error: %v", jsErrorString(err))
-	}
-	// JS files loaded successfully.
-	// Wait for pending callbacks, but stop for Ctrl-C.
-	abort := make(chan os.Signal, 1)
-	signal.Notify(abort, os.Interrupt)
-	go func() {
-		<-abort
-		repl.re.Stop(false)
-	}()
-	repl.re.Stop(true)
+	return nil
 }
 
 // startNode boots up the system node and all registered protocols, after which
@@ -453,7 +327,7 @@ func startNode(ctx *cli.Context, stack *node.Node) {
 	}
 }
 
-func makedag(ctx *cli.Context) {
+func makedag(ctx *cli.Context) error {
 	args := ctx.Args()
 	wrongArgs := func() {
 		utils.Fatalf(`Usage: gshift makedag <block number> <outputdir>`)
@@ -480,13 +354,15 @@ func makedag(ctx *cli.Context) {
 	default:
 		wrongArgs()
 	}
+	return nil
 }
 
-func gpuinfo(ctx *cli.Context) {
+func gpuinfo(ctx *cli.Context) error {
 	shf.PrintOpenCLDevices()
+	return nil
 }
 
-func gpubench(ctx *cli.Context) {
+func gpubench(ctx *cli.Context) error {
 	args := ctx.Args()
 	wrongArgs := func() {
 		utils.Fatalf(`Usage: gshift gpubench <gpu number>`)
@@ -503,9 +379,10 @@ func gpubench(ctx *cli.Context) {
 	default:
 		wrongArgs()
 	}
+	return nil
 }
 
-func version(c *cli.Context) {
+func version(c *cli.Context) error {
 	fmt.Println(clientIdentifier)
 	fmt.Println("Version:", verString)
 	fmt.Println("Protocol Versions:", shf.ProtocolVersions)
@@ -514,4 +391,6 @@ func version(c *cli.Context) {
 	fmt.Println("OS:", runtime.GOOS)
 	fmt.Printf("GOPATH=%s\n", os.Getenv("GOPATH"))
 	fmt.Printf("GOROOT=%s\n", runtime.GOROOT())
+
+	return nil
 }

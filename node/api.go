@@ -313,7 +313,7 @@ func (s *PublicWeb3API) ClientVersion() string {
 	return s.stack.Server().Name
 }
 
-// Sha3 applies the shift sha3 implementation on the input.
+// Sha3 applies the ethereum sha3 implementation on the input.
 // It assumes the input is hex encoded.
 func (s *PublicWeb3API) Sha3(input string) string {
 	return common.ToHex(crypto.Keccak256(common.FromHex(input)))

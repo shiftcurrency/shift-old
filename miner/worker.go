@@ -468,7 +468,6 @@ func (self *worker) commitNewWork() {
 		Extra:      self.extra,
 		Time:       big.NewInt(tstamp),
 	}
-
 	previous := self.current
 	// Could potentially happen if starting to mine in an odd state.
 	err := self.makeCurrent(parent, header)
@@ -476,22 +475,23 @@ func (self *worker) commitNewWork() {
 		glog.V(logger.Info).Infoln("Could not create new env for mining, retrying on next block.")
 		return
 	}
+	// Create the current work task and check any fork transitions needed
 	work := self.current
 
 	/* //approach 1
-	transactions := self.shf.TxPool().GetTransactions()
+	transactions := self.eth.TxPool().GetTransactions()
 	sort.Sort(types.TxByNonce(transactions))
 	*/
 
 	//approach 2
-	transactions := self.shf.TxPool().GetTransactions()
+	transactions := self.eth.TxPool().GetTransactions()
 	types.SortByPriceAndNonce(transactions)
 
 	/* // approach 3
 	// commit transactions for this run.
 	txPerOwner := make(map[common.Address]types.Transactions)
 	// Sort transactions by owner
-	for _, tx := range self.shf.TxPool().GetTransactions() {
+	for _, tx := range self.eth.TxPool().GetTransactions() {
 		from, _ := tx.From() // we can ignore the sender error
 		txPerOwner[from] = append(txPerOwner[from], tx)
 	}

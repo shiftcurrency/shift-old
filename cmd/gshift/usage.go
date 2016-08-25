@@ -21,9 +21,9 @@ package main
 import (
 	"io"
 
-	"github.com/codegangsta/cli"
 	"github.com/shiftcurrency/shift/cmd/utils"
 	"github.com/shiftcurrency/shift/internal/debug"
+	"gopkg.in/urfave/cli.v1"
 )
 
 // AppHelpTemplate is the test template for the default, global app help topic.
@@ -60,7 +60,7 @@ type flagGroup struct {
 // AppHelpFlagGroups is the application flags, grouped by functionality.
 var AppHelpFlagGroups = []flagGroup{
 	{
-		Name: "ETHEREUM",
+		Name: "SHIFT",
 		Flags: []cli.Flag{
 			utils.DataDirFlag,
 			utils.KeyStoreDirFlag,
@@ -68,7 +68,6 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.OlympicFlag,
 			utils.TestNetFlag,
 			utils.DevModeFlag,
-			utils.GenesisFileFlag,
 			utils.IdentityFlag,
 			utils.FastSyncFlag,
 			utils.LightKDFFlag,
@@ -101,7 +100,7 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.RPCCORSDomainFlag,
 			utils.JSpathFlag,
 			utils.ExecFlag,
-			utils.PreLoadJSFlag,
+			utils.PreloadJSFlag,
 		},
 	},
 	{

@@ -165,7 +165,7 @@ func WriteGenesisBlockForTesting(db ethdb.Database, accounts ...GenesisAccount) 
 	return block
 }
 
-// WriteDefaultGenesisBlock assembles the official Shift genesis block and
+// WriteDefaultGenesisBlock assembles the official Ethereum genesis block and
 // writes it - along with all associated state - into a chain database.
 func WriteDefaultGenesisBlock(chainDb ethdb.Database) (*types.Block, error) {
 	return WriteGenesisBlock(chainDb, strings.NewReader(DefaultGenesisBlock()))
@@ -183,7 +183,7 @@ func WriteOlympicGenesisBlock(db ethdb.Database) (*types.Block, error) {
 	return WriteGenesisBlock(db, strings.NewReader(OlympicGenesisBlock()))
 }
 
-// DefaultGenesisBlock assembles a JSON string representing the default Shift
+// DefaultGenesisBlock assembles a JSON string representing the default Ethereum
 // genesis block.
 func DefaultGenesisBlock() string {
 	reader, err := gzip.NewReader(base64.NewDecoder(base64.StdEncoding, strings.NewReader(defaultGenesisBlock)))
@@ -208,7 +208,15 @@ func OlympicGenesisBlock() string {
 			"0000000000000000000000000000000000000001": {"balance": "1"},
 			"0000000000000000000000000000000000000002": {"balance": "1"},
 			"0000000000000000000000000000000000000003": {"balance": "1"},
-			"0000000000000000000000000000000000000004": {"balance": "1"}
+			"0000000000000000000000000000000000000004": {"balance": "1"},
+			"dbdbdb2cbd23b783741e8d7fcf51e459b497e4a6": {"balance": "1606938044258990275541962092341162602522202993782792835301376"},
+			"e4157b34ea9615cfbde6b4fda419828124b70c78": {"balance": "1606938044258990275541962092341162602522202993782792835301376"},
+			"b9c015918bdaba24b4ff057a92a3873d6eb201be": {"balance": "1606938044258990275541962092341162602522202993782792835301376"},
+			"6c386a4b26f73c802f34673f7248bb118f97424a": {"balance": "1606938044258990275541962092341162602522202993782792835301376"},
+			"cd2a3d9f938e13cd947ec05abc7fe734df8dd826": {"balance": "1606938044258990275541962092341162602522202993782792835301376"},
+			"2ef47100e0787b915105fd5e3f4ff6752079d5cb": {"balance": "1606938044258990275541962092341162602522202993782792835301376"},
+			"e6716f9544a56c530d868e4bfbacb172315bdead": {"balance": "1606938044258990275541962092341162602522202993782792835301376"},
+			"1a26338f0d905e295fccb71fa9ea849ffa12aaf4": {"balance": "1606938044258990275541962092341162602522202993782792835301376"}
 		}
 	}`, types.EncodeNonce(42), params.GenesisGasLimit.Bytes(), params.GenesisDifficulty.Bytes())
 }
@@ -229,7 +237,8 @@ func TestNetGenesisBlock() string {
 			"0000000000000000000000000000000000000001": { "balance": "1" },
 			"0000000000000000000000000000000000000002": { "balance": "1" },
 			"0000000000000000000000000000000000000003": { "balance": "1" },
-			"0000000000000000000000000000000000000004": { "balance": "1" }
+			"0000000000000000000000000000000000000004": { "balance": "1" },
+			"102e61f5d8f9bc71d0ad4a084df4e65e05ce0e1c": { "balance": "1606938044258990275541962092341162602522202993782792835301376" }
 		}
 	}`, types.EncodeNonce(0x6d6f7264656e))
 }

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
 
-// ethtest executes Shift JSON tests.
+// shftest executes Shift JSON tests.
 package main
 
 import (
@@ -25,10 +25,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/codegangsta/cli"
 	"github.com/shiftcurrency/shift/logger/glog"
 	"github.com/shiftcurrency/shift/params"
 	"github.com/shiftcurrency/shift/tests"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -183,7 +183,7 @@ func runSuite(test, file string) {
 	}
 }
 
-func setupApp(c *cli.Context) {
+func setupApp(c *cli.Context) error {
 	flagTest := c.GlobalString(TestFlag.Name)
 	flagFile := c.GlobalString(FileFlag.Name)
 	continueOnError = c.GlobalBool(ContinueOnErrorFlag.Name)
@@ -196,8 +196,8 @@ func setupApp(c *cli.Context) {
 		if err := runTestWithReader(flagTest, os.Stdin); err != nil {
 			glog.Fatalln(err)
 		}
-
 	}
+	return nil
 }
 
 func main() {
@@ -208,7 +208,7 @@ func main() {
 	app.Usage = "shift test interface"
 	app.Action = setupApp
 	app.Version = "0.2.0"
-	app.Author = "shift team"
+	app.Author = "go-ethereum team"
 
 	app.Flags = []cli.Flag{
 		TestFlag,

@@ -12,7 +12,7 @@
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with cpp-shift.	If not, see <http://www.gnu.org/licenses/>.
+  along with cpp-ethereum.	If not, see <http://www.gnu.org/licenses/>.
 */
 /** @file internal.c
 * @author Tim Hughes <tim@twistedfury.com>
@@ -257,7 +257,7 @@ static bool ethash_hash(
 void ethash_quick_hash(
 	ethash_h256_t* return_hash,
 	ethash_h256_t const* header_hash,
-	uint64_t const nonce,
+	uint64_t nonce,
 	ethash_h256_t const* mix_hash
 )
 {

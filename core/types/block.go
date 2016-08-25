@@ -141,8 +141,10 @@ type Block struct {
 	// of the chain up to and including the block.
 	td *big.Int
 
-	// ReceivedAt is used by package shf to track block propagation time.
-	ReceivedAt time.Time
+	// These fields are used by package shf to track
+	// inter-peer block relay.
+	ReceivedAt   time.Time
+	ReceivedFrom interface{}
 }
 
 // DeprecatedTd is an old relic for extracting the TD of a block. It is in the
@@ -152,20 +154,18 @@ func (b *Block) DeprecatedTd() *big.Int {
 	return b.td
 }
 
-// [deprecated by shf/63]
 // StorageBlock defines the RLP encoding of a Block stored in the
 // state database. The StorageBlock encoding contains fields that
 // would otherwise need to be recomputed.
 type StorageBlock Block
 
-// "external" block encoding. used for eth protocol, etc.
+// "external" block encoding. used for shf protocol, etc.
 type extblock struct {
 	Header *Header
 	Txs    []*Transaction
 	Uncles []*Header
 }
 
-// [deprecated by shf/63]
 // "storage" block encoding. used for database.
 type storageblock struct {
 	Header *Header
@@ -287,7 +287,6 @@ func (b *Block) EncodeRLP(w io.Writer) error {
 	})
 }
 
-// [deprecated by shf/63]
 func (b *StorageBlock) DecodeRLP(s *rlp.Stream) error {
 	var sb storageblock
 	if err := s.Decode(&sb); err != nil {

@@ -1,6 +1,7 @@
 {
 	"ImportPath": "github.com/shiftcurrency/shift",
 	"GoVersion": "go1.5.2",
+	"GodepVersion": "v74",
 	"Packages": [
 		"./..."
 	],
@@ -14,18 +15,13 @@
 			"Rev": "165db2f241fd235aec29ba6d9b1ccd5f1c14637c"
 		},
 		{
-			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-215-g0ab42fd",
-			"Rev": "0ab42fd482c27cf2c95e7794ad3bb2082c2ab2d7"
-		},
-		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
 			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
 		},
 		{
 			"ImportPath": "github.com/ethereum/ethash",
-			"Comment": "v23.1-245-g25b32de",
-			"Rev": "25b32de0c0271065c28c3719c2bfe86959d72f0c"
+			"Comment": "v23.1-247-g2e80de5",
+			"Rev": "2e80de5022370cfe632195b1720db52d07ff8a77"
 		},
 		{
 			"ImportPath": "github.com/fatih/color",
@@ -84,10 +80,6 @@
 			"ImportPath": "github.com/jackpal/go-nat-pmp",
 			"Rev": "46523a463303c6ede3ddfe45bde1c7ed52ebaacd"
 		},
-        {
-            "ImportPath": "github.com/mattn/go-sqlite",
-            "Rev": "38ee283dabf11c9cbdb968eebd79b1fa7acbabe6"
-        },
 		{
 			"ImportPath": "github.com/mattn/go-colorable",
 			"Rev": "9fdad7c47650b7d2e1da50644c1f4ba7f172f252"
@@ -125,7 +117,7 @@
 		},
 		{
 			"ImportPath": "github.com/rjeczalik/notify",
-			"Rev": "5dd6205716539662f8f14ab513552b41eab69d5d"
+			"Rev": "f627deca7a510d96f0ef9388f2d0e8b16d21f87f"
 		},
 		{
 			"ImportPath": "github.com/robertkrimen/otto",
@@ -158,6 +150,10 @@
 		{
 			"ImportPath": "github.com/rs/cors",
 			"Rev": "5950cf11d77f8a61b432a25dd4d444b4ced01379"
+		},
+		{
+			"ImportPath": "github.com/rs/xhandler",
+			"Rev": "d9d9599b6aaf6a058cb7b1f48291ded2cbd13390"
 		},
 		{
 			"ImportPath": "github.com/syndtr/goleveldb/leveldb",
@@ -323,6 +319,11 @@
 		{
 			"ImportPath": "gopkg.in/karalabe/cookiejar.v2/collections/prque",
 			"Rev": "8dcd6a7f4951f6ff3ee9cbb919a06d8925822e57"
+		},
+		{
+			"ImportPath": "gopkg.in/urfave/cli.v1",
+			"Comment": "v1.17.0",
+			"Rev": "01857ac33766ce0c93856370626f9799281c14f4"
 		}
 	]
 }

@@ -43,7 +43,7 @@ func (s *NotificationTestService) SomeSubscription(ctx context.Context, n, val i
 
 	// by explicitly creating an subscription we make sure that the subscription id is send back to the client
 	// before the first subscription.Notify is called. Otherwise the events might be send before the response
-	// for the shf_subscribe method.
+	// for the eth_subscribe method.
 	subscription, err := notifier.NewSubscription(s.Unsubscribe)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func TestNotifications(t *testing.T) {
 	server := NewServer()
 	service := &NotificationTestService{}
 
-	if err := server.RegisterName("shf", service); err != nil {
+	if err := server.RegisterName("eth", service); err != nil {
 		t.Fatalf("unable to register test service %v", err)
 	}
 
@@ -79,7 +79,7 @@ func TestNotifications(t *testing.T) {
 	val := 12345
 	request := map[string]interface{}{
 		"id":      1,
-		"method":  "shf_subscribe",
+		"method":  "eth_subscribe",
 		"version": "2.0",
 		"params":  []interface{}{"someSubscription", n, val},
 	}

@@ -22,9 +22,9 @@ import (
 	_ "net/http/pprof"
 	"runtime"
 
-	"github.com/codegangsta/cli"
 	"github.com/shiftcurrency/shift/logger"
 	"github.com/shiftcurrency/shift/logger/glog"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -50,7 +50,7 @@ var (
 	pprofPortFlag = cli.IntFlag{
 		Name:  "pprofport",
 		Usage: "pprof HTTP server listening port",
-		Value: 53904,
+		Value: 6060,
 	}
 	memprofilerateFlag = cli.IntFlag{
 		Name:  "memprofilerate",

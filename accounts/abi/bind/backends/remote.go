@@ -34,7 +34,7 @@ import (
 var _ bind.ContractBackend = (*rpcBackend)(nil)
 
 // rpcBackend implements bind.ContractBackend, and acts as the data provider to
-// Shift contracts bound to Go structs. It uses an RPC connection to delegate
+// Ethereum contracts bound to Go structs. It uses an RPC connection to delegate
 // all its functionality.
 //
 // Note: The current implementation is a blocking one. This should be replaced
@@ -111,6 +111,26 @@ func (b *rpcBackend) request(method string, params []interface{}) (json.RawMessa
 	return res.Result, nil
 }
 
+// HasCode implements ContractVerifier.HasCode by retrieving any code associated
+// with the contract from the remote node, and checking its size.
+func (b *rpcBackend) HasCode(contract common.Address, pending bool) (bool, error) {
+	// Execute the RPC code retrieval
+	block := "latest"
+	if pending {
+		block = "pending"
+	}
+	res, err := b.request("eth_getCode", []interface{}{contract.Hex(), block})
+	if err != nil {
+		return false, err
+	}
+	var hex string
+	if err := json.Unmarshal(res, &hex); err != nil {
+		return false, err
+	}
+	// Convert the response back to a Go byte slice and return
+	return len(common.FromHex(hex)) > 0, nil
+}
+
 // ContractCall implements ContractCaller.ContractCall, delegating the execution of
 // a contract call to the remote node, returning the reply to for local processing.
 func (b *rpcBackend) ContractCall(contract common.Address, data []byte, pending bool) ([]byte, error) {
@@ -127,7 +147,7 @@ func (b *rpcBackend) ContractCall(contract common.Address, data []byte, pending 
 	if pending {
 		block = "pending"
 	}
-	res, err := b.request("shf_call", []interface{}{args, block})
+	res, err := b.request("eth_call", []interface{}{args, block})
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +162,7 @@ func (b *rpcBackend) ContractCall(contract common.Address, data []byte, pending 
 // PendingAccountNonce implements ContractTransactor.PendingAccountNonce, delegating
 // the current account nonce retrieval to the remote node.
 func (b *rpcBackend) PendingAccountNonce(account common.Address) (uint64, error) {
-	res, err := b.request("shf_getTransactionCount", []interface{}{account.Hex(), "pending"})
+	res, err := b.request("eth_getTransactionCount", []interface{}{account.Hex(), "pending"})
 	if err != nil {
 		return 0, err
 	}
@@ -160,7 +180,7 @@ func (b *rpcBackend) PendingAccountNonce(account common.Address) (uint64, error)
 // SuggestGasPrice implements ContractTransactor.SuggestGasPrice, delegating the
 // gas price oracle request to the remote node.
 func (b *rpcBackend) SuggestGasPrice() (*big.Int, error) {
-	res, err := b.request("shf_gasPrice", nil)
+	res, err := b.request("eth_gasPrice", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +211,7 @@ func (b *rpcBackend) EstimateGasLimit(sender common.Address, contract *common.Ad
 		Value: rpc.NewHexNumber(value),
 	}
 	// Execute the RPC call and retrieve the response
-	res, err := b.request("shf_estimateGas", []interface{}{args})
+	res, err := b.request("eth_estimateGas", []interface{}{args})
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +233,7 @@ func (b *rpcBackend) SendTransaction(tx *types.Transaction) error {
 	if err != nil {
 		return err
 	}
-	res, err := b.request("shf_sendRawTransaction", []interface{}{common.ToHex(data)})
+	res, err := b.request("eth_sendRawTransaction", []interface{}{common.ToHex(data)})
 	if err != nil {
 		return err
 	}

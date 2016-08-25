@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
 
-// gethrpctest is a command to run the external RPC tests.
+// gshiftrpctest is a command to run the external RPC tests.
 package main
 
 import (
@@ -28,7 +28,7 @@ import (
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core"
 	"github.com/shiftcurrency/shift/crypto"
-	"github.com/shiftcurrency/shift/shf"
+	"github.com/shiftcurrency/shift/eth"
 	"github.com/shiftcurrency/shift/ethdb"
 	"github.com/shiftcurrency/shift/logger/glog"
 	"github.com/shiftcurrency/shift/node"
@@ -98,10 +98,10 @@ func MakeSystemNode(keydir string, privkey string, test *tests.BlockTest) (*node
 		IPCPath:     node.DefaultIPCEndpoint(),
 		HTTPHost:    common.DefaultHTTPHost,
 		HTTPPort:    common.DefaultHTTPPort,
-		HTTPModules: []string{"admin", "db", "shf", "debug", "miner", "net", "shh", "txpool", "personal", "web3"},
+		HTTPModules: []string{"admin", "db", "eth", "debug", "miner", "net", "shh", "txpool", "personal", "web3"},
 		WSHost:      common.DefaultWSHost,
 		WSPort:      common.DefaultWSPort,
-		WSModules:   []string{"admin", "db", "shf", "debug", "miner", "net", "shh", "txpool", "personal", "web3"},
+		WSModules:   []string{"admin", "db", "eth", "debug", "miner", "net", "shh", "txpool", "personal", "web3"},
 		NoDiscovery: true,
 	})
 	if err != nil {

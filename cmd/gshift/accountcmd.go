@@ -1,12 +1,12 @@
-// Copyright 2016 The go-ethereum Authors
+// Copyright 2016 The go-gshift Authors
 // This file is part of go-ethereum.
 //
-// go-ethereum is free software: you can redistribute it and/or modify
+// go-gshift is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// go-ethereum is distributed in the hope that it will be useful,
+// go-gshift is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
@@ -20,34 +20,16 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/codegangsta/cli"
 	"github.com/shiftcurrency/shift/accounts"
 	"github.com/shiftcurrency/shift/cmd/utils"
+	"github.com/shiftcurrency/shift/console"
 	"github.com/shiftcurrency/shift/crypto"
 	"github.com/shiftcurrency/shift/logger"
 	"github.com/shiftcurrency/shift/logger/glog"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
-	walletCommand = cli.Command{
-		Name:  "wallet",
-		Usage: "shift presale wallet",
-		Subcommands: []cli.Command{
-			{
-				Action: importWallet,
-				Name:   "import",
-				Usage:  "import shift presale wallet",
-			},
-		},
-		Description: `
-
-    get wallet import /path/to/my/presale.wallet
-
-will prompt for your password and imports your ether presale account.
-It can be used non-interactively with the --password option taking a
-passwordfile as argument containing the wallet password in plaintext.
-
-`}
 	accountCommand = cli.Command{
 		Action: accountList,
 		Name:   "account",
@@ -69,9 +51,9 @@ either new or import). Without it you are not able to unlock your account.
 
 Note that exporting your key in unencrypted format is NOT supported.
 
-Keys are stored under <DATADIR>/keys.
+Keys are stored under <DATADIR>/keystore.
 It is safe to transfer the entire directory or the individual keys therein
-between shift nodes by simply copying.
+between gshift nodes by simply copying.
 Make sure you backup your keys regularly.
 
 In order to use your account to send transactions, you need to unlock them using
@@ -95,7 +77,7 @@ And finally. DO NOT FORGET YOUR PASSWORD.
 				Usage:  "create a new account",
 				Description: `
 
-    shift account new
+    gshift account new
 
 Creates a new account. Prints the address.
 
@@ -105,7 +87,7 @@ You must remember this passphrase to unlock your account in the future.
 
 For non-interactive use the passphrase can be specified with the --password flag:
 
-    shift --password <passwordfile> account new
+    gshift --password <passwordfile> account new
 
 Note, this is meant to be used for testing only, it is a bad idea to save your
 password to file or expose in any other way.
@@ -117,7 +99,7 @@ password to file or expose in any other way.
 				Usage:  "update an existing account",
 				Description: `
 
-    shift account update <address>
+    gshift account update <address>
 
 Update an existing account.
 
@@ -129,7 +111,7 @@ format to the newest format or change the password for an account.
 
 For non-interactive use the passphrase can be specified with the --password flag:
 
-    shift --password <passwordfile> account update <address>
+    gshift --password <passwordfile> account update <address>
 
 Since only one password can be given, only format update can be performed,
 changing your password is only possible interactively.
@@ -141,7 +123,7 @@ changing your password is only possible interactively.
 				Usage:  "import a private key into a new account",
 				Description: `
 
-    shift account import <keyfile>
+    gshift account import <keyfile>
 
 Imports an unencrypted private key from <keyfile> and creates a new account.
 Prints the address.
@@ -154,10 +136,10 @@ You must remember this passphrase to unlock your account in the future.
 
 For non-interactive use the passphrase can be specified with the -password flag:
 
-    shift --password <passwordfile> account import <keyfile>
+    gshift --password <passwordfile> account import <keyfile>
 
 Note:
-As you can directly copy your encrypted accounts to another shift instance,
+As you can directly copy your encrypted accounts to another gshift instance,
 this import mechanism is not needed when you transfer an account between
 nodes.
 					`,
@@ -166,11 +148,12 @@ nodes.
 	}
 )
 
-func accountList(ctx *cli.Context) {
+func accountList(ctx *cli.Context) error {
 	accman := utils.MakeAccountManager(ctx)
 	for i, acct := range accman.Accounts() {
 		fmt.Printf("Account #%d: {%x} %s\n", i, acct.Address, acct.File)
 	}
+	return nil
 }
 
 // tries unlocking the specified account a few times.
@@ -215,12 +198,12 @@ func getPassPhrase(prompt string, confirmation bool, i int, passwords []string) 
 	if prompt != "" {
 		fmt.Println(prompt)
 	}
-	password, err := utils.Stdin.PasswordPrompt("Passphrase: ")
+	password, err := console.Stdin.PromptPassword("Passphrase: ")
 	if err != nil {
 		utils.Fatalf("Failed to read passphrase: %v", err)
 	}
 	if confirmation {
-		confirm, err := utils.Stdin.PasswordPrompt("Repeat passphrase: ")
+		confirm, err := console.Stdin.PromptPassword("Repeat passphrase: ")
 		if err != nil {
 			utils.Fatalf("Failed to read passphrase confirmation: %v", err)
 		}
@@ -258,7 +241,7 @@ func ambiguousAddrRecovery(am *accounts.Manager, err *accounts.AmbiguousAddrErro
 }
 
 // accountCreate creates a new account into the keystore defined by the CLI flags.
-func accountCreate(ctx *cli.Context) {
+func accountCreate(ctx *cli.Context) error {
 	accman := utils.MakeAccountManager(ctx)
 	password := getPassPhrase("Your new account is locked with a password. Please give a password. Do not forget this password.", true, 0, utils.MakePasswordList(ctx))
 
@@ -267,11 +250,12 @@ func accountCreate(ctx *cli.Context) {
 		utils.Fatalf("Failed to create account: %v", err)
 	}
 	fmt.Printf("Address: {%x}\n", account.Address)
+	return nil
 }
 
 // accountUpdate transitions an account from a previous format to the current
 // one, also providing the possibility to change the pass-phrase.
-func accountUpdate(ctx *cli.Context) {
+func accountUpdate(ctx *cli.Context) error {
 	if len(ctx.Args()) == 0 {
 		utils.Fatalf("No accounts specified to update")
 	}
@@ -282,9 +266,10 @@ func accountUpdate(ctx *cli.Context) {
 	if err := accman.Update(account, oldPassword, newPassword); err != nil {
 		utils.Fatalf("Could not update the account: %v", err)
 	}
+	return nil
 }
 
-func importWallet(ctx *cli.Context) {
+func importWallet(ctx *cli.Context) error {
 	keyfile := ctx.Args().First()
 	if len(keyfile) == 0 {
 		utils.Fatalf("keyfile must be given as argument")
@@ -302,9 +287,10 @@ func importWallet(ctx *cli.Context) {
 		utils.Fatalf("%v", err)
 	}
 	fmt.Printf("Address: {%x}\n", acct.Address)
+	return nil
 }
 
-func accountImport(ctx *cli.Context) {
+func accountImport(ctx *cli.Context) error {
 	keyfile := ctx.Args().First()
 	if len(keyfile) == 0 {
 		utils.Fatalf("keyfile must be given as argument")
@@ -320,4 +306,5 @@ func accountImport(ctx *cli.Context) {
 		utils.Fatalf("Could not create the account: %v", err)
 	}
 	fmt.Printf("Address: {%x}\n", acct.Address)
+	return nil
 }

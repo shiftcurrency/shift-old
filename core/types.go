@@ -65,7 +65,7 @@ type Processor interface {
 }
 
 // Backend is an interface defining the basic functionality for an operable node
-// with all the functionality to be a functional, valid Shift operator.
+// with all the functionality to be a functional, valid Ethereum operator.
 //
 // TODO Remove this
 type Backend interface {

@@ -1,16 +1,16 @@
-# adjusted from https://github.com/shift/cpp-shift/blob/develop/docker/Dockerfile
+# adjusted from https://github.com/ethereum/cpp-ethereum/blob/develop/docker/Dockerfile
 FROM ubuntu:14.04
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update
 RUN apt-get upgrade -y
 
-# Shift dependencies
+# Ethereum dependencies
 RUN apt-get install -qy build-essential g++-4.8 git cmake libboost-all-dev libcurl4-openssl-dev wget
 RUN apt-get install -qy automake unzip libgmp-dev libtool libleveldb-dev yasm libminiupnpc-dev libreadline-dev scons
 RUN apt-get install -qy libjsoncpp-dev libargtable2-dev
 
-# NCurses based GUI (not optional though for a succesful compilation, see https://github.com/shift/cpp-shift/issues/452 )
+# NCurses based GUI (not optional though for a succesful compilation, see https://github.com/ethereum/cpp-ethereum/issues/452 )
 RUN apt-get install -qy libncurses5-dev
 
 # Qt-based GUI
@@ -28,19 +28,19 @@ RUN apt-get install -qy llvm-3.5 libedit-dev
 RUN mkdir -p /usr/lib/llvm-3.5/share/llvm && ln -s /usr/share/llvm-3.5/cmake /usr/lib/llvm-3.5/share/llvm/cmake
 
 
-# Shift PPA
+# Ethereum PPA
 RUN apt-get install -qy software-properties-common
-RUN add-apt-repository ppa:shift/shift
+RUN add-apt-repository ppa:ethereum/ethereum
 RUN apt-get update
 RUN apt-get install -qy libcryptopp-dev libjson-rpc-cpp-dev
 
 # this is a workaround, to make sure that docker's cache is invalidated whenever the git repo changes
-ADD https://api.github.com/repos/shift/cpp-shift/git/refs/heads/develop unused.txt 
+ADD https://api.github.com/repos/ethereum/cpp-ethereum/git/refs/heads/develop unused.txt 
 
-# Build Shift (HEADLESS)
-RUN git clone --depth=1 --branch develop https://github.com/shift/cpp-shift
-RUN mkdir -p cpp-shift/build
-RUN cd cpp-shift/build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DVMTRACE=1 -DPARANOIA=1 -DEVMJIT=1 && make -j $(cat /proc/cpuinfo | grep processor | wc -l) && make install
+# Build Ethereum (HEADLESS)
+RUN git clone --depth=1 --branch develop https://github.com/ethereum/cpp-ethereum
+RUN mkdir -p cpp-ethereum/build
+RUN cd cpp-ethereum/build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DVMTRACE=1 -DPARANOIA=1 -DEVMJIT=1 && make -j $(cat /proc/cpuinfo | grep processor | wc -l) && make install
 RUN ldconfig
 
-ENTRYPOINT ["/cpp-shift/build/test/checkRandomStateTest"]
+ENTRYPOINT ["/cpp-ethereum/build/test/checkRandomStateTest"]

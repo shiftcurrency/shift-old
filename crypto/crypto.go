@@ -59,7 +59,7 @@ func Keccak256Hash(data ...[]byte) (h common.Hash) {
 func Sha3(data ...[]byte) []byte          { return Keccak256(data...) }
 func Sha3Hash(data ...[]byte) common.Hash { return Keccak256Hash(data...) }
 
-// Creates an shift address given the bytes and the nonce
+// Creates an ethereum address given the bytes and the nonce
 func CreateAddress(b common.Address, nonce uint64) common.Address {
 	data, _ := rlp.EncodeToBytes([]interface{}{b, nonce})
 	return common.BytesToAddress(Keccak256(data)[12:])

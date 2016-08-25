@@ -43,7 +43,7 @@ func GetHashFn(ref common.Hash, chain *BlockChain) func(n uint64) common.Hash {
 type VMEnv struct {
 	chainConfig *ChainConfig   // Chain configuration
 	state       *state.StateDB // State to use for executing
-	evm         *vm.EVM        // The Shift Virtual Machine
+	evm         *vm.EVM        // The Ethereum Virtual Machine
 	depth       int            // Current execution depth
 	msg         Message        // Message appliod
 

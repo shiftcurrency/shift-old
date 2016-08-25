@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package state provides a caching layer atop the Shift state trie.
+// Package state provides a caching layer atop the Ethereum state trie.
 package state
 
 import (
@@ -34,7 +34,7 @@ import (
 // created.
 var StartingNonce uint64
 
-// StateDBs within the shift protocol are used to store anything
+// StateDBs within the ethereum protocol are used to store anything
 // within the merkle trie. StateDBs take care of caching and storing
 // nested states. It's the general query interface to retrieve:
 // * Contracts
@@ -66,6 +66,28 @@ func New(root common.Hash, db ethdb.Database) (*StateDB, error) {
 		refund:       new(big.Int),
 		logs:         make(map[common.Hash]vm.Logs),
 	}, nil
+}
+
+// Reset clears out all emphemeral state objects from the state db, but keeps
+// the underlying state trie to avoid reloading data for the next operations.
+func (self *StateDB) Reset(root common.Hash) error {
+	var (
+		err error
+		tr  = self.trie
+	)
+	if self.trie.Hash() != root {
+		if tr, err = trie.NewSecure(root, self.db); err != nil {
+			return err
+		}
+	}
+	*self = StateDB{
+		db:           self.db,
+		trie:         tr,
+		stateObjects: make(map[string]*StateObject),
+		refund:       new(big.Int),
+		logs:         make(map[common.Hash]vm.Logs),
+	}
+	return nil
 }
 
 func (self *StateDB) StartRecord(thash, bhash common.Hash, ti int) {
@@ -127,7 +149,7 @@ func (self *StateDB) GetNonce(addr common.Address) uint64 {
 		return stateObject.nonce
 	}
 
-	return 0
+	return StartingNonce
 }
 
 func (self *StateDB) GetCode(addr common.Address) []byte {
@@ -346,6 +368,27 @@ func (s *StateDB) IntermediateRoot() common.Hash {
 		}
 	}
 	return s.trie.Hash()
+}
+
+// DeleteSuicides flags the suicided objects for deletion so that it
+// won't be referenced again when called / queried up on.
+//
+// DeleteSuicides should not be used for consensus related updates
+// under any circumstances.
+func (s *StateDB) DeleteSuicides() {
+	// Reset refund so that any used-gas calculations can use
+	// this method.
+	s.refund = new(big.Int)
+	for _, stateObject := range s.stateObjects {
+		if stateObject.dirty {
+			// If the object has been removed by a suicide
+			// flag the object as deleted.
+			if stateObject.remove {
+				stateObject.deleted = true
+			}
+			stateObject.dirty = false
+		}
+	}
 }
 
 // Commit commits all state changes to the database.

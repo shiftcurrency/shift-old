@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package core implements the Shift consensus protocol.
+// Package core implements the Ethereum consensus protocol.
 package core
 
 import (
@@ -112,7 +112,7 @@ type BlockChain struct {
 }
 
 // NewBlockChain returns a fully initialised block chain using information
-// available in the database. It initialiser the default Shift Validator and
+// available in the database. It initialiser the default Ethereum Validator and
 // Processor.
 func NewBlockChain(chainDb ethdb.Database, config *ChainConfig, pow pow.PoW, mux *event.TypeMux) (*BlockChain, error) {
 	bodyCache, _ := lru.New(bodyCacheLimit)
@@ -526,7 +526,7 @@ func (self *BlockChain) GetBlockByNumber(number uint64) *types.Block {
 	return self.GetBlock(hash)
 }
 
-// [deprecated by shf/62]
+// [deprecated by eth/62]
 // GetBlocksFromHash returns the block corresponding to hash and up to n-1 ancestors.
 func (self *BlockChain) GetBlocksFromHash(hash common.Hash, n int) (blocks []*types.Block) {
 	for i := 0; i < n; i++ {
@@ -763,13 +763,20 @@ func (self *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err 
 	if ptd == nil {
 		return NonStatTy, ParentError(block.ParentHash())
 	}
+	// Make sure no inconsistent state is leaked during insertion
+	self.mu.Lock()
+	defer self.mu.Unlock()
 
 	localTd := self.GetTd(self.currentBlock.Hash())
 	externTd := new(big.Int).Add(block.Difficulty(), ptd)
 
-	// Make sure no inconsistent state is leaked during insertion
-	self.mu.Lock()
-	defer self.mu.Unlock()
+	// Irrelevant of the canonical status, write the block itself to the database
+	if err := self.hc.WriteTd(block.Hash(), externTd); err != nil {
+		glog.Fatalf("failed to write block total difficulty: %v", err)
+	}
+	if err := WriteBlock(self.chainDb, block); err != nil {
+		glog.Fatalf("failed to write block contents: %v", err)
+	}
 
 	// If the total difficulty is higher than our known, add it to the canonical chain
 	// Second clause in the if statement reduces the vulnerability to selfish mining.
@@ -781,20 +788,11 @@ func (self *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err 
 				return NonStatTy, err
 			}
 		}
-		// Insert the block as the new head of the chain
-		self.insert(block)
+		self.insert(block) // Insert the block as the new head of the chain
 		status = CanonStatTy
 	} else {
 		status = SideStatTy
 	}
-	// Irrelevant of the canonical status, write the block itself to the database
-	if err := self.hc.WriteTd(block.Hash(), externTd); err != nil {
-		glog.Fatalf("failed to write block total difficulty: %v", err)
-	}
-	if err := WriteBlock(self.chainDb, block); err != nil {
-		glog.Fatalf("failed to write block contents: %v", err)
-	}
-
 	self.futureBlocks.Remove(block.Hash())
 
 	return
@@ -819,6 +817,7 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (int, error) {
 		tstart        = time.Now()
 
 		nonceChecked = make([]bool, len(chain))
+		statedb      *state.StateDB
 	)
 
 	// Start the parallel nonce verifier.
@@ -885,7 +884,11 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (int, error) {
 
 		// Create a new statedb using the parent block and report an
 		// error if it fails.
-		statedb, err := state.New(self.GetBlock(block.ParentHash()).Root(), self.chainDb)
+		if statedb == nil {
+			statedb, err = state.New(self.GetBlock(block.ParentHash()).Root(), self.chainDb)
+		} else {
+			err = statedb.Reset(chain[i-1].Root())
+		}
 		if err != nil {
 			reportBlock(block, err)
 			return i, err
@@ -1117,15 +1120,12 @@ func (self *BlockChain) update() {
 	}
 }
 
-// reportBlock reports the given block and error using the canonical block
-// reporting tool. Reporting the block to the service is handled in a separate
-// goroutine.
+// reportBlock logs a bad block error.
 func reportBlock(block *types.Block, err error) {
 	if glog.V(logger.Error) {
 		glog.Errorf("Bad block #%v (%s)\n", block.Number(), block.Hash().Hex())
 		glog.Errorf("    %v", err)
 	}
-	go ReportBlock(block, err)
 }
 
 // InsertHeaderChain attempts to insert the given header chain in to the local

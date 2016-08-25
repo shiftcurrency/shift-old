@@ -108,7 +108,7 @@ type Database interface {
 	IsDeleted(common.Address) bool
 }
 
-// Account represents a contract or basic shift account.
+// Account represents a contract or basic ethereum account.
 type Account interface {
 	SubBalance(amount *big.Int)
 	AddBalance(amount *big.Int)

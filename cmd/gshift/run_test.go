@@ -20,7 +20,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"html/template"
 	"io"
 	"io/ioutil"
 	"os"
@@ -28,11 +27,12 @@ import (
 	"regexp"
 	"sync"
 	"testing"
+	"text/template"
 	"time"
 )
 
 func tmpdir(t *testing.T) string {
-	dir, err := ioutil.TempDir("", "geth-test")
+	dir, err := ioutil.TempDir("", "gshift-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,6 +45,7 @@ type testgshift struct {
 	// template variables for expect
 	Datadir    string
 	Executable string
+	Shiftbase  string
 	Func       template.FuncMap
 
 	removeDatadir bool
@@ -55,23 +56,30 @@ type testgshift struct {
 }
 
 func init() {
-	// Run the app if we're the child process for runGshf.
-	if os.Getenv("GETH_TEST_CHILD") != "" {
-		app.RunAndExitOnError()
+	// Run the app if we're the child process for runGshift.
+	if os.Getenv("GSHIFT_TEST_CHILD") != "" {
+		if err := app.Run(os.Args); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 		os.Exit(0)
 	}
 }
 
-// spawns gshift with the given command line args. If the args don't set --datadir, the
+// spawns geth with the given command line args. If the args don't set --datadir, the
 // child g gets a temporary data directory.
 func runGshift(t *testing.T, args ...string) *testgshift {
-	tt := &testgeth{T: t, Executable: os.Args[0]}
+	tt := &testgshift{T: t, Executable: os.Args[0]}
 	for i, arg := range args {
-		if arg == "-datadir" || arg == "--datadir" {
+		switch {
+		case arg == "-datadir" || arg == "--datadir":
 			if i < len(args)-1 {
 				tt.Datadir = args[i+1]
 			}
-			break
+		case arg == "-shiftbase" || arg == "--shiftbase":
+			if i < len(args)-1 {
+				tt.Shiftbase = args[i+1]
+			}
 		}
 	}
 	if tt.Datadir == "" {
@@ -90,7 +98,7 @@ func runGshift(t *testing.T, args ...string) *testgshift {
 	// will prevent any tests from running.
 	tt.stderr = &testlogger{t: t}
 	tt.cmd = exec.Command(os.Args[0], args...)
-	tt.cmd.Env = append(os.Environ(), "GETH_TEST_CHILD=1")
+	tt.cmd.Env = append(os.Environ(), "GSHIFT_TEST_CHILD=1")
 	tt.cmd.Stderr = tt.stderr
 	stdout, err := tt.cmd.StdoutPipe()
 	if err != nil {
@@ -109,13 +117,13 @@ func runGshift(t *testing.T, args ...string) *testgshift {
 // InputLine writes the given text to the childs stdin.
 // This method can also be called from an expect template, e.g.:
 //
-//     gshf.expect(`Passphrase: {{.InputLine "password"}}`)
-func (tt *testgeth) InputLine(s string) string {
+//     geth.expect(`Passphrase: {{.InputLine "password"}}`)
+func (tt *testgshift) InputLine(s string) string {
 	io.WriteString(tt.stdin, s+"\n")
 	return ""
 }
 
-func (tt *testgeth) setTemplateFunc(name string, fn interface{}) {
+func (tt *testgshift) setTemplateFunc(name string, fn interface{}) {
 	if tt.Func == nil {
 		tt.Func = make(map[string]interface{})
 	}
@@ -127,7 +135,7 @@ func (tt *testgeth) setTemplateFunc(name string, fn interface{}) {
 //
 // If the template starts with a newline, the newline is removed
 // before matching.
-func (tt *testgeth) expect(tplsource string) {
+func (tt *testgshift) expect(tplsource string) {
 	// Generate the expected output by running the template.
 	tpl := template.Must(template.New("").Funcs(tt.Func).Parse(tplsource))
 	wantbuf := new(bytes.Buffer)
@@ -143,7 +151,7 @@ func (tt *testgeth) expect(tplsource string) {
 	tt.Logf("Matched stdout text:\n%s", want)
 }
 
-func (tt *testgeth) matchExactOutput(want []byte) error {
+func (tt *testgshift) matchExactOutput(want []byte) error {
 	buf := make([]byte, len(want))
 	n := 0
 	tt.withKillTimeout(func() { n, _ = io.ReadFull(tt.stdout, buf) })
@@ -174,7 +182,7 @@ func (tt *testgeth) matchExactOutput(want []byte) error {
 // Note that an arbitrary amount of output may be consumed by the
 // regular expression. This usually means that expect cannot be used
 // after expectRegexp.
-func (tt *testgeth) expectRegexp(resource string) (*regexp.Regexp, []string) {
+func (tt *testgshift) expectRegexp(resource string) (*regexp.Regexp, []string) {
 	var (
 		re      = regexp.MustCompile(resource)
 		rtee    = &runeTee{in: tt.stdout}
@@ -197,7 +205,7 @@ func (tt *testgeth) expectRegexp(resource string) (*regexp.Regexp, []string) {
 
 // expectExit expects the child process to exit within 5s without
 // printing any additional text on stdout.
-func (tt *testgeth) expectExit() {
+func (tt *testgshift) expectExit() {
 	var output []byte
 	tt.withKillTimeout(func() {
 		output, _ = ioutil.ReadAll(tt.stdout)
@@ -211,20 +219,20 @@ func (tt *testgeth) expectExit() {
 	}
 }
 
-func (tt *testgeth) interrupt() {
+func (tt *testgshift) interrupt() {
 	tt.cmd.Process.Signal(os.Interrupt)
 }
 
 // stderrText returns any stderr output written so far.
 // The returned text holds all log lines after expectExit has
 // returned.
-func (tt *testgeth) stderrText() string {
+func (tt *testgshift) stderrText() string {
 	tt.stderr.mu.Lock()
 	defer tt.stderr.mu.Unlock()
 	return tt.stderr.buf.String()
 }
 
-func (tt *testgeth) withKillTimeout(fn func()) {
+func (tt *testgshift) withKillTimeout(fn func()) {
 	timeout := time.AfterFunc(5*time.Second, func() {
 		tt.Log("killing the child process (timeout)")
 		tt.cmd.Process.Kill()

@@ -36,7 +36,7 @@ type Config struct {
 	Logger    LogConfig
 }
 
-// EVM is used to run Shift based contracts and will utilise the
+// EVM is used to run Ethereum based contracts and will utilise the
 // passed environment to query external sources for state information.
 // The EVM will run the byte code VM or JIT VM based on the passed
 // configuration.

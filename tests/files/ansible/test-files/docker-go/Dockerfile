@@ -1,4 +1,4 @@
-# Adjusted from https://github.com/shiftcurrency/shift/blob/develop/Dockerfile
+# Adjusted from https://github.com/ethereum/go-ethereum/blob/develop/Dockerfile
 FROM ubuntu:14.04
 
 ## Environment setup
@@ -31,17 +31,17 @@ RUN git checkout v1
 RUN go install -v
 
 # this is a workaround, to make sure that docker's cache is invalidated whenever the git repo changes
-ADD https://api.github.com/repos/shiftcurrency/shift/git/refs/heads/develop unused.txt 
+ADD https://api.github.com/repos/ethereum/go-ethereum/git/refs/heads/develop unused.txt 
 
 ## Fetch and install go-ethereum
-RUN go get -u -v -d github.com/shiftcurrency/shift/...
-WORKDIR $GOPATH/src/github.com/shiftcurrency/shift
+RUN go get -u -v -d github.com/ethereum/go-ethereum/...
+WORKDIR $GOPATH/src/github.com/ethereum/go-ethereum
 
 RUN git checkout develop
 RUN git pull
 
 
-RUN SHF_DEPS=$(go list -f '{{.Imports}} {{.TestImports}} {{.XTestImports}}' github.com/shiftcurrency/shift/... | sed -e 's/\[//g' | sed -e 's/\]//g' | sed -e 's/C //g'); if [ "$SHF_DEPS" ]; then go get $SHF_DEPS; fi
-RUN go install -v ./cmd/shftest
+RUN ETH_DEPS=$(go list -f '{{.Imports}} {{.TestImports}} {{.XTestImports}}' github.com/ethereum/go-ethereum/... | sed -e 's/\[//g' | sed -e 's/\]//g' | sed -e 's/C //g'); if [ "$ETH_DEPS" ]; then go get $ETH_DEPS; fi
+RUN go install -v ./cmd/ethtest
 
-ENTRYPOINT ["shftest"]
+ENTRYPOINT ["ethtest"]

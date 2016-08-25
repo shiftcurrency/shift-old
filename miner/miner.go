@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package miner implements Shift block creation and mining.
+// Package miner implements Ethereum block creation and mining.
 package miner
 
 import (
@@ -26,7 +26,7 @@ import (
 	"github.com/shiftcurrency/shift/core"
 	"github.com/shiftcurrency/shift/core/state"
 	"github.com/shiftcurrency/shift/core/types"
-	"github.com/shiftcurrency/shift/shf/downloader"
+	"github.com/shiftcurrency/shift/eth/downloader"
 	"github.com/shiftcurrency/shift/event"
 	"github.com/shiftcurrency/shift/logger"
 	"github.com/shiftcurrency/shift/logger/glog"
@@ -44,15 +44,15 @@ type Miner struct {
 	threads  int
 	coinbase common.Address
 	mining   int32
-	eth      core.Backend
+	shf      core.Backend
 	pow      pow.PoW
 
 	canStart    int32 // can start indicates whether we can start the mining operation
 	shouldStart int32 // should start indicates whether we should start after sync
 }
 
-func New(eth core.Backend, config *core.ChainConfig, mux *event.TypeMux, pow pow.PoW) *Miner {
-	miner := &Miner{eth: eth, mux: mux, pow: pow, worker: newWorker(config, common.Address{}, eth), canStart: 1}
+func New(shf core.Backend, config *core.ChainConfig, mux *event.TypeMux, pow pow.PoW) *Miner {
+	miner := &Miner{shf: shf, mux: mux, pow: pow, worker: newWorker(config, common.Address{}, shf), canStart: 1}
 	go miner.update()
 
 	return miner

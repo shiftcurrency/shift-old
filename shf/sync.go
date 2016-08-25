@@ -18,11 +18,12 @@ package shf
 
 import (
 	"math/rand"
+	"sync/atomic"
 	"time"
 
 	"github.com/shiftcurrency/shift/common"
 	"github.com/shiftcurrency/shift/core/types"
-	"github.com/shiftcurrency/shift/shf/downloader"
+	"github.com/shiftcurrency/shift/eth/downloader"
 	"github.com/shiftcurrency/shift/logger"
 	"github.com/shiftcurrency/shift/logger/glog"
 	"github.com/shiftcurrency/shift/p2p/discover"
@@ -160,25 +161,30 @@ func (pm *ProtocolManager) synchronise(peer *peer) {
 	if peer == nil {
 		return
 	}
-	// Make sure the peer's TD is higher than our own. If not drop.
-	td := pm.blockchain.GetTd(pm.blockchain.CurrentBlock().Hash())
-	if peer.Td().Cmp(td) <= 0 {
+	// Make sure the peer's TD is higher than our own
+	currentBlock := pm.blockchain.CurrentBlock()
+	td := pm.blockchain.GetTd(currentBlock.Hash())
+
+	pHead, pTd := peer.Head()
+	if pTd.Cmp(td) <= 0 {
 		return
 	}
 	// Otherwise try to sync with the downloader
 	mode := downloader.FullSync
-	if pm.fastSync {
+	if atomic.LoadUint32(&pm.fastSync) == 1 {
 		mode = downloader.FastSync
 	}
-	if err := pm.downloader.Synchronise(peer.id, peer.Head(), peer.Td(), mode); err != nil {
+	if err := pm.downloader.Synchronise(peer.id, pHead, pTd, mode); err != nil {
 		return
 	}
+	atomic.StoreUint32(&pm.synced, 1) // Mark initial sync done
+
 	// If fast sync was enabled, and we synced up, disable it
-	if pm.fastSync {
+	if atomic.LoadUint32(&pm.fastSync) == 1 {
 		// Disable fast sync if we indeed have something in our chain
 		if pm.blockchain.CurrentBlock().NumberU64() > 0 {
 			glog.V(logger.Info).Infof("fast sync complete, auto disabling")
-			pm.fastSync = false
+			atomic.StoreUint32(&pm.fastSync, 0)
 		}
 	}
 }

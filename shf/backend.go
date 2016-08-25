@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package eth implements the Shift protocol.
+// Package shf implements the Shift protocol.
 package shf
 
 import (
@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ethereum/ethash"
@@ -37,8 +38,8 @@ import (
 	"github.com/shiftcurrency/shift/core"
 	"github.com/shiftcurrency/shift/core/types"
 	"github.com/shiftcurrency/shift/core/vm"
-	"github.com/shiftcurrency/shift/shf/downloader"
-	"github.com/shiftcurrency/shift/shf/filters"
+	"github.com/shiftcurrency/shift/eth/downloader"
+	"github.com/shiftcurrency/shift/eth/filters"
 	"github.com/shiftcurrency/shift/ethdb"
 	"github.com/shiftcurrency/shift/event"
 	"github.com/shiftcurrency/shift/logger"
@@ -104,7 +105,7 @@ type Config struct {
 
 type Shift struct {
 	chainConfig *core.ChainConfig
-	// Channel for shutting down the shift
+	// Channel for shutting down shift
 	shutdownChan chan bool
 
 	// DB interfaces
@@ -113,6 +114,7 @@ type Shift struct {
 
 	// Handlers
 	txPool          *core.TxPool
+	txMu            sync.Mutex
 	blockchain      *core.BlockChain
 	accountManager  *accounts.Manager
 	pow             *ethash.Ethash
@@ -151,7 +153,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Shift, error) {
 		return nil, err
 	}
 	if db, ok := chainDb.(*ethdb.LDBDatabase); ok {
-		db.Meter("shf/db/chaindata/")
+		db.Meter("eth/db/chaindata/")
 	}
 	if err := upgradeChainDatabase(chainDb); err != nil {
 		return nil, err
@@ -165,7 +167,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Shift, error) {
 		return nil, err
 	}
 	if db, ok := dappDb.(*ethdb.LDBDatabase); ok {
-		db.Meter("shf/db/dapp/")
+		db.Meter("eth/db/dapp/")
 	}
 	glog.V(logger.Info).Infof("Protocol Versions: %v, Network Id: %v", ProtocolVersions, config.NetworkId)
 
@@ -242,12 +244,14 @@ func New(ctx *node.ServiceContext, config *Config) (*Shift, error) {
 		if err != nil {
 			return nil, err
 		}
-		glog.V(logger.Info).Infoln("WARNING: Wrote default shift genesis block")
+		glog.V(logger.Info).Infoln("WARNING: Wrote default Shift genesis block")
 	}
 
 	if config.ChainConfig == nil {
 		return nil, errors.New("missing chain config")
 	}
+	core.WriteChainConfig(chainDb, genesis.Hash(), config.ChainConfig)
+
 	shf.chainConfig = config.ChainConfig
 	shf.chainConfig.VmConfig = vm.Config{
 		EnableJit: config.EnableJit,
@@ -276,42 +280,42 @@ func New(ctx *node.ServiceContext, config *Config) (*Shift, error) {
 	return shf, nil
 }
 
-// APIs returns the collection of RPC services the shift package offers.
+// APIs returns the collection of RPC services the ethereum package offers.
 // NOTE, some of these services probably need to be moved to somewhere else.
 func (s *Shift) APIs() []rpc.API {
 	return []rpc.API{
 		{
-			Namespace: "shf",
+			Namespace: "eth",
 			Version:   "1.0",
 			Service:   NewPublicShiftAPI(s),
 			Public:    true,
 		}, {
-			Namespace: "shf",
+			Namespace: "eth",
 			Version:   "1.0",
 			Service:   NewPublicAccountAPI(s.accountManager),
 			Public:    true,
 		}, {
 			Namespace: "personal",
 			Version:   "1.0",
-			Service:   NewPrivateAccountAPI(s.accountManager),
+			Service:   NewPrivateAccountAPI(s),
 			Public:    false,
 		}, {
-			Namespace: "shf",
+			Namespace: "eth",
 			Version:   "1.0",
 			Service:   NewPublicBlockChainAPI(s.chainConfig, s.blockchain, s.miner, s.chainDb, s.gpo, s.eventMux, s.accountManager),
 			Public:    true,
 		}, {
-			Namespace: "shf",
+			Namespace: "eth",
 			Version:   "1.0",
 			Service:   NewPublicTransactionPoolAPI(s),
 			Public:    true,
 		}, {
-			Namespace: "shf",
+			Namespace: "eth",
 			Version:   "1.0",
 			Service:   NewPublicMinerAPI(s),
 			Public:    true,
 		}, {
-			Namespace: "shf",
+			Namespace: "eth",
 			Version:   "1.0",
 			Service:   downloader.NewPublicDownloaderAPI(s.protocolManager.downloader, s.eventMux),
 			Public:    true,
@@ -326,7 +330,7 @@ func (s *Shift) APIs() []rpc.API {
 			Service:   NewPublicTxPoolAPI(s),
 			Public:    true,
 		}, {
-			Namespace: "shf",
+			Namespace: "eth",
 			Version:   "1.0",
 			Service:   filters.NewPublicFilterAPI(s.chainDb, s.eventMux),
 			Public:    true,
@@ -352,42 +356,7 @@ func (s *Shift) APIs() []rpc.API {
 			Namespace: "admin",
 			Version:   "1.0",
 			Service:   ethreg.NewPrivateRegistarAPI(s.chainConfig, s.blockchain, s.chainDb, s.txPool, s.accountManager),
-		}, {
-            Namespace: "eth",
-            Version:   "1.0",
-            Service:   NewPublicShiftAPI(s),
-            Public:    true,
-        }, {
-            Namespace: "eth",
-            Version:   "1.0",
-            Service:   NewPublicAccountAPI(s.accountManager),
-            Public:    true,
-        }, {
-            Namespace: "eth",
-            Version:   "1.0",
-            Service:   NewPublicBlockChainAPI(s.chainConfig, s.blockchain, s.miner, s.chainDb, s.gpo, s.eventMux, s.accountManager),
-            Public:    true,
-        }, {
-            Namespace: "eth",
-            Version:   "1.0",
-            Service:   NewPublicTransactionPoolAPI(s),
-            Public:    true,
-        }, {
-            Namespace: "eth",
-            Version:   "1.0",
-            Service:   NewPublicMinerAPI(s),
-            Public:    true,
-        }, {
-            Namespace: "eth",
-            Version:   "1.0",
-            Service:   downloader.NewPublicDownloaderAPI(s.protocolManager.downloader, s.eventMux),
-            Public:    true,
-        }, {
-            Namespace: "eth",
-            Version:   "1.0",
-            Service:   filters.NewPublicFilterAPI(s.chainDb, s.eventMux),
-            Public:    true,
-        },
+		},
 	}
 }
 

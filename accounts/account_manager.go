@@ -17,7 +17,7 @@
 // Package accounts implements encrypted storage of secp256k1 private keys.
 //
 // Keys are stored as encrypted JSON files according to the Web3 Secret Storage specification.
-// See https://github.com/shift/wiki/wiki/Web3-Secret-Storage-Definition for more information.
+// See https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition for more information.
 package accounts
 
 import (
@@ -45,7 +45,7 @@ var (
 // Account represents a stored key.
 // When used as an argument, it selects a unique key file to act on.
 type Account struct {
-	Address common.Address // Shift account address derived from the key
+	Address common.Address // Ethereum account address derived from the key
 
 	// File contains the key file name.
 	// When Acccount is used as an argument to select a key, File can be left blank to
@@ -147,9 +147,21 @@ func (am *Manager) Sign(addr common.Address, hash []byte) (signature []byte, err
 	return crypto.Sign(hash, unlockedKey.PrivateKey)
 }
 
+// SignWithPassphrase signs hash if the private key matching the given address can be
+// decrypted with the given passphrase.
+func (am *Manager) SignWithPassphrase(addr common.Address, passphrase string, hash []byte) (signature []byte, err error) {
+	_, key, err := am.getDecryptedKey(Account{Address: addr}, passphrase)
+	if err != nil {
+		return nil, err
+	}
+
+	defer zeroKey(key.PrivateKey)
+	return crypto.Sign(hash, key.PrivateKey)
+}
+
 // Unlock unlocks the given account indefinitely.
-func (am *Manager) Unlock(a Account, keyAuth string) error {
-	return am.TimedUnlock(a, keyAuth, 0)
+func (am *Manager) Unlock(a Account, passphrase string) error {
+	return am.TimedUnlock(a, passphrase, 0)
 }
 
 // Lock removes the private key with the given address from memory.
@@ -310,7 +322,7 @@ func (am *Manager) Update(a Account, passphrase, newPassphrase string) error {
 	return am.keyStore.StoreKey(a.File, key, newPassphrase)
 }
 
-// ImportPreSaleKey decrypts the given Shift presale wallet and stores
+// ImportPreSaleKey decrypts the given Ethereum presale wallet and stores
 // a key file in the key directory. The key file is encrypted with the same passphrase.
 func (am *Manager) ImportPreSaleKey(keyJSON []byte, passphrase string) (Account, error) {
 	a, _, err := importPreSaleKey(am.keyStore, keyJSON, passphrase)

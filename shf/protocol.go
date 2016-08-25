@@ -28,19 +28,18 @@ import (
 
 // Constants to match up protocol versions and messages
 const (
-	eth61 = 61
-	eth62 = 62
-	eth63 = 63
+	shf62 = 62
+	shf63 = 63
 )
 
 // Official short name of the protocol used during capability negotiation.
-var ProtocolName = "shift"
+var ProtocolName = "shf"
 
 // Supported versions of the shf protocol (first is primary).
-var ProtocolVersions = []uint{eth63, eth62, eth61}
+var ProtocolVersions = []uint{shf63, shf62}
 
 // Number of implemented message corresponding to different protocol versions.
-var ProtocolLengths = []uint64{17, 8, 9}
+var ProtocolLengths = []uint64{17, 8}
 
 const (
 	NetworkId          = 1
@@ -49,26 +48,15 @@ const (
 
 // shf protocol message codes
 const (
-	// Protocol messages belonging to eth/61
-	StatusMsg                   = 0x00
-	NewBlockHashesMsg           = 0x01
-	TxMsg                       = 0x02
-	GetBlockHashesMsg           = 0x03
-	BlockHashesMsg              = 0x04
-	GetBlocksMsg                = 0x05
-	BlocksMsg                   = 0x06
-	NewBlockMsg                 = 0x07
-	GetBlockHashesFromNumberMsg = 0x08
-
-	// Protocol messages belonging to shf/62 (new protocol from scratch)
-	// StatusMsg          = 0x00 (uncomment after shf/61 deprecation)
-	// NewBlockHashesMsg  = 0x01 (uncomment after shf/61 deprecation)
-	// TxMsg              = 0x02 (uncomment after shf/61 deprecation)
+	// Protocol messages belonging to shf/62
+	StatusMsg          = 0x00
+	NewBlockHashesMsg  = 0x01
+	TxMsg              = 0x02
 	GetBlockHeadersMsg = 0x03
 	BlockHeadersMsg    = 0x04
 	GetBlockBodiesMsg  = 0x05
 	BlockBodiesMsg     = 0x06
-	// 	NewBlockMsg       = 0x07 (uncomment after shf/61 deprecation)
+	NewBlockMsg        = 0x07
 
 	// Protocol messages belonging to shf/63
 	GetNodeDataMsg = 0x0d
@@ -117,12 +105,6 @@ type txPool interface {
 	GetTransactions() types.Transactions
 }
 
-type chainManager interface {
-	GetBlockHashesFromHash(hash common.Hash, amount uint64) (hashes []common.Hash)
-	GetBlock(hash common.Hash) (block *types.Block)
-	Status() (td *big.Int, currentBlock common.Hash, genesisBlock common.Hash)
-}
-
 // statusData is the network packet for the status message.
 type statusData struct {
 	ProtocolVersion uint32
@@ -136,19 +118,6 @@ type statusData struct {
 type newBlockHashesData []struct {
 	Hash   common.Hash // Hash of one particular block being announced
 	Number uint64      // Number of one particular block being announced
-}
-
-// getBlockHashesData is the network packet for the hash based hash retrieval.
-type getBlockHashesData struct {
-	Hash   common.Hash
-	Amount uint64
-}
-
-// getBlockHashesFromNumberData is the network packet for the number based hash
-// retrieval.
-type getBlockHashesFromNumberData struct {
-	Number uint64
-	Amount uint64
 }
 
 // getBlockHeadersData represents a block header query.
@@ -209,8 +178,3 @@ type blockBody struct {
 
 // blockBodiesData is the network packet for block content distribution.
 type blockBodiesData []*blockBody
-
-// nodeDataData is the network response packet for a node data retrieval.
-type nodeDataData []struct {
-	Value []byte
-}

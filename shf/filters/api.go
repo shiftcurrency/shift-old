@@ -48,7 +48,7 @@ const (
 )
 
 // PublicFilterAPI offers support to create and manage filters. This will allow external clients to retrieve various
-// information related to the Shift protocol such als blocks, transactions and logs.
+// information related to the Ethereum protocol such als blocks, transactions and logs.
 type PublicFilterAPI struct {
 	mux *event.TypeMux
 
@@ -68,8 +68,6 @@ type PublicFilterAPI struct {
 
 	transactionMu    sync.RWMutex
 	transactionQueue map[int]*hashQueue
-
-	transactMu sync.Mutex
 }
 
 // NewPublicFilterAPI returns a new PublicFilterAPI instance.
@@ -100,6 +98,7 @@ done:
 	for {
 		select {
 		case <-timer.C:
+			s.filterManager.Lock() // lock order like filterLoop()
 			s.logMu.Lock()
 			for id, filter := range s.logQueue {
 				if time.Since(filter.timeout) > filterTickerTime {
@@ -126,6 +125,7 @@ done:
 				}
 			}
 			s.transactionMu.Unlock()
+			s.filterManager.Unlock()
 		case <-s.quit:
 			break done
 		}
@@ -135,19 +135,24 @@ done:
 
 // NewBlockFilter create a new filter that returns blocks that are included into the canonical chain.
 func (s *PublicFilterAPI) NewBlockFilter() (string, error) {
+	// protect filterManager.Add() and setting of filter fields
+	s.filterManager.Lock()
+	defer s.filterManager.Unlock()
+
 	externalId, err := newFilterId()
 	if err != nil {
 		return "", err
 	}
 
-	s.blockMu.Lock()
 	filter := New(s.chainDb)
 	id, err := s.filterManager.Add(filter, ChainFilter)
 	if err != nil {
 		return "", err
 	}
 
+	s.blockMu.Lock()
 	s.blockQueue[id] = &hashQueue{timeout: time.Now()}
+	s.blockMu.Unlock()
 
 	filter.BlockCallback = func(block *types.Block, logs vm.Logs) {
 		s.blockMu.Lock()
@@ -158,8 +163,6 @@ func (s *PublicFilterAPI) NewBlockFilter() (string, error) {
 		}
 	}
 
-	defer s.blockMu.Unlock()
-
 	s.filterMapMu.Lock()
 	s.filterMapping[externalId] = id
 	s.filterMapMu.Unlock()
@@ -169,13 +172,14 @@ func (s *PublicFilterAPI) NewBlockFilter() (string, error) {
 
 // NewPendingTransactionFilter creates a filter that returns new pending transactions.
 func (s *PublicFilterAPI) NewPendingTransactionFilter() (string, error) {
+	// protect filterManager.Add() and setting of filter fields
+	s.filterManager.Lock()
+	defer s.filterManager.Unlock()
+
 	externalId, err := newFilterId()
 	if err != nil {
 		return "", err
 	}
-
-	s.transactionMu.Lock()
-	defer s.transactionMu.Unlock()
 
 	filter := New(s.chainDb)
 	id, err := s.filterManager.Add(filter, PendingTxFilter)
@@ -183,7 +187,9 @@ func (s *PublicFilterAPI) NewPendingTransactionFilter() (string, error) {
 		return "", err
 	}
 
+	s.transactionMu.Lock()
 	s.transactionQueue[id] = &hashQueue{timeout: time.Now()}
+	s.transactionMu.Unlock()
 
 	filter.TransactionCallback = func(tx *types.Transaction) {
 		s.transactionMu.Lock()
@@ -203,8 +209,9 @@ func (s *PublicFilterAPI) NewPendingTransactionFilter() (string, error) {
 
 // newLogFilter creates a new log filter.
 func (s *PublicFilterAPI) newLogFilter(earliest, latest int64, addresses []common.Address, topics [][]common.Hash, callback func(log *vm.Log, removed bool)) (int, error) {
-	s.logMu.Lock()
-	defer s.logMu.Unlock()
+	// protect filterManager.Add() and setting of filter fields
+	s.filterManager.Lock()
+	defer s.filterManager.Unlock()
 
 	filter := New(s.chainDb)
 	id, err := s.filterManager.Add(filter, LogFilter)
@@ -212,7 +219,9 @@ func (s *PublicFilterAPI) newLogFilter(earliest, latest int64, addresses []commo
 		return 0, err
 	}
 
+	s.logMu.Lock()
 	s.logQueue[id] = &logQueue{timeout: time.Now()}
+	s.logMu.Unlock()
 
 	filter.SetBeginBlock(earliest)
 	filter.SetEndBlock(latest)
@@ -233,6 +242,7 @@ func (s *PublicFilterAPI) newLogFilter(earliest, latest int64, addresses []commo
 	return id, nil
 }
 
+// Logs creates a subscription that fires for all new log that match the given filter criteria.
 func (s *PublicFilterAPI) Logs(ctx context.Context, args NewFilterArgs) (rpc.Subscription, error) {
 	notifier, supported := rpc.NotifierFromContext(ctx)
 	if !supported {
@@ -291,12 +301,13 @@ type NewFilterArgs struct {
 	Topics    [][]common.Hash
 }
 
+// UnmarshalJSON sets *args fields with given data.
 func (args *NewFilterArgs) UnmarshalJSON(data []byte) error {
 	type input struct {
 		From      *rpc.BlockNumber `json:"fromBlock"`
 		ToBlock   *rpc.BlockNumber `json:"toBlock"`
 		Addresses interface{}      `json:"address"`
-		Topics    interface{}      `json:"topics"`
+		Topics    []interface{}    `json:"topics"`
 	}
 
 	var raw input
@@ -321,7 +332,6 @@ func (args *NewFilterArgs) UnmarshalJSON(data []byte) error {
 	if raw.Addresses != nil {
 		// raw.Address can contain a single address or an array of addresses
 		var addresses []common.Address
-
 		if strAddrs, ok := raw.Addresses.([]interface{}); ok {
 			for i, addr := range strAddrs {
 				if strAddr, ok := addr.(string); ok {
@@ -352,56 +362,53 @@ func (args *NewFilterArgs) UnmarshalJSON(data []byte) error {
 		args.Addresses = addresses
 	}
 
+	// helper function which parses a string to a topic hash
 	topicConverter := func(raw string) (common.Hash, error) {
 		if len(raw) == 0 {
 			return common.Hash{}, nil
 		}
-
 		if len(raw) >= 2 && raw[0] == '0' && (raw[1] == 'x' || raw[1] == 'X') {
 			raw = raw[2:]
 		}
-
+		if len(raw) != 2 * common.HashLength {
+			return common.Hash{}, errors.New("invalid topic(s)")
+		}
 		if decAddr, err := hex.DecodeString(raw); err == nil {
 			return common.BytesToHash(decAddr), nil
 		}
-
-		return common.Hash{}, errors.New("invalid topic given")
+		return common.Hash{}, errors.New("invalid topic(s)")
 	}
 
-	// topics is an array consisting of strings or arrays of strings
-	if raw.Topics != nil {
-		topics, ok := raw.Topics.([]interface{})
-		if ok {
-			parsedTopics := make([][]common.Hash, len(topics))
-			for i, topic := range topics {
-				if topic == nil {
-					parsedTopics[i] = []common.Hash{common.StringToHash("")}
-				} else if strTopic, ok := topic.(string); ok {
-					if t, err := topicConverter(strTopic); err != nil {
-						return fmt.Errorf("invalid topic on index %d", i)
-					} else {
-						parsedTopics[i] = []common.Hash{t}
-					}
-				} else if arrTopic, ok := topic.([]interface{}); ok {
-					parsedTopics[i] = make([]common.Hash, len(arrTopic))
-					for j := 0; j < len(parsedTopics[i]); i++ {
-						if arrTopic[j] == nil {
-							parsedTopics[i][j] = common.StringToHash("")
-						} else if str, ok := arrTopic[j].(string); ok {
-							if t, err := topicConverter(str); err != nil {
-								return fmt.Errorf("invalid topic on index %d", i)
-							} else {
-								parsedTopics[i] = []common.Hash{t}
-							}
-						} else {
-							return fmt.Errorf("topic[%d][%d] not a string", i, j)
-						}
-					}
-				} else {
-					return fmt.Errorf("topic[%d] invalid", i)
+	// topics is an array consisting of strings and/or arrays of strings.
+	// JSON null values are converted to common.Hash{} and ignored by the filter manager.
+	if len(raw.Topics) > 0 {
+		args.Topics = make([][]common.Hash, len(raw.Topics))
+		for i, t := range raw.Topics {
+			if t == nil { // ignore topic when matching logs
+				args.Topics[i] = []common.Hash{common.Hash{}}
+			} else if topic, ok := t.(string); ok { // match specific topic
+				top, err := topicConverter(topic)
+				if err != nil {
+					return err
 				}
+				args.Topics[i] = []common.Hash{top}
+			} else if topics, ok := t.([]interface{}); ok { // or case e.g. [null, "topic0", "topic1"]
+				for _, rawTopic := range topics {
+					if rawTopic == nil {
+						args.Topics[i] = append(args.Topics[i], common.Hash{})
+					} else if topic, ok := rawTopic.(string); ok {
+						parsed, err := topicConverter(topic)
+						if err != nil {
+							return err
+						}
+						args.Topics[i] = append(args.Topics[i], parsed)
+					} else {
+						return fmt.Errorf("invalid topic(s)")
+					}
+				}
+			} else {
+				return fmt.Errorf("invalid topic(s)")
 			}
-			args.Topics = parsedTopics
 		}
 	}
 
@@ -445,35 +452,43 @@ func (s *PublicFilterAPI) GetLogs(args NewFilterArgs) []vmlog {
 
 // UninstallFilter removes the filter with the given filter id.
 func (s *PublicFilterAPI) UninstallFilter(filterId string) bool {
-	s.filterMapMu.Lock()
-	defer s.filterMapMu.Unlock()
+	s.filterManager.Lock()
+	defer s.filterManager.Unlock()
 
+	s.filterMapMu.Lock()
 	id, ok := s.filterMapping[filterId]
 	if !ok {
+		s.filterMapMu.Unlock()
 		return false
 	}
-
-	defer s.filterManager.Remove(id)
 	delete(s.filterMapping, filterId)
+	s.filterMapMu.Unlock()
 
+	s.filterManager.Remove(id)
+
+	s.logMu.Lock()
 	if _, ok := s.logQueue[id]; ok {
-		s.logMu.Lock()
-		defer s.logMu.Unlock()
 		delete(s.logQueue, id)
+		s.logMu.Unlock()
 		return true
 	}
+	s.logMu.Unlock()
+
+	s.blockMu.Lock()
 	if _, ok := s.blockQueue[id]; ok {
-		s.blockMu.Lock()
-		defer s.blockMu.Unlock()
 		delete(s.blockQueue, id)
+		s.blockMu.Unlock()
 		return true
 	}
+	s.blockMu.Unlock()
+
+	s.transactionMu.Lock()
 	if _, ok := s.transactionQueue[id]; ok {
-		s.transactionMu.Lock()
-		defer s.transactionMu.Unlock()
 		delete(s.transactionQueue, id)
+		s.transactionMu.Unlock()
 		return true
 	}
+	s.transactionMu.Unlock()
 
 	return false
 }
@@ -527,7 +542,9 @@ func (s *PublicFilterAPI) logFilterChanged(id int) []vmlog {
 
 // GetFilterLogs returns the logs for the filter with the given id.
 func (s *PublicFilterAPI) GetFilterLogs(filterId string) []vmlog {
+	s.filterMapMu.RLock()
 	id, ok := s.filterMapping[filterId]
+	s.filterMapMu.RUnlock()
 	if !ok {
 		return toRPCLogs(nil, false)
 	}
@@ -542,9 +559,9 @@ func (s *PublicFilterAPI) GetFilterLogs(filterId string) []vmlog {
 // GetFilterChanges returns the logs for the filter with the given id since last time is was called.
 // This can be used for polling.
 func (s *PublicFilterAPI) GetFilterChanges(filterId string) interface{} {
-	s.filterMapMu.Lock()
+	s.filterMapMu.RLock()
 	id, ok := s.filterMapping[filterId]
-	s.filterMapMu.Unlock()
+	s.filterMapMu.RUnlock()
 
 	if !ok { // filter not found
 		return []interface{}{}

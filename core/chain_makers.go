@@ -35,7 +35,9 @@ import (
 
 // MakeChainConfig returns a new ChainConfig with the shift default chain settings.
 func MakeChainConfig() *ChainConfig {
-	return &ChainConfig{HomesteadBlock: big.NewInt(0)}
+	return &ChainConfig{
+		HomesteadBlock: big.NewInt(0),
+	}
 }
 
 // FakePow is a non-validating proof of work implementation.
@@ -173,10 +175,16 @@ func (b *BlockGen) OffsetTime(seconds int64) {
 // Blocks created by GenerateChain do not contain valid proof of work
 // values. Inserting them into BlockChain requires use of FakePow or
 // a similar non-validating proof of work implementation.
-func GenerateChain(parent *types.Block, db ethdb.Database, n int, gen func(int, *BlockGen)) ([]*types.Block, []types.Receipts) {
+func GenerateChain(config *ChainConfig, parent *types.Block, db ethdb.Database, n int, gen func(int, *BlockGen)) ([]*types.Block, []types.Receipts) {
 	blocks, receipts := make(types.Blocks, n), make([]types.Receipts, n)
 	genblock := func(i int, h *types.Header, statedb *state.StateDB) (*types.Block, types.Receipts) {
 		b := &BlockGen{parent: parent, i: i, chain: blocks, header: h, statedb: statedb}
+
+		// Mutate the state and block according to any hard-fork specs
+		if config == nil {
+			config = MakeChainConfig()
+		}
+		// Execute any user modifications to the block and finalize it
 		if gen != nil {
 			gen(i, b)
 		}
@@ -205,9 +213,9 @@ func GenerateChain(parent *types.Block, db ethdb.Database, n int, gen func(int, 
 func makeHeader(parent *types.Block, state *state.StateDB) *types.Header {
 	var time *big.Int
 	if parent.Time() == nil {
-		time = big.NewInt(50)
+		time = big.NewInt(10)
 	} else {
-		time = new(big.Int).Add(parent.Time(), big.NewInt(50)) // block time is fixed at 10 seconds
+		time = new(big.Int).Add(parent.Time(), big.NewInt(10)) // block time is fixed at 10 seconds
 	}
 	return &types.Header{
 		Root:       state.IntermediateRoot(),
@@ -261,7 +269,7 @@ func makeHeaderChain(parent *types.Header, n int, db ethdb.Database, seed int) [
 
 // makeBlockChain creates a deterministic chain of blocks rooted at parent.
 func makeBlockChain(parent *types.Block, n int, db ethdb.Database, seed int) []*types.Block {
-	blocks, _ := GenerateChain(parent, db, n, func(i int, b *BlockGen) {
+	blocks, _ := GenerateChain(nil, parent, db, n, func(i int, b *BlockGen) {
 		b.SetCoinbase(common.Address{0: byte(seed), 19: byte(i)})
 	})
 	return blocks
