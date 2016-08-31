@@ -327,7 +327,7 @@ func (pool *TxPool) addTx(hash common.Hash, addr common.Address, tx *types.Trans
 
 		// Increment the nonce on the pending state. This can only happen if
 		// the nonce is +1 to the previous one.
-		pool.pendingState.SetNonce(addr, tx.Nonce()+1)
+		pool.pendingState.SetNonce(addr, pool.pendingState.GetNonce(addr))
 		// Notify the subscribers. This event is posted in a goroutine
 		// because it's possible that somewhere during the post "Remove transaction"
 		// gets called which will then wait for the global tx pool lock and deadlock.

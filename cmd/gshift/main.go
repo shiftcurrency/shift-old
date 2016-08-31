@@ -51,7 +51,7 @@ const (
 	versionMajor     = 3        // Major version component of the current release
 	versionMinor     = 1        // Minor version component of the current release
 	versionPatch     = 2        // Patch version component of the current release
-	versionMeta      = "" // Version metadata to append to the version string
+	versionMeta      = "SQLDB" // Version metadata to append to the version string
 
 	versionOracle = "0xea7b9770ca2cb04296cac84f36636d4041251cdf" // Shift address of the Gshift release oracle
 )
