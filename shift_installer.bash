@@ -127,8 +127,22 @@ install_shift() {
 }
 
 install_webui() {
+
+    echo -n "Installing SHIFT WebUi..."
+    git clone https://github.com/shiftcurrency/shift-wallet >> 2&>1 || { echo -n "Could not clone git wallet source. Exiting." && exit 1; }
+    if [[ -d "shift-wallet" ]]; then
+        mv shift-wallet public
+    fi
+
+    cd public && npm install || { echo -n "Could not install web wallet node modules. Exiting." && exit 1; }
+    bower install || { echo -n "Could not install bower components for the web wallet. Exiting." && exit 1; }
+    grunt release || { echo -n "Could build web wallet release. Exiting." && exit 1; }
+    echo "done."
+    
     return 0;
+
 }
+
 
 
 install_prereq
@@ -136,6 +150,8 @@ ntp_checks
 add_pg_user_database
 install_node_npm
 install_shift
+install_webui
+
 
 echo ""
 echo ""
