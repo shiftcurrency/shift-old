@@ -130,6 +130,11 @@ install_webui() {
 
     echo -n "Installing SHIFT WebUi..."
     git clone https://github.com/shiftcurrency/shift-wallet >> 2&>1 || { echo -n "Could not clone git wallet source. Exiting." && exit 1; }
+
+    if [[ -d "public" ]]; then
+        rm -rf public/
+    fi
+
     if [[ -d "shift-wallet" ]]; then
         mv shift-wallet public
     fi
