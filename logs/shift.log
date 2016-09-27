@@ -1,0 +1,24 @@
+
+[inf] 2016-09-20 13:14:29 | Shift started: 0.0.0.0:8005
+[inf] 2016-09-20 13:14:30 | Modules ready and launched
+[inf] 2016-09-20 13:14:30 | Blocks 1
+[inf] 2016-09-20 13:14:32 | Blockchain ready
+[inf] 2016-09-20 13:14:32 | Peers ready, stored 1
+[ERR] 2016-09-20 13:14:32 | Rejecting invalid peer: 108.61.196.62 #/version Expected type string but found type null
+[ERR] 2016-09-20 13:14:32 | Rejecting invalid peer: 108.61.196.62 #/os Expected type string but found type null
+[inf] 2016-09-20 13:14:32 | Checking blockchain on 108.61.196.62:8005
+[inf] 2016-09-20 13:14:34 | Cleaning up...
+[inf] 2016-09-20 13:14:34 | Cleaned up successfully
+[inf] 2016-09-20 13:22:27 | Shift started: 0.0.0.0:8005
+[inf] 2016-09-20 13:22:27 | Modules ready and launched
+[inf] 2016-09-20 13:22:27 | Blocks 1
+[inf] 2016-09-20 13:22:30 | Blockchain ready
+[inf] 2016-09-20 13:22:30 | Peers ready, stored 1
+[inf] 2016-09-20 13:22:30 | Checking blockchain on 108.61.196.62:8005
+[inf] 2016-09-20 13:22:31 | Cleaning up...
+[inf] 2016-09-20 13:22:31 | Cleaned up successfully
+[inf] 2016-09-20 13:22:59 | Shift started: 0.0.0.0:8005
+[inf] 2016-09-20 13:22:59 | Modules ready and launched
+[inf] 2016-09-20 13:22:59 | Blocks 1
+[inf] 2016-09-20 13:23:01 | Cleaning up...
+[inf] 2016-09-20 13:23:01 | Cleaned up successfully
