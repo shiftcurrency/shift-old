@@ -2,63 +2,10 @@
 
 **NOTE:** The following is applicable to: **Ubuntu 14.04 (LTS) - x86_64**.
 
-Install essentials:
+Automatic install (Debian based systems only (Ubuntu, Mint, Debian):
 
 ```
-sudo apt-get update
-sudo apt-get install curl build-essential python
-```
-
-Install PostgreSQL (version 9.5.2):
-
-```
-sudo apt-get purge -y postgres*
-sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" > /etc/apt/sources.list.d/pgdg.list'; wget -q https://www.postgresql.org/media/keys/ACCC4CF8.asc -O - | sudo apt-key add -
-sudo apt-get update && sudo apt-get install -y postgresql postgresql-contrib libpq-dev
-sudo su postgres
-createuser -d -s -P shift
-createdb -O shift shiftdb
-
-```
-
-Install Node.js (version 0.12.x) + npm:
-
-```
-curl -sL https://deb.nodesource.com/setup_0.12 | sudo -E bash -
-sudo apt-get install -y nodejs
-```
-
-Install grunt-cli (globally):
-
-```
-sudo npm install grunt-cli -g
-```
-
-Install bower (globally):
-
-```
-sudo npm install bower -g
-```
-
-Build SHIFT:
-
-```
-git clone -b shift_migration https://github.com/shiftcurrency/shift.git
-cd shift && npm install --production
-```
-
-## Launch
-
-To launch SHIFT:
-
-```
-node app.js
-```
-
-**NOTE:** The **port**, **address** and **config-path** can be overridden by providing the relevant command switch:
-
-```
-node app.js -p [port] -a [address] -c [config-path]
+git clone -b testnet  https://github.com/shiftcurrency/shift.git && cd shift && ./shift_installer.bash install
 ```
 
 ## Authors
