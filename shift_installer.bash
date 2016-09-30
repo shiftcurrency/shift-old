@@ -1,36 +1,44 @@
 #!/usr/bin/env bash
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LANGUAGE=en_US.UTF-8
+logfile="shift_installer.log"
+
+if [ "\$USER" == "root" ]; then
+  echo "Error: SHIFT should not be installed be as root. Exiting."
+  exit 1
+fi
 
 
 install_prereq() {
 
-    echo "Running: apt-get update...";
-    sudo apt-get update >> /dev/null || \
+    echo -n "Running: apt-get update...";
+    sudo apt-get update  &> /dev/null || \
     { echo "Could not update apt repositories. Run apt-get update manually. Exiting." && exit 1; };
     echo -e "done.\n"
 
-    echo "Running: apt-get install curl build-essential python lsb-release wget... ";
-    sudo apt-get install -y -qq curl build-essential python lsb-release wget 2>&1|| \
+    echo -n "Running: apt-get install curl build-essential python lsb-release wget... ";
+    sudo apt-get install -y -qq curl build-essential python lsb-release wget &>> $logfile || \
     { echo "Could not install packages prerequisites. Exiting." && exit 1; };
     echo -e "done.\n"
 
     echo -n "Removing former postgresql installations: apt-get purge -y postgres*... ";
-    sudo apt-get purge -y -qq postgres* >> /dev/null || \
+    sudo apt-get purge -y -qq postgres* &>> $logfile || \
     { echo "Could not remove former installation of postgresql. Exiting." && exit 1; };
     echo -e "done.\n"
 
     echo -n "Updating apt repository sources for postgresql.. ";
-#    sudo bash -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ wheezy-pgdg main"     > /etc/apt/sources.list.d/pgdg.list' 2> /dev/null || \
-    sudo bash -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" > /etc/apt/sources.list.d/pgdg.list' 2> /dev/null || \
+    sudo bash -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ wheezy-pgdg main" > /etc/apt/sources.list.d/pgdg.list' &>> $logfile || \
     { echo "Could not add postgresql repo to apt." && exit 1; }
     echo -e "done.\n"
 
     echo -n "Adding postgresql repo key... "
-    sudo wget -q https://www.postgresql.org/media/keys/ACCC4CF8.asc -O - | sudo apt-key add - >> /dev/null || \
+    sudo wget -q https://www.postgresql.org/media/keys/ACCC4CF8.asc -O - | sudo apt-key add - &>> $logfile || \
     { echo "Could not add postgresql repo key. Exiting." && exit 1; }
     echo -e "done.\n"
 
     echo -n "Installing postgresql... "
-    sudo apt-get update -qq >> /dev/null && sudo apt-get install -y -qq postgresql postgresql-contrib libpq-dev 2> /dev/null || \
+    sudo apt-get update -qq &> /dev/null && sudo apt-get install -y -qq postgresql postgresql-contrib libpq-dev &>> $logfile || \
     { echo "Could not install postgresql. Exiting." && exit 1; }
     echo -e "done.\n"
 
@@ -41,20 +49,16 @@ install_prereq() {
 ntp_checks() {
     # Install NTP or Chrony for Time Management - Physical Machines only
     if [[ ! -f "/proc/user_beancounters" ]]; then
-      if sudo pgrep -x "ntpd" > /dev/null; then
-        echo "NTP is running"
-      else
-        echo "NTP is not running"
-        echo -e "\nInstalling NTP...\n"
-        sudo apt-get install ntp -yyq
-        sudo service ntp stop
-        sudo ntpdate pool.ntp.org
-        sudo service ntp start
-        if sudo pgrep -x "ntpd" > /dev/null; then
-          echo "NTP is running"
-        else
+      if ! sudo pgrep -x "ntpd" > /dev/null; then
+        echo -n "\nInstalling NTP... "
+        sudo apt-get install ntp -yyq &>> $logfile
+        sudo service ntp stop &>> $logfile
+        sudo ntpdate pool.ntp.org &>> $logfile
+        sudo service ntp start &>> $logfile
+        if ! sudo pgrep -x "ntpd" > /dev/null; then
           echo -e "SHIFT requires NTP running. Please check /etc/ntp.conf and correct any issues. Exiting."
           exit 1
+        echo -e "done.\n"
         fi # if sudo pgrep
       fi # if [[ ! -f "/proc/user_beancounters" ]]
     elif [[ -f "/proc/user_beancounters" ]]; then
@@ -98,7 +102,7 @@ start_postgres() {
     fi
 
     if [[ $running -ne 1 ]]; then
-        /etc/init.d/postgresql start || { echo -n "Could not start postgresql, try to start it manually. Exiting." && exit 1; }
+        /etc/init.d/postgresql start &>> $logfile || { echo -n "Could not start postgresql, try to start it manually. Exiting." && exit 1; }
     fi
 
     return 0
@@ -107,12 +111,12 @@ start_postgres() {
 install_node_npm() {
 
     echo -n "Installing nodejs and npm... "
-    curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash - >> /dev/null
-    sudo apt-get install -y -qq nodejs >> /dev/null || { echo "Could not install nodejs and npm. Exiting." && exit 1; }
+    curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash - &>> $logfile
+    sudo apt-get install -y -qq nodejs &>> $logfile || { echo "Could not install nodejs and npm. Exiting." && exit 1; }
     echo -e "done.\n" && echo -n "Installing grunt-cli... "
-    sudo npm install grunt-cli -g 2> /dev/null || { echo "Could not install grunt-cli. Exiting." && exit 1; }
+    sudo npm install grunt-cli -g &>> $logfile || { echo "Could not install grunt-cli. Exiting." && exit 1; }
     echo -e "done.\n" && echo -n "Installing bower... "
-    sudo npm install bower -g 2> /dev/null || { echo "Could not install bower. Exiting." && exit 1; }
+    sudo npm install bower -g &>> $logfile || { echo "Could not install bower. Exiting." && exit 1; }
     echo -e "done.\n"
 
     return 0;
@@ -120,16 +124,17 @@ install_node_npm() {
 
 install_shift() {
 
-    echo -n "Installing SHIFT core... "
-    npm install --production 2> /dev/null || { echo "Could not install SHIFT, please check the log directory. Exiting." && exit 1; }
+    echo -n "Installing Shift core... "
+    npm install --production &>> $logfile || { echo "Could not install SHIFT, please check the log directory. Exiting." && exit 1; }
     echo -e "done.\n"
+
     return 0;
 }
 
 install_webui() {
 
-    echo -n "Installing SHIFT WebUi..."
-    git clone https://github.com/shiftcurrency/shift-wallet >> 2&>1 || { echo -n "Could not clone git wallet source. Exiting." && exit 1; }
+    echo -n "Installing Shift WebUi... "
+    git clone https://github.com/shiftcurrency/shift-wallet &>> $logfile || { echo -n "Could not clone git wallet source. Exiting." && exit 1; }
 
     if [[ -d "public" ]]; then
         rm -rf public/
@@ -137,26 +142,45 @@ install_webui() {
 
     if [[ -d "shift-wallet" ]]; then
         mv shift-wallet public
+    else
+        echo "Could not find installation directory for SHIFT web wallet. Install the web wallet manually."
+        exit 1;
     fi
 
-    cd public && npm install || { echo -n "Could not install web wallet node modules. Exiting." && exit 1; }
-    bower install || { echo -n "Could not install bower components for the web wallet. Exiting." && exit 1; }
-    grunt release || { echo -n "Could build web wallet release. Exiting." && exit 1; }
+    cd public && npm install &>> $logfile || { echo -n "Could not install web wallet node modules. Exiting." && exit 1; }
+    bower install &>> $logfile || { echo -n "Could not install bower components for the web wallet. Exiting." && exit 1; }
+    grunt release &>> $logfile || { echo -n "Could build web wallet release. Exiting." && exit 1; }
     echo "done."
     
     return 0;
 
 }
 
+parse_option() {
+  OPTIND=2
+  while getopts d:r:n opt
+  do
+    case $opt in
+      u) install_with_ui=true ;;
+    esac
+  done
+}
 
 
+case $1 in
+"install")
+parse_option $@
 install_prereq
 ntp_checks
 add_pg_user_database
 install_node_npm
 install_shift
 install_webui
-
+  ;;
+*)
+  exit 1
+  ;;
+esac
 
 echo ""
 echo ""
