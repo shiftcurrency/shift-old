@@ -2,7 +2,7 @@
 
 **NOTE:** The following is applicable to: **Ubuntu 14.04 (LTS) - x86_64**.
 
-Automatic install (Debian based systems only (Ubuntu, Mint, Debian):
+Automatic install (Debian based systems only (Ubuntu, Mint, Debian)):
 
 ```
 git clone -b testnet  https://github.com/shiftcurrency/shift.git && cd shift && ./shift_installer.bash install
