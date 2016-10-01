@@ -11,8 +11,9 @@ fi
 
 
 install_prereq() {
+    sudo id &> /dev/null
 
-    echo -n "Running: apt-get update...";
+    echo -n "Running: apt-get update... ";
     sudo apt-get update  &> /dev/null || \
     { echo "Could not update apt repositories. Run apt-get update manually. Exiting." && exit 1; };
     echo -e "done.\n"
@@ -22,7 +23,7 @@ install_prereq() {
     { echo "Could not install packages prerequisites. Exiting." && exit 1; };
     echo -e "done.\n"
 
-    echo -n "Removing former postgresql installations: apt-get purge -y postgres*... ";
+    echo -n "Removing former postgresql installation... ";
     sudo apt-get purge -y -qq postgres* &>> $logfile || \
     { echo "Could not remove former installation of postgresql. Exiting." && exit 1; };
     echo -e "done.\n"
@@ -148,6 +149,8 @@ install_webui() {
     fi
 
     cd public && npm install &>> $logfile || { echo -n "Could not install web wallet node modules. Exiting." && exit 1; }
+    # Bower config seems to have the wrong permissions. Make sure we change these before trying to use bower.
+    sudo chown -R $USER:$USER ~/.config &> /dev/null
     bower install &>> $logfile || { echo -n "Could not install bower components for the web wallet. Exiting." && exit 1; }
     grunt release &>> $logfile || { echo -n "Could build web wallet release. Exiting." && exit 1; }
     echo "done."
@@ -178,6 +181,7 @@ install_shift
 install_webui
   ;;
 *)
+  echo "Usage: ./shift_installer.bash install"
   exit 1
   ;;
 esac
