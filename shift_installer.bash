@@ -103,7 +103,12 @@ start_postgres() {
     fi
 
     if [[ $running -ne 1 ]]; then
-        /etc/init.d/postgresql start &>> $logfile || { echo -n "Could not start postgresql, try to start it manually. Exiting." && exit 1; }
+        sudo /etc/init.d/postgresql start &>> $logfile || { echo "Could not start postgresql, try to start it manually. Exiting." && exit 1; }
+    fi
+
+    #with systemd the service is not automatically enabled on restart
+    if [[ `sudo systemctl` =~ -\.mount ]]; then
+        sudo systemctl enable postgresql &>> $logfile || { echo "Could not enable postgresql service (systemd). Exiting." && exit 1; }
     fi
 
     return 0
