@@ -107,7 +107,7 @@ start_postgres() {
     fi
 
     #with systemd the service is not automatically enabled on restart
-    if [[ `sudo systemctl` =~ -\.mount ]]; then
+    if [[ -f /bin/systemctl && `sudo systemctl` =~ -\.mount ]]; then
         sudo systemctl enable postgresql &>> $logfile || { echo "Could not enable postgresql service (systemd). Exiting." && exit 1; }
     fi
 
