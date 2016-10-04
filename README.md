@@ -1,57 +1,29 @@
-## SHIFT Blocktime
+## Installation
 
-Fixed at 50 seconds (average target 35-40 seconds)
+**NOTE:** The following is applicable to: **Ubuntu 14.04 (LTS) - x86_64**.
 
-## SHIFT Blockreward
+Automatic install (Debian based systems only (Ubuntu, Mint, Debian)):
 
-Static reward of 2 Shift per block.
+```
+git clone -b testnet  https://github.com/shiftcurrency/shift.git && cd shift && ./shift_installer.bash install
+```
 
+## Authors
+- Joey <shiftcurrency@gmail.com>
+- Boris Povod <boris@crypti.me>
+- Pavel Nekrasov <landgraf.paul@gmail.com>
+- Sebastian Stupurac <stupurac.sebastian@gmail.com>
+- Oliver Beddows <oliver@lisk.io>
 
-## Building SHIFT
+## License
 
-For prerequisites and detailed build instructions please read the
-[Installation Instructions](https://github.com/shiftcurrency/shift/wiki/Building-and-Installing-Shift)
-on the wiki.
+The MIT License (MIT)
 
-Building gshift requires both a Go and a C compiler.
-You can install them using your favourite package manager.
-Once the dependencies are installed, run
+Copyright (c) 2016 Lisk  
+Copyright (c) 2014-2015 Crypti
 
-    make gshift
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:  
 
-## Executables
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-Go Shift comes with several wrappers/executables found in
-[the `cmd` directory](https://github.com/shiftcurrency/shift/tree/develop/cmd):
-
-* `gshift` Shift CLI (shift command line interface client)
-* `bootnode` runs a bootstrap node for the Discovery Protocol
-* `shifttest` test tool which runs with the [tests](https://github.com/shiftcurrency/tests) suite:
-  `/path/to/test.json > shftest --test BlockTests --stdin`.
-* `evm` is a generic Shift Virtual Machine: `evm -code 60ff60ff -gas
-  10000 -price 0 -dump`. See `-h` for a detailed description.
-* `disasm` disassembles EVM code: `echo "6001" | disasm`
-* `rlpdump` prints RLP structures
-
-## Command line options
-
-`gshift` can be configured via command line options, environment variables and config files.
-
-To get the options available:
-
-    gshift help
-
-## WIKI (to be added on readthedocs)
-
-## Contribution
-
-If you'd like to contribute to shift please fork, fix, commit and
-send a pull request. Commits who do not comply with the coding standards
-are ignored (use gofmt!). If you send pull requests make absolute sure that you
-commit on the `develop` branch and that you do not merge to master.
-Commits that are directly based on master are simply ignored.
-
-See [Developers' Guide](https://github.com/shiftcurrency/shift/wiki/Developers'-Guide)
-for more details on configuring your environment, testing, and
-dependency management.
-
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
