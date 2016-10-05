@@ -163,6 +163,25 @@ install_webui() {
 
 }
 
+update_version() {
+
+    if [[ -f config.json ]]; then
+        cp config.json /tmp/
+    fi
+
+    echo -n "Updating Shift version to latest... "
+
+    git pull || { echo "Failed to fetch updates from git repository. Run it manually with: git pull. Exiting." && exit 1; }
+
+    if [[ -f /tmp/config.json ]]; then
+        mv /tmp/config.json .
+    fi
+
+    echo "done."
+
+}
+
+
 parse_option() {
   OPTIND=2
   while getopts d:r:n opt
@@ -175,19 +194,23 @@ parse_option() {
 
 
 case $1 in
-"install")
-parse_option $@
-install_prereq
-ntp_checks
-add_pg_user_database
-install_node_npm
-install_shift
-install_webui
-  ;;
+    "install")
+        parse_option $@
+        install_prereq
+        ntp_checks
+        add_pg_user_database
+        install_node_npm
+        install_shift
+        install_webui
+    ;;
+    "update_version")
+        update_version
+    ;;
 *)
-  echo "Usage: ./shift_installer.bash install"
-  exit 1
-  ;;
+    echo 'Available options: install, update_version'
+    echo 'Usage: ./shift_installer.bash install'
+    exit 1
+    ;;
 esac
 
 echo ""
