@@ -32,7 +32,7 @@ module.exports = {
 	signatureExceptions: [
 	],
 	signatureLength: 196,
-	totalAmount: 1000000000000000,
+	totalAmount: 1009000000000000,
 	unconfirmedTransactionTimeOut: 10800, // 1080 blocks
 	voteExceptions: [
 	]

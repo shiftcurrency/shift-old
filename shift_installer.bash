@@ -4,7 +4,7 @@ export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 logfile="shift_installer.log"
 
-if [ "$USER" == "root" ]; then
+if [[ "$USER" == "root" ]]; then
   echo "Error: SHIFT should not be installed be as root. Exiting."
   exit 1
 fi
