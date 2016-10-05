@@ -4,12 +4,6 @@ export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 logfile="shift_installer.log"
 
-if [[ "$USER" == "root" ]]; then
-  echo "Error: SHIFT should not be installed be as root. Exiting."
-  exit 1
-fi
-
-
 install_prereq() {
     sudo id &> /dev/null
 
@@ -45,7 +39,6 @@ install_prereq() {
 
     return 0;
 }
-
 
 ntp_checks() {
     # Install NTP or Chrony for Time Management - Physical Machines only
@@ -155,7 +148,7 @@ install_webui() {
         sudo chown -R $USER:$USER /home/$USER/.config &> /dev/null
     fi
 
-    bower install &>> $logfile || { echo "\n\nCould not install bower components for the web wallet. Exiting." && exit 1; }
+    bower --allow-root install &>> $logfile || { echo "\n\nCould not install bower components for the web wallet. Exiting." && exit 1; }
     grunt release &>> $logfile || { echo "Could build web wallet release. Exiting." && exit 1; }
     echo "done."
     
