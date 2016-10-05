@@ -4,7 +4,7 @@ export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 logfile="shift_installer.log"
 
-if [ "\$USER" == "root" ]; then
+if [ "$USER" == "root" ]; then
   echo "Error: SHIFT should not be installed be as root. Exiting."
   exit 1
 fi
@@ -149,10 +149,14 @@ install_webui() {
     fi
 
     cd public && npm install &>> $logfile || { echo -n "Could not install web wallet node modules. Exiting." && exit 1; }
+
     # Bower config seems to have the wrong permissions. Make sure we change these before trying to use bower.
-    sudo chown -R $USER:$USER ~/.config &> /dev/null
-    bower install &>> $logfile || { echo -n "Could not install bower components for the web wallet. Exiting." && exit 1; }
-    grunt release &>> $logfile || { echo -n "Could build web wallet release. Exiting." && exit 1; }
+    if [[ -d /home/$USER/.config ]]; then
+        sudo chown -R $USER:$USER /home/$USER/.config &> /dev/null
+    fi
+
+    bower install &>> $logfile || { echo "\n\nCould not install bower components for the web wallet. Exiting." && exit 1;
+    grunt release &>> $logfile || { echo "Could build web wallet release. Exiting." && exit 1; }
     echo "done."
     
     return 0;
