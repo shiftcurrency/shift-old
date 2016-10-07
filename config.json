@@ -127,7 +127,7 @@
         "loadPerIteration": 5000
     },
     "ssl": {
-        "enabled": true,
+        "enabled": false,
         "options": {
             "port": 9306,
             "address": "0.0.0.0",
