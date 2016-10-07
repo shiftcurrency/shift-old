@@ -127,12 +127,12 @@
         "loadPerIteration": 5000
     },
     "ssl": {
-        "enabled": false,
+        "enabled": true,
         "options": {
-            "port": 443,
+            "port": 9306,
             "address": "0.0.0.0",
-            "key": "./ssl/shift.key",
-            "cert": "./ssl/shift.crt"
+            "key": "./ssl/shift_httpd.key",
+            "cert": "./ssl/shift_httpd.crt"
         }
     },
     "dapp": {
