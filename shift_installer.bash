@@ -3,6 +3,7 @@ export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 logfile="shift_installer.log"
+version="1.0.0"
 
 install_prereq() {
     if [[ ! -f /usr/bin/sudo ]]; then
@@ -11,6 +12,8 @@ install_prereq() {
 
     sudo id || { exit 1; };
 
+    echo "Running Shift installer script version $version ..."
+    
     echo -n "Running: apt-get update... ";
     sudo apt-get update  &> /dev/null || \
     { echo "Could not update apt repositories. Run apt-get update manually. Exiting." && exit 1; };
@@ -204,7 +207,7 @@ case $1 in
         update_version
     ;;
 *)
-    echo 'Available options: install, update_version'
+    echo 'Available options: install, update_version(under development)'
     echo 'Usage: ./shift_installer.bash install'
     exit 1
     ;;
