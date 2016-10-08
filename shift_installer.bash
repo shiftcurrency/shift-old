@@ -155,8 +155,8 @@ install_webui() {
         sudo chown -R $USER:$USER /home/$USER/.config &> /dev/null
     fi
 
-    bower --allow-root install &>> $logfile || { echo "\n\nCould not install bower components for the web wallet. Exiting." && exit 1; }
-    grunt release &>> $logfile || { echo "Could build web wallet release. Exiting." && exit 1; }
+    bower --allow-root install &>> $logfile || { echo -e "\n\nCould not install bower components for the web wallet. Exiting." && exit 1; }
+    grunt release &>> $logfile || { echo -e "\n\nCould not build web wallet release. Exiting." && exit 1; }
     echo "done."
     
     return 0;
