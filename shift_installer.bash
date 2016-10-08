@@ -5,7 +5,11 @@ export LANGUAGE=en_US.UTF-8
 logfile="shift_installer.log"
 
 install_prereq() {
-    sudo id &> /dev/null
+    if [[ ! -f /usr/bin/sudo ]]; then
+        echo "Install sudo before continuing. Issue: apt-get install sudo as root user."
+    fi
+
+    sudo id || { exit 1; };
 
     echo -n "Running: apt-get update... ";
     sudo apt-get update  &> /dev/null || \
@@ -96,7 +100,7 @@ start_postgres() {
     fi
 
     if [[ $running -ne 1 ]]; then
-        /etc/init.d/postgresql start &>> $logfile || { echo -n "Could not start postgresql, try to start it manually. Exiting." && exit 1; }
+        sudo /etc/init.d/postgresql start &>> $logfile || { echo -n "Could not start postgresql, try to start it manually. Exiting." && exit 1; }
     fi
 
     return 0
