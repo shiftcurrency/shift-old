@@ -25,7 +25,7 @@ install_prereq() {
     echo -e "done.\n"
 
     echo -n "Running: apt-get install curl build-essential python lsb-release wget... ";
-    sudo apt-get install -y -qq curl build-essential python lsb-release wget &>> $logfile || \
+    sudo apt-get install -y -qq curl build-essential python lsb-release wget openssl &>> $logfile || \
     { echo "Could not install packages prerequisites. Exiting." && exit 1; };
     echo -e "done.\n"
 
