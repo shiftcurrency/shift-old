@@ -6,13 +6,18 @@ logfile="shift_installer.log"
 version="1.0.0"
 
 install_prereq() {
+
     if [[ ! -f /usr/bin/sudo ]]; then
         echo "Install sudo before continuing. Issue: apt-get install sudo as root user."
+        echo "Also make sure that your user has sudo access."
     fi
 
-    sudo id || { exit 1; };
+    sudo id &> /dev/null || { exit 1; };
 
-    echo "Running Shift installer script version $version ..."
+    echo ""
+    echo "-------------------------------------------------------"
+    echo "Shift installer script. Version: $version"
+    echo "-------------------------------------------------------"
     
     echo -n "Running: apt-get update... ";
     sudo apt-get update  &> /dev/null || \
@@ -158,6 +163,8 @@ install_webui() {
     bower --allow-root install &>> $logfile || { echo -e "\n\nCould not install bower components for the web wallet. Exiting." && exit 1; }
     grunt release &>> $logfile || { echo -e "\n\nCould not build web wallet release. Exiting." && exit 1; }
     echo "done."
+
+    cd ..
     
     return 0;
 
@@ -181,13 +188,95 @@ update_version() {
 
 }
 
+install_ssl() {
+
+    country=SE
+    state=Stockholm
+    locality=Stockholm
+    organization=ShiftCurrency
+    organizationalunit=ShiftCurrency
+
+    while true; do
+        echo -n "Supply domain or IP-address for the ssl certificate (the host the shift runs on): "
+        read commonname
+
+        if [[ -z "$commonname" ]]; then
+            continue
+        else
+            break
+        fi  
+    done
+
+    while true; do
+        echo -n "Supply password for the private key: "
+        read password
+
+        if [[ -z "$password" ]]; then
+            continue
+        else
+            break
+        fi
+    done
+
+    while true; do
+        echo -n "Supply email address for the certificate: "
+        read email
+
+        if [[ -z "$email" ]]; then
+            continue
+        else
+            break
+        fi
+    done
+
+    echo -n "Generating key request for "$commonname"... "
+ 
+    openssl genrsa -des3 -passout pass:"$password" -out "$commonname".key 2048 -noout &>> $logfile || \
+    { echo -e "Could not generate ssl key. Exiting." && exit 1; }
+    echo "done."
+ 
+    echo -n "Removing passphrase from key... "
+    openssl rsa -in "$commonname".key -passin pass:"$password" -out "$commonname".key &>> $logfile || \
+    { echo -e "\nCould not remove passphare key. Exiting." && exit 1; }
+    echo "done."
+ 
+    echo -n "Creating CSR..."
+    openssl req -new -key "$commonname".key -out "$commonname".csr -passin pass:"$password" \
+        -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email" &>> $logfile || \
+        { echo -e "\nCould not not generate the CSR. Exiting." && exit 1; }
+    echo "done."
+
+    echo -n "Creating certificate for "$commonname"... "
+    openssl x509 -req -days 365 -in "$commonname".csr -signkey "$commonname".key -out "$commonname".crt &>> $logfile || \
+    { echo -e "\nCould not create ssl certificate. Exiting." && exit 1; }
+    echo "done."
+
+    echo -n "Creating "$commonname" pem file... "
+    if [[ -f "$commonname".crt ]] && [[ -f "$commonname".key ]]; then
+        cat "$commonname".crt "$commonname".key > "$commonname".pem
+    fi
+    echo "done."
+
+    if [[ ! -d ssl/ ]]; then
+        mkdir ssl
+    fi
+
+    mv "$commonname".pem ssl/
+    rm $commonname*
+
+    echo ""
+    echo ""
+    echo "To enable SSL for Shift Web Ui, configure config.json and set both key and cert to ./ssl/$commonname.pem"
+
+}
+
 
 parse_option() {
   OPTIND=2
   while getopts d:r:n opt
   do
     case $opt in
-      u) install_with_ui=true ;;
+      s) install_with_ssl=true ;;
     esac
   done
 }
@@ -202,10 +291,12 @@ case $1 in
         install_node_npm
         install_shift
         install_webui
+        install_ssl
     ;;
     "update_version")
         update_version
     ;;
+
 *)
     echo 'Available options: install, update_version(under development)'
     echo 'Usage: ./shift_installer.bash install'
