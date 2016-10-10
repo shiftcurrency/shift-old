@@ -208,7 +208,7 @@ install_ssl() {
     done
 
     while true; do
-        echo -n "Supply password for the private key: "
+        echo -n "Supply password for the private key (this password will not be used again, it can be arbitrary): "
         read password
 
         if [[ -z "$password" ]]; then
@@ -219,7 +219,7 @@ install_ssl() {
     done
 
     while true; do
-        echo -n "Supply email address for the certificate: "
+        echo -n "Supply email address for the certificate (you do not have to use a real email address): "
         read email
 
         if [[ -z "$email" ]]; then
