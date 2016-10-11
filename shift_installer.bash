@@ -4,6 +4,7 @@ export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 logfile="shift_installer.log"
 version="1.0.0"
+root_path=$(pwd)
 
 install_prereq() {
 
@@ -123,6 +124,8 @@ install_node_npm() {
     sudo npm install grunt-cli -g &>> $logfile || { echo "Could not install grunt-cli. Exiting." && exit 1; }
     echo -e "done.\n" && echo -n "Installing bower... "
     sudo npm install bower -g &>> $logfile || { echo "Could not install bower. Exiting." && exit 1; }
+    echo -e "done.\n" && echo -n "Installing process management software... "
+    sudo npm install forever -g &>> $logfile || { echo "Could not install process management software(forever). Exiting." && exit 1; }
     echo -e "done.\n"
 
     return 0;
@@ -270,6 +273,31 @@ install_ssl() {
 
 }
 
+stop_shift() {
+    forever_exists=$(whereis forever | awk {'print $2'})
+    if [[ ! -z $forever_exists ]]; then
+        $forever_exists stop $root_path/app.js &>> $logfile
+    fi
+}
+
+start_shift() {
+    forever_exists=$(whereis forever | awk {'print $2'})
+    if [[ ! -z $forever_exists ]]; then
+        $forever_exists start -o $root_path/logs/shift_node.log -e $root_path/logs/shift_node_err.log app.js &>> $logfile || \
+        { echo -e "\nCould not start Shift." && exit 1; }
+    fi
+}
+
+
+running() {
+    status=$(wget -q -O - http://localhost:9305/api/loader/status/ |tr ':,' ' ' |awk {'print $2'})
+    if [[ "$status" == "true" ]]; then
+        return 0
+    else
+        return 1
+    fi   
+}
+
 
 parse_option() {
   OPTIND=2
@@ -292,22 +320,33 @@ case $1 in
         install_shift
         install_webui
         install_ssl
+        echo ""
+        echo ""
+        echo "Start SHIFT with: node app.js"
+        echo "Open the User Interface with: http://node.ip:9305"
+
     ;;
     "update_version")
         update_version
+    ;;
+    "status")
+        if running; then
+            echo "running"
+        else
+            echo "not running"
+        fi
+    ;;
+    "start")
+        start_shift
+    ;;
+    "stop")
+        stop_shift
     ;;
 
 *)
     echo 'Available options: install, update_version(under development)'
     echo 'Usage: ./shift_installer.bash install'
     exit 1
-    ;;
+;;
 esac
-
-echo ""
-echo ""
-echo ""
-echo "Start SHIFT with: node app.js"
-echo "Open the User Interface with: http://node.ip:9305"
-
 exit 0;
