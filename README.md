@@ -5,7 +5,7 @@
 Automatic install (Debian based systems only (Ubuntu, Mint, Debian)):
 
 ```
-git clone https://github.com/shiftcurrency/shift.git && cd shift && ./shift_installer.bash install
+git clone https://github.com/shiftcurrency/shift.git && cd shift && ./shift_manager.bash install
 ```
 
 ## Authors
