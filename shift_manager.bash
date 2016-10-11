@@ -274,28 +274,45 @@ install_ssl() {
 }
 
 stop_shift() {
+    echo -n "Stopping Shift... "
     forever_exists=$(whereis forever | awk {'print $2'})
     if [[ ! -z $forever_exists ]]; then
         $forever_exists stop $root_path/app.js &>> $logfile
     fi
+
+    if ! running; then
+        echo "OK"
+        return 0
+    fi
+
+    return 1
 }
 
 start_shift() {
+    echo -n "Starting Shift... "
     forever_exists=$(whereis forever | awk {'print $2'})
     if [[ ! -z $forever_exists ]]; then
         $forever_exists start -o $root_path/logs/shift_node.log -e $root_path/logs/shift_node_err.log app.js &>> $logfile || \
         { echo -e "\nCould not start Shift." && exit 1; }
     fi
+
+    sleep 2
+
+    if running; then
+        echo "OK"
+        return 0
+    fi
+    return 1
 }
 
 
 running() {
-    status=$(wget -q -O - http://localhost:9305/api/loader/status/ |tr ':,' ' ' |awk {'print $2'})
-    if [[ "$status" == "true" ]]; then
-        return 0
-    else
+
+    process=$(forever list |grep app.js |awk {'print $9'})
+    if [[ -z $process ]] || [[ "$process" == "STOPPED" ]]; then
         return 1
-    fi   
+    fi
+    return 0
 }
 
 
@@ -331,9 +348,9 @@ case $1 in
     ;;
     "status")
         if running; then
-            echo "running"
+            echo "OK"
         else
-            echo "not running"
+            echo "KO"
         fi
     ;;
     "start")
