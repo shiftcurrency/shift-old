@@ -14,6 +14,7 @@ git clone https://github.com/shiftcurrency/shift.git && cd shift && ./shift_mana
 - Pavel Nekrasov <landgraf.paul@gmail.com>
 - Sebastian Stupurac <stupurac.sebastian@gmail.com>
 - Oliver Beddows <oliver@lisk.io>
+- Isabella Dell <isabella@lisk.io>
 
 ## License
 
