@@ -2,7 +2,7 @@
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
-logfile="shift_installer.log"
+logfile="shift_manager.log"
 version="1.0.0"
 root_path=$(pwd)
 

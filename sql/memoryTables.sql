@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS "mem_accounts"(
   "producedblocks" int DEFAULT 0,
   "missedblocks" int DEFAULT 0,
   "fees" BIGINT DEFAULT 0,
-  "rewards" BIGINT DEFAULT 0
+  "rewards" BIGINT DEFAULT 0,
+  "virgin" SMALLINT DEFAULT 1
 );
 
 CREATE INDEX IF NOT EXISTS "mem_accounts_balance" ON "mem_accounts"("balance");
@@ -45,11 +46,16 @@ CREATE TABLE IF NOT EXISTS "mem_round"(
   "round" BIGINT
 );
 
+CREATE INDEX IF NOT EXISTS "mem_round_address" ON "mem_round"("address");
+CREATE INDEX IF NOT EXISTS "mem_round_round" ON "mem_round"("round");
+
 CREATE TABLE IF NOT EXISTS "mem_accounts2delegates"(
   "accountId" VARCHAR(22) NOT NULL,
   "dependentId" VARCHAR(64) NOT NULL,
   FOREIGN KEY ("accountId") REFERENCES mem_accounts("address") ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS "mem_accounts2delegates_accountId" ON "mem_accounts2delegates"("accountId");
 
 CREATE TABLE IF NOT EXISTS "mem_accounts2u_delegates"(
   "accountId" VARCHAR(22) NOT NULL,
@@ -57,17 +63,23 @@ CREATE TABLE IF NOT EXISTS "mem_accounts2u_delegates"(
   FOREIGN KEY ("accountId") REFERENCES mem_accounts("address") ON DELETE CASCADE
 );
 
+CREATE INDEX IF NOT EXISTS "mem_accounts2u_delegates_accountId" ON "mem_accounts2u_delegates"("accountId");
+
 CREATE TABLE IF NOT EXISTS "mem_accounts2multisignatures"(
   "accountId" VARCHAR(22) NOT NULL,
   "dependentId" VARCHAR(64) NOT NULL,
   FOREIGN KEY ("accountId") REFERENCES mem_accounts("address") ON DELETE CASCADE
 );
 
+CREATE INDEX IF NOT EXISTS "mem_accounts2multisignatures_accountId" ON "mem_accounts2multisignatures"("accountId");
+
 CREATE TABLE IF NOT EXISTS "mem_accounts2u_multisignatures"(
   "accountId" VARCHAR(22) NOT NULL,
   "dependentId" VARCHAR(64) NOT NULL,
   FOREIGN KEY ("accountId") REFERENCES mem_accounts("address") ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS "mem_accounts2u_multisignatures_accountId" ON "mem_accounts2u_multisignatures"("accountId");
 
 DELETE FROM "mem_accounts2u_delegates";
 DELETE FROM "mem_accounts2u_multisignatures";
