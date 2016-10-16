@@ -5,8 +5,11 @@ import sys
 
 
 def blacklist():
-    res = subprocess.Popen("psql -qAt -U shift shift_db -c \"SELECT ip FROM peers WHERE version < '5.0.0';\"",  
+    try:
+        res = subprocess.Popen("psql -qAt -U shift shift_db -c \"SELECT ip FROM peers WHERE version < '5.0.0';\"",  
                             shell=True, stdout=subprocess.PIPE).stdout.read()
+    except Exception as e:
+        print "Could not fetch IP addresses from SQL server, reason: %s" % e
 
     if os.path.isfile("config.json"):
         try:
