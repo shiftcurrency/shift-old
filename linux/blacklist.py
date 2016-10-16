@@ -19,13 +19,15 @@ def blacklist():
                 f.seek(0)
                 f.write(json.dumps(content, indent=4, sort_keys=True))
                 f.truncate()
+            return res
         except Exception as e:
             print "Could not open configuration file for Shift node. Exiting."
             sys.exit(0)
-    return res
+    return False
 
 if __name__ == "__main__":
     res = blacklist()
     if res:
         print "Blacklisted %i addresses, restart your node." % len(res.split())
-    sys.exit(0)
+        sys.exit(0)
+    print "Could not open config.json, run the script in the same directory as your config.json."
