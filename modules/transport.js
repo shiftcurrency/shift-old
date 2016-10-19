@@ -84,7 +84,7 @@ __private.attachApi = function () {
 				req.peer.dappid = req.body.dappid;
 			}
 
-			if ((req.peer.version === constants.minVersion) && (headers.nethash === library.config.nethash)) {
+			if ((req.peer.version === constants.currentVersion) && (headers.nethash === library.config.nethash)) {
 				if (!modules.blocks.lastReceipt()) {
 					modules.delegates.enableForging();
 				}
@@ -477,7 +477,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 				return setImmediate(cb, ['Peer is not on the same network', headers.nethash, req.method, req.url].join(' '));
 			}
 
-			if (headers.version === constants.minVersion) {
+			if (headers.version === constants.currentVersion) {
 				library.dbSequence.add(function (cb) {
 					modules.peers.update({
 						ip: peer.ip,

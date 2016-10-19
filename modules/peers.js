@@ -463,7 +463,7 @@ shared.getPeer = function (req, cb) {
 };
 
 shared.version = function (req, cb) {
-	return setImmediate(cb, null, {version: constants.minVersion, build: library.build});
+	return setImmediate(cb, null, {version: constants.currentVersion, build: library.build});
 };
 
 // Export

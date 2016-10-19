@@ -12,7 +12,7 @@ function System (cb, scope) {
 	library = scope;
 	self = this;
 
-	__private.version = constants.minVersion;
+	__private.version = constants.currentVersion;
 	__private.port = library.config.port;
 	__private.nethash = library.config.nethash;
 	__private.osName = os.platform() + os.release();
