@@ -2,6 +2,7 @@
 
 var os = require('os');
 var sandboxHelper = require('../helpers/sandbox.js');
+var constants = require('../helpers/constants.js');
 
 // Private fields
 var modules, library, self, __private = {}, shared = {};
@@ -11,7 +12,7 @@ function System (cb, scope) {
 	library = scope;
 	self = this;
 
-	__private.version = library.config.version;
+	__private.version = constants.minVersion;
 	__private.port = library.config.port;
 	__private.nethash = library.config.nethash;
 	__private.osName = os.platform() + os.release();
