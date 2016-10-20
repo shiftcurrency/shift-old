@@ -9,6 +9,7 @@ var OrderBy = require('../helpers/orderBy.js');
 var path = require('path');
 var Router = require('../helpers/router.js');
 var sandboxHelper = require('../helpers/sandbox.js');
+var constants = require('../helpers/constants.js');
 var schema = require('../schema/peers.js');
 var sql = require('../sql/peers.js');
 var util = require('util');
@@ -99,7 +100,13 @@ __private.updatePeersList = function (cb) {
 			library.logger.debug(['Picked', peers.length, 'of', res.body.peers.length, 'peers'].join(' '));
 
 			async.eachLimit(peers, 2, function (peer, cb) {
+
 				peer = self.inspect(peer);
+
+				if (peer.version<constants.minVersion) {
+					library.logger.warn(['Rejecting peer (invalid version):', peer.ip, 'Version', peer.version].join(' '));
+					return setImmediate(cb);
+					}
 
 				library.schema.validate(peer, schema.updatePeersList.peer, function (err) {
 					if (err) {
@@ -456,7 +463,7 @@ shared.getPeer = function (req, cb) {
 };
 
 shared.version = function (req, cb) {
-	return setImmediate(cb, null, {version: library.config.version, build: library.build});
+	return setImmediate(cb, null, {version: constants.currentVersion, build: library.build});
 };
 
 // Export
