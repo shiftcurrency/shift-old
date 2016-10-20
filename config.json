@@ -1,146 +1,146 @@
 {
-    "address": "0.0.0.0", 
+    "port": 9305,
+    "address": "0.0.0.0",
+    "serveHttpAPI": true,
+    "serveHttpWallet": true,
+    "version": "5.0.0",
+    "fileLogLevel": "info",
+    "logFileName": "logs/shift.log",
+    "consoleLogLevel": "log",
+    "db": {
+        "host": "localhost",
+        "port": 5432,
+        "database": "shift_db",
+        "user": "shift",
+        "password": "testing",
+        "poolSize": 200,
+        "poolIdleTimeout": 30000,
+        "reapIntervalMillis": 1000,
+        "logEvents": [
+            "error"
+        ]
+    },
     "api": {
         "access": {
             "whiteList": [
                 "127.0.0.1"
             ]
         }
-    }, 
-    "consoleLogLevel": "log", 
-    "dapp": {
-        "autoexec": [], 
-        "masterpassword": "yg1rYpY9br95", 
-        "masterrequired": true
-    }, 
-    "db": {
-        "database": "shift_db", 
-        "host": "localhost", 
-        "logEvents": [
-            "error"
-        ], 
-        "password": "testing", 
-        "poolIdleTimeout": 30000, 
-        "poolSize": 200, 
-        "port": 5432, 
-        "reapIntervalMillis": 1000, 
-        "user": "shift"
-    }, 
-    "fileLogLevel": "info", 
+    },
+    "peers": {
+        "list": [
+            {
+                "ip": "108.61.196.62",
+                "port": 9305
+            },
+            {
+                "ip": "45.32.153.244",
+                "port": 9305
+            },
+            {
+                "ip": "104.154.37.132",
+                "port": 9305
+            },
+            {
+                "ip": "45.63.78.209",
+                "port": 9305
+            },
+            {
+                "ip": "91.121.64.132",
+                "port": 9305
+            },
+            {
+                "ip": "13.66.225.208",
+                "port": 9305
+            },
+            {
+                "ip": "108.61.166.33",
+                "port": 9305
+            },
+            {
+                "ip": "45.32.156.174",
+                "port": 9305
+            },
+            {
+                "ip": "173.253.129.20",
+                "port": 9305
+            },
+            {
+                "ip": "212.24.98.226",
+                "port": 9305
+            },
+            {
+                "ip": "108.61.167.39",
+                "port": 9305
+            },
+            {
+                "ip": "138.68.146.65",
+                "port": 9305
+            },
+            {
+                "ip": "46.101.161.74",
+                "port": 9305
+            },
+            {
+                "ip": "37.247.116.145",
+                "port": 9305
+            },
+            {
+                "ip": "104.238.191.221",
+                "port": 9305
+            },
+            {
+                "ip": "67.205.138.171",
+                "port": 9305
+            },
+            {
+                "ip": "159.203.41.88",
+                "port": 9305
+            },
+            {
+                "ip": "66.11.122.128",
+                "port": 9305
+            },
+            {
+                "ip": "92.52.46.192",
+                "port": 9305
+            },
+            {
+                "ip": "137.74.22.88",
+                "port": 9305
+            }
+        ],
+        "blackList": [],
+        "options": {
+            "timeout": 5000
+        }
+    },
     "forging": {
+        "force": false,
+        "secret": [],
         "access": {
             "whiteList": [
                 "127.0.0.1"
             ]
-        }, 
-        "force": false, 
-        "secret": []
-    }, 
+        }
+    },
     "loading": {
-        "loadPerIteration": 5000, 
-        "verifyOnLoading": false
-    }, 
-    "logFileName": "logs/shift.log", 
-    "nethash": "7337a324ef27e1e234d1e9018cacff7d4f299a09c2df9be460543b8f7ef652f1", 
-    "peers": {
-        "blackList": [], 
-        "list": [
-            {
-                "ip": "108.61.196.62", 
-                "port": 9305
-            }, 
-            {
-                "ip": "45.32.153.244", 
-                "port": 9305
-            }, 
-            {
-                "ip": "104.154.37.132", 
-                "port": 9305
-            }, 
-            {
-                "ip": "45.63.78.209", 
-                "port": 9305
-            }, 
-            {
-                "ip": "91.121.64.132", 
-                "port": 9305
-            }, 
-            {
-                "ip": "13.66.225.208", 
-                "port": 9305
-            }, 
-            {
-                "ip": "108.61.166.33", 
-                "port": 9305
-            }, 
-            {
-                "ip": "45.32.156.174", 
-                "port": 9305
-            }, 
-            {
-                "ip": "173.253.129.20", 
-                "port": 9305
-            }, 
-            {
-                "ip": "212.24.98.226", 
-                "port": 9305
-            }, 
-            {
-                "ip": "108.61.167.39", 
-                "port": 9305
-            }, 
-            {
-                "ip": "138.68.146.65", 
-                "port": 9305
-            }, 
-            {
-                "ip": "46.101.161.74", 
-                "port": 9305
-            }, 
-            {
-                "ip": "37.247.116.145", 
-                "port": 9305
-            }, 
-            {
-                "ip": "104.238.191.221", 
-                "port": 9305
-            }, 
-            {
-                "ip": "67.205.138.171", 
-                "port": 9305
-            }, 
-            {
-                "ip": "159.203.41.88", 
-                "port": 9305
-            }, 
-            {
-                "ip": "66.11.122.128", 
-                "port": 9305
-            }, 
-            {
-                "ip": "92.52.46.192", 
-                "port": 9305
-            }, 
-            {
-                "ip": "137.74.22.88", 
-                "port": 9305
-            }
-        ], 
-        "options": {
-            "timeout": 5000
-        }
-    }, 
-    "port": 9305, 
-    "serveHttpAPI": true, 
-    "serveHttpWallet": true, 
+        "verifyOnLoading": false,
+        "loadPerIteration": 5000
+    },
     "ssl": {
-        "enabled": false, 
+        "enabled": false,
         "options": {
-            "address": "0.0.0.0", 
-            "cert": "./ssl/shift_httpd.crt", 
-            "key": "./ssl/shift_httpd.key", 
-            "port": 9306
+            "port": 9306,
+            "address": "0.0.0.0",
+            "key": "./ssl/shift.key",
+            "cert": "./ssl/shift.crt"
         }
-    }, 
-    "version": "5.0.0"
+    },
+    "dapp": {
+        "masterrequired": true,
+        "masterpassword": "",
+        "autoexec": []
+    },
+    "nethash": "7337a324ef27e1e234d1e9018cacff7d4f299a09c2df9be460543b8f7ef652f1"
 }
