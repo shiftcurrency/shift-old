@@ -16,6 +16,7 @@ var schema = require('../schema/blocks.js');
 var slots = require('../helpers/slots.js');
 var sql = require('../sql/blocks.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
+var sql_escape = require('pg-format');
 
 // Private fields
 var modules, library, self, __private = {}, shared = {};
@@ -504,9 +505,9 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
 		},
 		function (res, waterCb) {
 			library.db.query(sql.getCommonBlock(res.body.common.previousBlock), {
-				id: res.body.common.id,
-				previousBlock: res.body.common.previousBlock,
-				height: res.body.common.height
+				id: sql_escape.string(res.body.common.id),
+				previousBlock: sql_escape.string(res.body.common.previousBlock),
+				height: sql_escape.string(res.body.common.height)
 			}).then(function (rows) {
 				if (!rows.length || !rows[0].count) {
 					return setImmediate(waterCb, ['Chain comparison failed with peer:', peer.string, 'using block:', JSON.stringify(res.body.common)].join(' '));

@@ -263,10 +263,10 @@ Peers.prototype.state = function (pip, port, state, timeoutSeconds, cb) {
 		clock = null;
 	}
 	var params = {
-		state: state,
-		clock: clock,
-		ip: pip,
-		port: port
+		state: sql_escape.string(state),
+		clock: sql_escape.string(clock),
+		ip: sql_escape.string(pip),
+		port: sql_escape.string(port)
 	};
 	library.db.query(sql.state, params).then(function (res) {
 		library.logger.debug('Updated peer state', params);
@@ -343,7 +343,7 @@ Peers.prototype.update = function (peer, cb) {
 		library.logger.debug('Upserted peer', params);
 
 		if (peer.dappid) {
-			return self.addDapp({dappid: peer.dappid, ip: peer.ip, port: peer.port}, cb);
+			return self.addDapp({dappid: sql_escape.string(peer.dappid), ip: sql_escape.string(peer.ip), port: sql_escape.string(peer.port)}, cb);
 		} else {
 			return setImmediate(cb);
 		}
@@ -365,8 +365,8 @@ Peers.prototype.onBind = function (scope) {
 Peers.prototype.onBlockchainReady = function () {
 	async.eachSeries(library.config.peers.list, function (peer, cb) {
 		var params = {
-			ip: peer.ip,
-			port: peer.port,
+			ip: sql_escape.string(peer.ip),
+			port: sql_escape.string(peer.port),
 			state: 2
 		};
 		library.db.query(sql.insertSeed, params).then(function (res) {
