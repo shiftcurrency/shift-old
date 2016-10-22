@@ -1,3 +1,5 @@
+## SHIFT version 5.1.0
+
 ## Installation
 
 Automatic install script for Debian based systems Ubuntu, Mint, Debian.
@@ -21,6 +23,8 @@ Shift node status, is it running or not?
 
 
 ## Authors
+- MQ Shift Team
+- Goldeneye Shift Team
 - Joey <shiftcurrency@gmail.com>
 - Boris Povod <boris@crypti.me>
 - Pavel Nekrasov <landgraf.paul@gmail.com>
