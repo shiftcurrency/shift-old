@@ -317,7 +317,7 @@ running() {
 
 show_blockHeight(){
   export PGPASSWORD="testing"
-  blockHeight=`psql -d shift_db -U shift -h localhost -p 5432 -t -c "select height from blocks order by height desc limit 1;"
+  blockHeight=`psql -d shift_db -U shift -h localhost -p 5432 -t -c "select height from blocks order by height desc limit 1;"`
   echo "Block height = $blockHeight"
 }
 
