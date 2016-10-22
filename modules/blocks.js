@@ -16,7 +16,7 @@ var schema = require('../schema/blocks.js');
 var slots = require('../helpers/slots.js');
 var sql = require('../sql/blocks.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
-var sql_escape = require('pg-format');
+var sql_escape = require('../helpers/sql_escaping.js');
 
 // Private fields
 var modules, library, self, __private = {}, shared = {};

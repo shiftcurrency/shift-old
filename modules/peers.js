@@ -13,7 +13,7 @@ var constants = require('../helpers/constants.js');
 var schema = require('../schema/peers.js');
 var sql = require('../sql/peers.js');
 var util = require('util');
-var sql_escape = require('pg-format');
+var sql_escape = require('../helpers/sql_escaping.js');
 
 // Private fields
 var modules, library, self, __private = {}, shared = {};
