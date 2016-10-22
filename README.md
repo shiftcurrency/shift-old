@@ -23,8 +23,9 @@ Shift node status, is it running or not?
 
 
 ## Authors
-- MQ Shift Team
-- Goldeneye Shift Team
+- MQ <Shift Team>
+- Goldeneye <Shift Team>
+- Ralfs <Shift Team>
 - Joey <shiftcurrency@gmail.com>
 - Boris Povod <boris@crypti.me>
 - Pavel Nekrasov <landgraf.paul@gmail.com>
