@@ -505,9 +505,9 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
 		},
 		function (res, waterCb) {
 			library.db.query(sql.getCommonBlock(res.body.common.previousBlock), {
-				id: sql_escape.string(res.body.common.id),
-				previousBlock: sql_escape.string(res.body.common.previousBlock),
-				height: sql_escape.string(res.body.common.height)
+				id: sql_escape(res.body.common.id),
+				previousBlock: sql_escape(res.body.common.previousBlock),
+				height: sql_escape(res.body.common.height)
 			}).then(function (rows) {
 				if (!rows.length || !rows[0].count) {
 					return setImmediate(waterCb, ['Chain comparison failed with peer:', peer.string, 'using block:', JSON.stringify(res.body.common)].join(' '));

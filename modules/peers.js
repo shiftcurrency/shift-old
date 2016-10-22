@@ -263,10 +263,10 @@ Peers.prototype.state = function (pip, port, state, timeoutSeconds, cb) {
 		clock = null;
 	}
 	var params = {
-		state: sql_escape.string(state),
-		clock: sql_escape.string(clock),
-		ip: sql_escape.string(pip),
-		port: sql_escape.string(port)
+		state: sql_escape(state),
+		clock: sql_escape(clock),
+		ip: sql_escape(pip),
+		port: sql_escape(port)
 	};
 	library.db.query(sql.state, params).then(function (res) {
 		library.logger.debug('Updated peer state', params);
@@ -324,10 +324,10 @@ Peers.prototype.addDapp = function (config, cb) {
 
 Peers.prototype.update = function (peer, cb) {
 	var params = {
-		ip: sql_escape.string(peer.ip),
-		port: sql_escape.string(peer.port),
-		os: sql_escape.string(peer.os) || null,
-		version: sql_escape.string(peer.version) || null,
+		ip: sql_escape(peer.ip),
+		port: sql_escape(peer.port),
+		os: sql_escape(peer.os) || null,
+		version: sql_escape(peer.version) || null,
 		state: 1
 	};
 
@@ -343,7 +343,7 @@ Peers.prototype.update = function (peer, cb) {
 		library.logger.debug('Upserted peer', params);
 
 		if (peer.dappid) {
-			return self.addDapp({dappid: sql_escape.string(peer.dappid), ip: sql_escape.string(peer.ip), port: sql_escape.string(peer.port)}, cb);
+			return self.addDapp({dappid: sql_escape(peer.dappid), ip: sql_escape(peer.ip), port: sql_escape(peer.port)}, cb);
 		} else {
 			return setImmediate(cb);
 		}
@@ -365,8 +365,8 @@ Peers.prototype.onBind = function (scope) {
 Peers.prototype.onBlockchainReady = function () {
 	async.eachSeries(library.config.peers.list, function (peer, cb) {
 		var params = {
-			ip: sql_escape.string(peer.ip),
-			port: sql_escape.string(peer.port),
+			ip: sql_escape(peer.ip),
+			port: sql_escape(peer.port),
 			state: 2
 		};
 		library.db.query(sql.insertSeed, params).then(function (res) {
