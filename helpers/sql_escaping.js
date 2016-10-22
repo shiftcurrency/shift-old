@@ -15,4 +15,4 @@ function format (str) {
 	return str.replace (sql_regex, sql_escaper);
 };
 
-exports = module.exports = format;
+module.exports = format;
