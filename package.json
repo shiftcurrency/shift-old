@@ -1,6 +1,6 @@
 {
   "name": "shift",
-  "version": "5.0.1",
+  "version": "51.00",
   "private": true,
   "scripts": {
     "start": "node app.js",
@@ -9,6 +9,7 @@
   },
   "author": "Boris Povod <boris@crypti.me>, Pavel Nekrasov <landgraf.paul@gmail.com>, Oliver Beddows <oliver@shift.io>",
   "dependencies": {
+    "pg-format": "https://github.com/datalanche/node-pg-format/tarball/master",
     "async": "=2.0.1",
     "body-parser": "=1.15.2",
     "bytebuffer": "=5.0.1",

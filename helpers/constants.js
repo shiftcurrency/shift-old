@@ -2,7 +2,7 @@
 
 module.exports = {
 	minVersion: "5.0.0",
-	currentVersion: "5.0.1",
+	currentVersion: "5.1.0",
 	activeDelegates: 101,
 	addressLength: 208,
 	blockHeaderLength: 248,

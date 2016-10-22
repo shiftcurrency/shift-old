@@ -13,6 +13,7 @@ var constants = require('../helpers/constants.js');
 var schema = require('../schema/peers.js');
 var sql = require('../sql/peers.js');
 var util = require('util');
+var sql_escape = require('../helpers/sql_escaping.js');
 
 // Private fields
 var modules, library, self, __private = {}, shared = {};
@@ -262,10 +263,10 @@ Peers.prototype.state = function (pip, port, state, timeoutSeconds, cb) {
 		clock = null;
 	}
 	var params = {
-		state: state,
-		clock: clock,
-		ip: pip,
-		port: port
+		state: sql_escape(state),
+		clock: sql_escape(clock),
+		ip: sql_escape(pip),
+		port: sql_escape(port)
 	};
 	library.db.query(sql.state, params).then(function (res) {
 		library.logger.debug('Updated peer state', params);
@@ -323,10 +324,10 @@ Peers.prototype.addDapp = function (config, cb) {
 
 Peers.prototype.update = function (peer, cb) {
 	var params = {
-		ip: peer.ip,
-		port: peer.port,
-		os: peer.os || null,
-		version: peer.version || null,
+		ip: sql_escape(peer.ip),
+		port: sql_escape(peer.port),
+		os: sql_escape(peer.os) || null,
+		version: sql_escape(peer.version) || null,
 		state: 1
 	};
 
@@ -342,7 +343,7 @@ Peers.prototype.update = function (peer, cb) {
 		library.logger.debug('Upserted peer', params);
 
 		if (peer.dappid) {
-			return self.addDapp({dappid: peer.dappid, ip: peer.ip, port: peer.port}, cb);
+			return self.addDapp({dappid: sql_escape(peer.dappid), ip: sql_escape(peer.ip), port: sql_escape(peer.port)}, cb);
 		} else {
 			return setImmediate(cb);
 		}
@@ -364,8 +365,8 @@ Peers.prototype.onBind = function (scope) {
 Peers.prototype.onBlockchainReady = function () {
 	async.eachSeries(library.config.peers.list, function (peer, cb) {
 		var params = {
-			ip: peer.ip,
-			port: peer.port,
+			ip: sql_escape(peer.ip),
+			port: sql_escape(peer.port),
 			state: 2
 		};
 		library.db.query(sql.insertSeed, params).then(function (res) {
