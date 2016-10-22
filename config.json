@@ -1,16 +1,16 @@
 {
-    "port": 8005,
+    "port": 9405,
     "address": "0.0.0.0",
     "serveHttpAPI": true,
     "serveHttpWallet": true,
-    "version": "4.3.0",
+    "version": "5.0.1",
     "fileLogLevel": "info",
     "logFileName": "logs/shift.log",
     "consoleLogLevel": "log",
     "db": {
         "host": "localhost",
         "port": 5432,
-        "database": "shiftdb",
+        "database": "shift_db",
         "user": "shift",
         "password": "testing",
         "poolSize": 200,
@@ -22,30 +22,25 @@
     },
     "api": {
         "access": {
-            "whiteList": ["127.0.0.1"]
+            "whiteList": [
+                "127.0.0.1"
+            ]
         }
     },
     "peers": {
-        "list": [
-            {
-                "ip": "108.61.196.62",
-                "port": 8005
-            },
-            {
-                "ip": "45.32.153.244",
-                "port": 8005
-            }
-        ],
+        "list": [],
         "blackList": [],
         "options": {
-            "timeout": 4000
+            "timeout": 5000
         }
     },
     "forging": {
         "force": false,
         "secret": [],
         "access": {
-            "whiteList": ["127.0.0.1"]
+            "whiteList": [
+                "127.0.0.1"
+            ]
         }
     },
     "loading": {
@@ -55,7 +50,7 @@
     "ssl": {
         "enabled": false,
         "options": {
-            "port": 443,
+            "port": 9406,
             "address": "0.0.0.0",
             "key": "./ssl/shift.key",
             "cert": "./ssl/shift.crt"
@@ -63,8 +58,8 @@
     },
     "dapp": {
         "masterrequired": true,
-        "masterpassword": "yg1rYpY9br98",
+        "masterpassword": "ZTUN5gzN6K8M",
         "autoexec": []
     },
-    "nethash": "434318640adc0eaf826f3b1d0af06667bc5968e4f1b361aaaf1dd04e26d53af3"
+    "nethash": "7337a324ef27e1e234d1e9018cacff7d4f299a09c2df9be460543b8f7ef652e2"
 }

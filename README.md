@@ -1,12 +1,24 @@
 ## Installation
 
-**NOTE:** The following is applicable to: **Ubuntu 14.04 (LTS) - x86_64**.
+Automatic install script for Debian based systems Ubuntu, Mint, Debian.
 
-Automatic install (Debian based systems only (Ubuntu, Mint, Debian)):
+Install Shift
+```
+git clone https://github.com/shiftcurrency/shift.git && cd shift && ./shift_manager.bash install
+```
+Start Shift
+```
+./shift_manager.bash start
+```
+Stop Shift
+```
+./shift_manager.bash stop
+```
+Shift node status, is it running or not?
+```
+./shift_manager.bash status
+```
 
-```
-git clone -b testnet  https://github.com/shiftcurrency/shift.git && cd shift && ./shift_installer.bash install
-```
 
 ## Authors
 - Joey <shiftcurrency@gmail.com>
@@ -14,6 +26,7 @@ git clone -b testnet  https://github.com/shiftcurrency/shift.git && cd shift && 
 - Pavel Nekrasov <landgraf.paul@gmail.com>
 - Sebastian Stupurac <stupurac.sebastian@gmail.com>
 - Oliver Beddows <oliver@lisk.io>
+- Isabella Dell <isabella@lisk.io>
 
 ## License
 
