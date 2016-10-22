@@ -8,7 +8,11 @@ var sql_escaper = function sql_escaper(char) {
 };
 
 function format (str) {
- return str.replace (sql_regex, sql_escaper);
+    if (typeof str !== 'string') {
+        return str;
+    }
+
+	return str.replace (sql_regex, sql_escaper);
 };
 
 exports = module.exports = format;
