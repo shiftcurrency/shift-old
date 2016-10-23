@@ -3,7 +3,7 @@
     "address": "0.0.0.0",
     "serveHttpAPI": true,
     "serveHttpWallet": true,
-    "version": "5.0.0",
+    "version": "5.1.0",
     "fileLogLevel": "info",
     "logFileName": "logs/shift.log",
     "consoleLogLevel": "log",
@@ -22,7 +22,9 @@
     },
     "api": {
         "access": {
-            "whiteList": ["127.0.0.1"]
+            "whiteList": [
+                "127.0.0.1"
+            ]
         }
     },
     "peers": {
@@ -107,8 +109,6 @@
                 "ip": "137.74.22.88",
                 "port": 9305
             }
-
-
         ],
         "blackList": [],
         "options": {
@@ -119,7 +119,9 @@
         "force": false,
         "secret": [],
         "access": {
-            "whiteList": ["127.0.0.1"]
+            "whiteList": [
+                "127.0.0.1"
+            ]
         }
     },
     "loading": {
@@ -131,13 +133,13 @@
         "options": {
             "port": 9306,
             "address": "0.0.0.0",
-            "key": "./ssl/shift_httpd.key",
-            "cert": "./ssl/shift_httpd.crt"
+            "key": "./ssl/shift.key",
+            "cert": "./ssl/shift.crt"
         }
     },
     "dapp": {
         "masterrequired": true,
-        "masterpassword": "yg1rYpY9br95",
+        "masterpassword": "",
         "autoexec": []
     },
     "nethash": "7337a324ef27e1e234d1e9018cacff7d4f299a09c2df9be460543b8f7ef652f1"

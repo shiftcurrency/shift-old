@@ -10,6 +10,7 @@ var popsicle = require('popsicle');
 var Router = require('../helpers/router.js');
 var schema = require('../schema/transport.js');
 var sandboxHelper = require('../helpers/sandbox.js');
+var constants = require('../helpers/constants.js');
 var sql = require('../sql/transport.js');
 var zlib = require('zlib');
 
@@ -83,7 +84,7 @@ __private.attachApi = function () {
 				req.peer.dappid = req.body.dappid;
 			}
 
-			if ((req.peer.version === library.config.version) && (headers.nethash === library.config.nethash)) {
+			if ((req.peer.version === constants.currentVersion) && (headers.nethash === library.config.nethash)) {
 				if (!modules.blocks.lastReceipt()) {
 					modules.delegates.enableForging();
 				}
@@ -476,7 +477,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 				return setImmediate(cb, ['Peer is not on the same network', headers.nethash, req.method, req.url].join(' '));
 			}
 
-			if (headers.version === library.config.version) {
+			if (headers.version === constants.currentVersion) {
 				library.dbSequence.add(function (cb) {
 					modules.peers.update({
 						ip: peer.ip,
