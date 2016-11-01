@@ -6,7 +6,8 @@
     "version": "5.1.0",
     "fileLogLevel": "info",
     "logFileName": "logs/shift.log",
-    "consoleLogLevel": "log",
+    "consoleLogLevel": "info",
+    "trustProxy": false,
     "topAccounts": false,
     "db": {
         "host": "localhost",
