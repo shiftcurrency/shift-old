@@ -541,7 +541,8 @@ Transaction.prototype.undo = function (trs, block, sender, cb) {
 		return setImmediate(cb, 'Unknown transaction type ' + trs.type);
 	}
 
-	var amount = trs.amount + trs.fee;
+	var amount = bignum(trs.amount.toString());
+	    amount = amount.plus(trs.fee.toString()).toNumber();
 
 	this.scope.account.merge(sender.address, {
 		balance: amount,
@@ -627,7 +628,8 @@ Transaction.prototype.undoUnconfirmed = function (trs, sender, cb) {
 		return setImmediate(cb, 'Unknown transaction type ' + trs.type);
 	}
 
-	var amount = trs.amount + trs.fee;
+	var amount = bignum(trs.amount.toString());
+	    amount = amount.plus(trs.fee.toString()).toNumber();
 
 	this.scope.account.merge(sender.address, {u_balance: amount}, function (err, sender) {
 		if (err) {
