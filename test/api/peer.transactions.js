@@ -53,7 +53,7 @@ describe('POST /peer/transactions', function () {
 
 	it('using valid headers should be ok', function (done) {
 		var account = node.randomAccount();
-		var transaction = node.lisk.transaction.createTransaction(account.address, 1, node.gAccount.password);
+		var transaction = node.shift.transaction.createTransaction(account.address, 1, node.gAccount.password);
 
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
@@ -64,7 +64,7 @@ describe('POST /peer/transactions', function () {
 
 	it('using already processed transaction should fail', function (done) {
 		var account = node.randomAccount();
-		var transaction = node.lisk.transaction.createTransaction(account.address, 1, node.gAccount.password);
+		var transaction = node.shift.transaction.createTransaction(account.address, 1, node.gAccount.password);
 
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
@@ -80,7 +80,7 @@ describe('POST /peer/transactions', function () {
 
 	it('using already confirmed transaction should fail', function (done) {
 		var account = node.randomAccount();
-		var transaction = node.lisk.transaction.createTransaction(account.address, 1, node.gAccount.password);
+		var transaction = node.shift.transaction.createTransaction(account.address, 1, node.gAccount.password);
 
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
