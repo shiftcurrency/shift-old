@@ -16,7 +16,7 @@ z_schema.registerFormat('address', function (str) {
     return true;
   }
 
-  return /^[0-9]+[L]$/ig.test(str);
+  return /^[0-9]+[S]$/ig.test(str);
 });
 
 z_schema.registerFormat('username', function (str) {
