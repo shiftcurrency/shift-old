@@ -1,4 +1,4 @@
-## SHIFT version 5.1.0
+## SHIFT version 5.2.0
 
 ## Installation
 

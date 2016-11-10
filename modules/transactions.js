@@ -215,8 +215,6 @@ __private.addUnconfirmedTransaction = function (transaction, sender, cb) {
 		if (err) {
 			self.removeUnconfirmedTransaction(transaction.id);
 			return setImmediate(cb, err);
-		} else if (modules.loader.syncing()) {
-			self.undoUnconfirmed(transaction, cb);
 		} else {
 			transaction.receivedAt = new Date();
 			__private.unconfirmedTransactions.push(transaction);
@@ -264,21 +262,20 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
 		return setImmediate(cb, 'Missing transaction');
 	}
 
-	// Check transaction indexes
-	if (__private.unconfirmedTransactionsIdIndex[transaction.id] !== undefined) {
-		library.logger.debug('Transaction is already processed: ' + transaction.id);
+	// Ignore transaction when syncing
+	if (modules.loader.syncing()) {
 		return setImmediate(cb);
 	}
 
+	// Check transaction indexes
+	if (__private.unconfirmedTransactionsIdIndex[transaction.id] !== undefined) {
+		return setImmediate(cb, 'Transaction is already processed: ' + transaction.id);
+	}
+
 	modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
-		function done (err, ignore) {
+		function done (err) {
 			if (err) {
-				if (ignore) {
-					library.logger.debug(err);
-					return setImmediate(cb);
-				} else {
-					return setImmediate(cb, err);
-				}
+				return setImmediate(cb, err);
 			}
 
 			__private.addUnconfirmedTransaction(transaction, sender, function (err) {
@@ -306,18 +303,18 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
 					return done('Requester not found');
 				}
 
-				library.logic.transaction.process(transaction, sender, requester, function (err, transaction, ignore) {
+				library.logic.transaction.process(transaction, sender, requester, function (err, transaction) {
 					if (err) {
-						return done(err, ignore);
+						return done(err);
 					}
 
 					library.logic.transaction.verify(transaction, sender, done);
 				});
 			});
 		} else {
-			library.logic.transaction.process(transaction, sender, function (err, transaction, ignore) {
+			library.logic.transaction.process(transaction, sender, function (err, transaction) {
 				if (err) {
-					return done(err, ignore);
+					return done(err);
 				}
 
 				library.logic.transaction.verify(transaction, sender, done);
@@ -327,18 +324,21 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
 };
 
 Transactions.prototype.applyUnconfirmedList = function (ids, cb) {
-	async.eachSeries(ids, function (id, cb) {
+	async.eachSeries(ids, function (id, eachSeriesCb) {
 		var transaction = self.getUnconfirmedTransaction(id);
+		if (!transaction) {
+			return setImmediate(eachSeriesCb);
+		}
 		modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
 			if (err) {
 				self.removeUnconfirmedTransaction(id);
-				return setImmediate(cb, err);
+				return setImmediate(eachSeriesCb, err);
 			}
 			self.applyUnconfirmed(transaction, sender, function (err) {
 				if (err) {
 					self.removeUnconfirmedTransaction(id);
 				}
-				return setImmediate(cb, err);
+				return setImmediate(eachSeriesCb, err);
 			});
 		});
 	}, cb);
