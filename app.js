@@ -33,6 +33,8 @@ program
 	.option('-x, --peers [peers...]', 'peers list')
 	.option('-l, --log <level>', 'log level')
 	.option('-s, --snapshot <round>', 'verify snapshot')
+	.option('-lf, --logFileName <path>', 'log file path')
+	.option('-db, --dbName <name>', 'database name')
 	.parse(process.argv);
 
 if (program.config) {
@@ -63,6 +65,14 @@ if (program.peers) {
 
 if (program.log) {
 	appConfig.consoleLogLevel = program.log;
+}
+
+if (program.logFileName) {
+	appConfig.logFileName = program.logFileName;
+}
+
+if (program.dbName) {
+	appConfig.db.database = program.dbName;
 }
 
 if (program.snapshot) {
