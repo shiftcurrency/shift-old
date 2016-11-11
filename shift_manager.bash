@@ -143,18 +143,8 @@ install_shift() {
 install_webui() {
 
     echo -n "Installing Shift WebUi... "
-    git clone https://github.com/shiftcurrency/shift-wallet &>> $logfile || { echo -n "Could not clone git wallet source. Exiting." && exit 1; }
-
-    if [[ -d "public" ]]; then
-        rm -rf public/
-    fi
-
-    if [[ -d "shift-wallet" ]]; then
-        mv shift-wallet public
-    else
-        echo "Could not find installation directory for SHIFT web wallet. Install the web wallet manually."
-        exit 1;
-    fi
+    git submodule init &>> $logfile || { echo -n "Could not init submodules. Exiting." && exit 1; }
+    git submodule update &>> $logfile || { echo -n "Could not update submodules. Exiting." && exit 1; }
 
     cd public && npm install &>> $logfile || { echo -n "Could not install web wallet node modules. Exiting." && exit 1; }
 
@@ -163,8 +153,7 @@ install_webui() {
         sudo chown -R $USER:$USER /home/$USER/.config &> /dev/null
     fi
 
-    bower --allow-root install &>> $logfile || { echo -e "\n\nCould not install bower components for the web wallet. Exiting." && exit 1; }
-    grunt release &>> $logfile || { echo -e "\n\nCould not build web wallet release. Exiting." && exit 1; }
+    npm run grunt-release &>> $logfile || { echo -e "\n\nCould not build web wallet release. Exiting." && exit 1; }
     echo "done."
 
     cd ..
