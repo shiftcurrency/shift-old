@@ -1,0 +1,6 @@
+[submodule "public"]
+	path = public
+	url = https://github.com/shiftcurrency/shift-wallet.git
+[submodule "test/shift-js"]
+	path = test/shift-js
+	url = https://github.com/shiftcurrency/shift-js.git
