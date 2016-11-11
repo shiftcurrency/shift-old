@@ -264,6 +264,11 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
 		return setImmediate(cb, 'Missing transaction');
 	}
 
+    // Ignore transaction when syncing 
+    if (modules.loader.syncing()) {
+        return setImmediate(cb);
+    } 
+
 	// Check transaction indexes
 	if (__private.unconfirmedTransactionsIdIndex[transaction.id] !== undefined) {
 		library.logger.debug('Transaction is already processed: ' + transaction.id);
