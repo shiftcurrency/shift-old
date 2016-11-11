@@ -35,6 +35,7 @@ program
 	.option('-s, --snapshot <round>', 'verify snapshot')
 	.option('-lf, --logFileName <path>', 'log file path')
 	.option('-db, --dbName <name>', 'database name')
+	.option('-t, --top', 'enable TOP accounts')
 	.parse(process.argv);
 
 if (program.config) {
@@ -73,6 +74,10 @@ if (program.logFileName) {
 
 if (program.dbName) {
 	appConfig.db.database = program.dbName;
+}
+
+if (program.top) {
+	appConfig.topAccounts = true;
 }
 
 if (program.snapshot) {
