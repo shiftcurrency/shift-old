@@ -30,11 +30,6 @@ install_prereq() {
     { echo "Could not install packages prerequisites. Exiting." && exit 1; };
     echo -e "done.\n"
 
-    echo -n "Removing former postgresql installation... ";
-    sudo apt-get purge -y -qq postgres* &>> $logfile || \
-    { echo "Could not remove former installation of postgresql. Exiting." && exit 1; };
-    echo -e "done.\n"
-
     echo -n "Updating apt repository sources for postgresql.. ";
     sudo bash -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ wheezy-pgdg main" > /etc/apt/sources.list.d/pgdg.list' &>> $logfile || \
     { echo "Could not add postgresql repo to apt." && exit 1; }
@@ -78,15 +73,15 @@ add_pg_user_database() {
     if start_postgres; then
         user_exists=$(grep postgres /etc/passwd |wc -l);
         if [[ $user_exists == 1 ]]; then
-            echo -n "Creating database user... "
-            res=$(sudo -u postgres psql -c "CREATE USER shift WITH PASSWORD 'testing';" 2> /dev/null)
-            res=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='shift'" 2> /dev/null)
+            echo -n "Creating database user (testnet)... "
+            res=$(sudo -u postgres psql -c "CREATE USER shift_testnet WITH PASSWORD 'testing';" 2> /dev/null)
+            res=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='shift_testnet'" 2> /dev/null)
             if [[ $res -eq 1 ]]; then
                 echo -e "done.\n"
             fi
 
-            echo -n "Creating database... "
-            res=$(sudo -u postgres createdb -O shift shift_db 2> /dev/null)
+            echo -n "Creating database (testnet)... "
+            res=$(sudo -u postgres createdb -O shift shift_db_testnet 2> /dev/null)
             res=$(sudo -u postgres psql -lqt 2> /dev/null |grep shift_db |awk {'print $1'} |wc -l)
             if [[ $res -eq 1 ]]; then
                 echo -e "done.\n"
