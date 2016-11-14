@@ -399,9 +399,9 @@ __private.findGoodPeers = function (heights) {
 	});
 
 	// Assuming that the node reached at least 10% of the network
-	if (heights.length < 10) {
-		return { height: 0, peers: [] };
-	} else {
+	// if (heights.length < 10) {
+	//	return { height: 0, peers: [] };
+	// } else {
 		// Ordering the peers with descending height
 		heights = heights.sort(function (a,b) {
 			return b.height - a.height;
@@ -434,7 +434,7 @@ __private.findGoodPeers = function (heights) {
 			return item.peer;
 		});
 		return {height: height, peers: peers};
-	}
+	// }
 };
 
 // Public methods
