@@ -39,6 +39,20 @@ module.exports = function (config) {
 		config.errorLevel = errorLevel;
 	};
 
+	// remove secret in the message, e.g. url parameter
+	function snipsecretMsg(msg) {
+		var pos = msg.search("secret=");
+		if (pos<0)
+			return msg;
+		pos += 7;
+		var posE = msg.indexOf("&", pos);
+		if (posE<0)
+			posE=msg.length();
+		var toReplace = msg.substr(pos, posE-pos);
+		return msg.replace(toReplace, 'XXXXXXXXXX');
+	}
+
+	// remove secret in the data
 	function snipsecret (data) {
 		for (var key in data) {
 			if (key.search(/secret/i) > -1) {
@@ -61,8 +75,10 @@ module.exports = function (config) {
 				log.message = message;
 			}
 
+			log.message = snipsecretMsg(log.message);				// remove secret in the message, e.g. url parameter
+
 			if (data && util.isObject(data)) {
-				log.data = JSON.stringify(snipsecret(data));
+				log.data = JSON.stringify(snipsecret(data));	// remove secret in the data
 			} else {
 				log.data = data;
 			}
