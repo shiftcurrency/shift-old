@@ -81,8 +81,8 @@ add_pg_user_database() {
             fi
 
             echo -n "Creating database (testnet)... "
-            res=$(sudo -u postgres createdb -O shift shift_db_testnet 2> /dev/null)
-            res=$(sudo -u postgres psql -lqt 2> /dev/null |grep shift_db |awk {'print $1'} |wc -l)
+            res=$(sudo -u postgres createdb -O shift_testnet shift_db_testnet 2> /dev/null)
+            res=$(sudo -u postgres psql -lqt 2> /dev/null |grep shift_db_testnet |awk {'print $1'} |wc -l)
             if [[ $res -eq 1 ]]; then
                 echo -e "done.\n"
             fi
