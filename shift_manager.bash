@@ -315,6 +315,16 @@ running() {
     return 0
 }
 
+show_blockHeight(){
+   SHIFT_CONFIG="config.json"
+   SOURCE_DB_NAME="$(grep "database" $SHIFT_CONFIG | cut -f 4 -d '"' | head -1)"
+   SOURCE_UNAME="$(grep "user" $SHIFT_CONFIG | cut -f 4 -d '"' | head -1)"
+   SOURCE_PASSWORD="$(grep "password" $SHIFT_CONFIG | cut -f 4 -d '"' | head -1)"
+
+   export PGPASSWORD=$SOURCE_PASSWORD
+   blockHeight=$(psql -d $SOURCE_DB_NAME -U $SOURCE_UNAME -h localhost -p 5432 -t -c "select height from blocks order by height desc limit 1")
+  echo "Block height = $blockHeight"
+}
 
 parse_option() {
   OPTIND=2
@@ -349,6 +359,7 @@ case $1 in
     "status")
         if running; then
             echo "OK"
+            show_blockHeight
         else
             echo "KO"
         fi

@@ -3,15 +3,15 @@
     "address": "0.0.0.0",
     "serveHttpAPI": true,
     "serveHttpWallet": true,
-    "version": "5.0.1",
+    "version": "5.1.0t",
     "fileLogLevel": "info",
     "logFileName": "logs/shift.log",
     "consoleLogLevel": "log",
     "db": {
         "host": "localhost",
         "port": 5432,
-        "database": "shift_db",
-        "user": "shift",
+        "database": "shift_db_testnet",
+        "user": "shift_testnet",
         "password": "testing",
         "poolSize": 200,
         "poolIdleTimeout": 30000,
@@ -28,7 +28,12 @@
         }
     },
     "peers": {
-        "list": [],
+        "list": [
+            {
+                "ip": "45.76.34.134",
+                "port": 9405
+            }
+        ],
         "blackList": [],
         "options": {
             "timeout": 5000
@@ -58,8 +63,8 @@
     },
     "dapp": {
         "masterrequired": true,
-        "masterpassword": "ZTUN5gzN6K8M",
+        "masterpassword": "",
         "autoexec": []
     },
-    "nethash": "7337a324ef27e1e234d1e9018cacff7d4f299a09c2df9be460543b8f7ef652e2"
+    "nethash": "cba57b868c8571599ad594c6607a77cad60cf0372ecde803004d87e679117c12"
 }
