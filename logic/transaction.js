@@ -482,7 +482,7 @@ Transaction.prototype.apply = function (trs, block, sender, cb) {
 	var exceedsBalance = bignum(sender.balance.toString()).lessThan(amount);
 
 	if (trs.blockId !== genesisblock.block.id && exceedsBalance) {
-		var err = ['Account does not have enough SHIFT:', sender.address, 'balance:', bignum(sender.u_balance || 0).div(Math.pow(10,8))].join(' ');
+		var err = ['Account does not have enough SHIFT:', sender.address, 'balance:', bignum(sender.balance || 0).div(Math.pow(10,8))].join(' ');
 		if (exceptions.balance.indexOf(trs.id) > -1) {
 			this.scope.logger.debug(err);
 			this.scope.logger.debug(JSON.stringify(trs));
