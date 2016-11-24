@@ -326,6 +326,85 @@ show_blockHeight(){
   echo "Block height = $blockHeight"
 }
 
+create_snapshot(){
+   SNAPSHOT_LOG=snapshot/snapshot.log
+   SHIFT_CONFIG="config.json"
+   SOURCE_DB_NAME="$(grep "database" $SHIFT_CONFIG | cut -f 4 -d '"' | head -1)"
+   SOURCE_UNAME="$(grep "user" $SHIFT_CONFIG | cut -f 4 -d '"' | head -1)"
+   SOURCE_PASSWORD="$(grep "password" $SHIFT_CONFIG | cut -f 4 -d '"' | head -1)"
+
+   export PGPASSWORD=$SOURCE_PASSWORD
+   if [ ! -f "snapshot/snapshot.log" ]; then
+     mkdir -p snapshot
+     echo " " > $SNAPSHOT_LOG
+     sudo chown postgres:${USER:=$(/usr/bin/id -run)} snapshot
+     sudo chmod -R g+w snapshot
+   fi
+   SNAPSHOT_DIRECTORY=snapshot/
+   NOW=$(date +"%d-%m-%Y - %T")
+
+   echo " + Creating snapshot"
+   echo "--------------------------------------------------"
+   echo "..."
+   sudo su postgres -c "pg_dump -Ft $SOURCE_DB_NAME > $SNAPSHOT_DIRECTORY'shift_db$NOW.snapshot.tar'"
+   blockHeight=$(psql -d $SOURCE_DB_NAME -U $SOURCE_UNAME -h localhost -p 5432 -t -c "select height from blocks order by height desc limit 1")
+   dbSize=$(psql -d $SOURCE_DB_NAME -U $SOURCE_UNAME -h localhost -p 5432 -t -c "select pg_size_pretty(pg_database_size('$SOURCE_DB_NAME'))")
+
+   if [ $? != 0 ]; then
+     echo "X Failed to create snapshot."
+     exit 1
+   else
+     echo "$NOW -- Snapshot created successfully at block$blockHeight ($dbSize)."
+     echo "$NOW -- Snapshot created successfully at block$blockHeight ($dbSize)" >> $SNAPSHOT_LOG
+   fi
+}
+
+restore_snapshot(){
+   SNAPSHOT_LOG=snapshot/snapshot.log
+   SHIFT_CONFIG="config.json"
+   SOURCE_DB_NAME="$(grep "database" $SHIFT_CONFIG | cut -f 4 -d '"' | head -1)"
+   SOURCE_UNAME="$(grep "user" $SHIFT_CONFIG | cut -f 4 -d '"' | head -1)"
+   SOURCE_PASSWORD="$(grep "password" $SHIFT_CONFIG | cut -f 4 -d '"' | head -1)"
+
+  echo " + Restoring snapshot"
+  echo "--------------------------------------------------"
+  SNAPSHOT_FILE=`ls -t snapshot/shift_db* | head  -1`
+  if [ -z "$SNAPSHOT_FILE" ]; then
+    echo "****** No snapshot to restore, please consider create it first"
+    echo " "
+    exit 1
+  fi
+  echo "Snapshot to restore = $SNAPSHOT_FILE"
+
+  read -p "Please stop node app.js first, this will overwrite your whole blockchain, are you ready (y/n)? " -n 1 -r
+  if [[ ! $REPLY =~ ^[Yy]$ ]]
+  then
+     echo " "
+     echo "***** Please stop node.js first.. then execute restore again"
+     echo " "
+     exit 1
+  fi
+
+  #snapshot restoring..
+  echo " "
+  export PGPASSWORD="testing"
+  $(pg_restore -d $SOURCE_DB_NAME "$SNAPSHOT_FILE" -U $SOURCE_UNAME -h localhost -c -n public)
+
+  if [ $? != 0 ]; then
+    echo "X Failed to restore."
+    exit 1
+  else
+    echo "OK snapshot restored successfully."
+  fi
+}
+
+function snapshot_log(){
+  echo " + Snapshot Log"
+  echo "--------------------------------------------------"
+  cat snapshot/snapshot.log
+  echo "--------------------------------------------------END"
+}
+
 parse_option() {
   OPTIND=2
   while getopts d:r:n opt
@@ -370,10 +449,20 @@ case $1 in
     "stop")
         stop_shift
     ;;
-
+    "create_snapshot")
+        create_snapshot
+    ;;
+    "restore_snapshot")
+        restore_snapshot
+    ;;
+    "snapshot_log")
+        snapshot_log
+    ;;
+    
 *)
-    echo 'Available options: install, update_version(under development)'
-    echo 'Usage: ./shift_installer.bash install'
+    echo 'Available options: install, update_version(under development), create_snapshot, restore_snapshot, snapshot_log'
+    echo 'Usage: ./shift_manager.bash install'
+    echo 'Usage: ./shift_manager.bash create_snapshot'
     exit 1
 ;;
 esac
