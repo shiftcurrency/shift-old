@@ -25,8 +25,8 @@ install_prereq() {
     { echo "Could not update apt repositories. Run apt-get update manually. Exiting." && exit 1; };
     echo -e "done.\n"
 
-    echo -n "Running: apt-get install curl build-essential python lsb-release wget... ";
-    sudo apt-get install -y -qq curl build-essential python lsb-release wget openssl &>> $logfile || \
+    echo -n "Running: apt-get install curl build-essential python lsb-release wget openssl autoconf libtool automake libsodium-dev... ";
+    sudo apt-get install -y -qq curl build-essential python lsb-release wget openssl autoconf libtool automake libsodium-dev &>> $logfile || \
     { echo "Could not install packages prerequisites. Exiting." && exit 1; };
     echo -e "done.\n"
 
