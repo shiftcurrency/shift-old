@@ -72,7 +72,9 @@ function DApps (cb, scope) {
 				return setImmediate(eachSeriesCb, err);
 			});
 		}, function (err) {
-			library.logger.error(err);
+			if (err) {
+				library.logger.error(err);
+			}
 		});
 	});
 

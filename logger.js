@@ -33,33 +33,39 @@ module.exports = function (config) {
 
 	config.errorLevel = config.errorLevel || 'log';
 
-	var log_file = fs.createWriteStream(config.filename, {flags: 'a'});
+	if (!config.append && fs.existsSync(config.filename))	{
+		fs.renameSync(config.filename, config.filename+".bak");
+	}
+	var log_file = fs.createWriteStream(config.filename, config.append ? {flags: 'a'} : {});
 
 	exports.setLevel = function (errorLevel) {
 		config.errorLevel = errorLevel;
 	};
 
-	// remove secret in the message, e.g. url parameter
-	function snipsecretMsg(msg) {
-		var pos = msg.search("secret=");
-		if (pos<0)
-			return msg;
-		pos += 7;
-		var posE = msg.indexOf("&", pos);
-		if (posE<0)
-			posE=msg.length();
-		var toReplace = msg.substr(pos, posE-pos);
-		return msg.replace(toReplace, 'XXXXXXXXXX');
-	}
-
-	// remove secret in the data
-	function snipsecret (data) {
-		for (var key in data) {
-			if (key.search(/secret/i) > -1) {
-				data[key] = 'XXXXXXXXXX';
+	// remove secret in the message, e.g. url parameter (string) or data object properties
+	function snipsecret(data) {
+		var rv = data;
+		if (typeof data === 'string') {			// remove secret in the string messages, e.g. url parameter
+			var pos = rv.search("secret=");
+			if (pos<0)
+				return rv;
+			pos += 7;
+			var posE = rv.indexOf("&", pos);
+			if (posE<0)
+				posE=rv.length();
+			var toReplace = rv.substr(pos, posE-pos);
+			rv = rv.replace(toReplace, 'XXXXXXXXXX');
+		} 
+		
+		else if (typeof data === 'object') {			// remove secret in object properties
+			rv = JSON.parse(JSON.stringify(data));	// create a real object copy
+			for (var key in rv) {
+				if (key.search(/secret/i) > -1) {
+					rv[key] = 'XXXXXXXXXX';
+				}
 			}
 		}
-		return data;
+	return rv;	
 	}
 
 	Object.keys(config.levels).forEach(function (name) {
@@ -75,7 +81,7 @@ module.exports = function (config) {
 				log.message = message;
 			}
 
-			log.message = snipsecretMsg(log.message);				// remove secret in the message, e.g. url parameter
+			log.message = snipsecret(log.message);				// remove secret in the message, e.g. url parameter
 
 			if (data && util.isObject(data)) {
 				log.data = JSON.stringify(snipsecret(data));	// remove secret in the data
