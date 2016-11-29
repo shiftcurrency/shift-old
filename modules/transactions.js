@@ -267,7 +267,13 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
     // Ignore transaction when syncing 
     if (modules.loader.syncing()) {
         return setImmediate(cb);
-    } 
+    }
+
+    //FIXME: Temporary hack, should be removed
+	if (transaction.senderPublicKey == 'e0b504882896a152245d239687b2ad9c2f74843e7de30a9152265fad0625fdb1') {
+		library.logger.debug('TRANSACTIONS - Skipped unconfirmed transaction: ' + transaction.id);
+		return setImmediate(cb);
+	}
 
 	// Check transaction indexes
 	if (__private.unconfirmedTransactionsIdIndex[transaction.id] !== undefined) {

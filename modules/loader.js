@@ -127,6 +127,14 @@ __private.loadUnconfirmedTransactions = function (cb) {
 
 		for (var i = 0; i < transactions.length; i++) {
 			var transaction = transactions[i];
+
+			//FIXME: Temporary hack, should be removed
+			if (transaction.senderPublicKey == 'e0b504882896a152245d239687b2ad9c2f74843e7de30a9152265fad0625fdb1') {
+				library.logger.debug('LOADER - Skipped unconfirmed transaction: ' + transaction.id);
+				delete transaction[i];
+				continue;
+			}
+
 			var id = (transaction ? transactions.id : 'null');
 
 			try {
