@@ -873,6 +873,8 @@ __private.createSymlink = function (dapp, cb) {
 
 __private.apiHandler = function (message, callback) {
 	try {
+		library.logger.trace("dapps.apiHandler: ", message);
+
 		var strs = message.call.split('#');
 		var module = strs[0], call = strs[1];
 
