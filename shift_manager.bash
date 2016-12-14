@@ -50,6 +50,10 @@ install_prereq() {
     { echo "Could not install postgresql. Exiting." && exit 1; }
     echo -e "done.\n"
 
+    echo -n "Enable postgresql... "
+		sudo update-rc.d postgresql enable
+    echo -e "done.\n"
+
     return 0;
 }
 
