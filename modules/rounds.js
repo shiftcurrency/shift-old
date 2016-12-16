@@ -71,7 +71,7 @@ Rounds.prototype.backwardTick = function (block, previousBlock, done) {
 	__private.unFeesByRound[round] = Math.floor(__private.unFeesByRound[round]) || 0;
 	__private.unFeesByRound[round] += Math.floor(block.totalFee);
 
-	__private.unRewardsByRound[round] = (__private.rewardsByRound[round] || []);
+	__private.unRewardsByRound[round] = (__private.unRewardsByRound[round] || []);
 	__private.unRewardsByRound[round].push(block.reward);
 
 	__private.unDelegatesByRound[round] = __private.unDelegatesByRound[round] || [];
@@ -154,7 +154,7 @@ Rounds.prototype.tick = function (block, done) {
 
 	scope.finishRound = (
 		(round !== nextRound && __private.delegatesByRound[round].length === slots.delegates) ||
-		(block.height === 1 || block.heighti === 101)
+		(block.height === 1 || block.height === 101)
 	);
 
 	function Tick (t) {
