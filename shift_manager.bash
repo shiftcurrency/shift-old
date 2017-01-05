@@ -4,6 +4,9 @@ export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 logfile="shift_manager.log"
 version="1.0.0"
+
+cd "$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+
 root_path=$(pwd)
 
 install_prereq() {
@@ -43,6 +46,10 @@ install_prereq() {
     echo -n "Installing postgresql... "
     sudo apt-get update -qq &> /dev/null && sudo apt-get install -y -qq postgresql-9.6 postgresql-contrib-9.6 libpq-dev &>> $logfile || \
     { echo "Could not install postgresql. Exiting." && exit 1; }
+    echo -e "done.\n"
+
+    echo -n "Enable postgresql... "
+		sudo update-rc.d postgresql enable
     echo -e "done.\n"
 
     return 0;
@@ -341,7 +348,7 @@ case $1 in
         install_node_npm
         install_shift
         install_webui
-        install_ssl
+#        install_ssl
         echo ""
         echo ""
         echo "Start SHIFT with: node app.js"
