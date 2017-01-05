@@ -4,6 +4,9 @@ export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 logfile="shift_manager.log"
 version="1.0.0"
+
+cd "$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+
 root_path=$(pwd)
 
 install_prereq() {
@@ -350,7 +353,7 @@ case $1 in
         install_node_npm
         install_shift
         install_webui
-        install_ssl
+#        install_ssl
         echo ""
         echo ""
         echo "Start SHIFT with: node app.js"
