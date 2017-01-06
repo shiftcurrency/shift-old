@@ -59,12 +59,16 @@ Multisignature.prototype.verify = function (trs, sender, cb) {
 			this.scope.logger.debug(err);
 			this.scope.logger.debug(JSON.stringify(trs));
 		} else {
-		return setImmediate(cb, err);
+			return setImmediate(cb, err);
 		}
 	}
 
 	if (trs.asset.multisignature.lifetime < 1 || trs.asset.multisignature.lifetime > 72) {
 		return setImmediate(cb, 'Invalid multisignature lifetime. Must be between 1 and 72');
+	}
+
+	if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
+		return setImmediate(cb, 'Account already has multisignatures enabled');
 	}
 
 	if (this.ready(trs, sender)) {
@@ -202,10 +206,6 @@ Multisignature.prototype.applyUnconfirmed = function (trs, sender, cb) {
 		return setImmediate(cb, 'Signature on this account is pending confirmation');
 	}
 
-	if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
-		return setImmediate(cb, 'Account already has multisignatures enabled');
-	}
-
 	__private.unconfirmedSignatures[sender.address] = true;
 
 	this.scope.account.merge(sender.address, {
@@ -308,7 +308,7 @@ Multisignature.prototype.dbSave = function (trs) {
 };
 
 Multisignature.prototype.afterSave = function (trs, cb) {
-	library.network.io.sockets.emit('multisignatures/change', {});
+	library.network.io.sockets.emit('multisignatures/change', trs);
 	return setImmediate(cb);
 };
 

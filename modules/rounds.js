@@ -55,12 +55,18 @@ Rounds.prototype.directionSwap = function (direction, lastBlock, cb) {
 		__private.feesByRound = {};
 		__private.rewardsByRound = {};
 		__private.delegatesByRound = {};
-		self.flush(self.calc(lastBlock.height), cb);
+
+		return setImmediate(cb);
 	} else {
 		__private.unFeesByRound = {};
 		__private.unRewardsByRound = {};
 		__private.unDelegatesByRound = {};
-		self.flush(self.calc(lastBlock.height), cb);
+
+		if (lastBlock) {
+			return __private.sumRound(self.calc(lastBlock.height), cb);
+		} else {
+			return setImmediate(cb);
+		}
 	}
 };
 
@@ -100,7 +106,9 @@ Rounds.prototype.backwardTick = function (block, previousBlock, done) {
 					delete __private.unFeesByRound[round];
 					delete __private.unRewardsByRound[round];
 					delete __private.unDelegatesByRound[round];
-				});
+				}).then(promised.markBlockId);
+			} else {
+				return promised.markBlockId();
 			}
 		});
 	}
@@ -214,21 +222,10 @@ Rounds.prototype.onBind = function (scope) {
 Rounds.prototype.onBlockchainReady = function () {
 	var round = self.calc(modules.blocks.getLastBlock().height);
 
-	library.db.query(sql.summedRound, { round: round, activeDelegates:constants.activeDelegates }).then(function (rows) {
-
-		var rewards = [];
-
-		rows[0].rewards.forEach(function (reward) {
-			rewards.push(Math.floor(reward));
-		});
-
-		__private.feesByRound[round] = Math.floor(rows[0].fees);
-		__private.rewardsByRound[round] = rewards;
-		__private.delegatesByRound[round] = rows[0].delegates;
-		__private.loaded = true;
-
-	}).catch(function (err) {
-		library.logger.error('Round#onBlockchainReady error', err);
+	__private.sumRound(round, function (err) {
+		if (!err) {
+			__private.loaded = true;
+		}
 	});
 };
 
@@ -242,7 +239,6 @@ Rounds.prototype.cleanup = function (cb) {
 };
 
 // Private
-
 __private.getOutsiders = function (scope, cb) {
 	scope.outsiders = [];
 
@@ -261,6 +257,26 @@ __private.getOutsiders = function (scope, cb) {
 		}, function (err) {
 			return setImmediate(cb, err);
 		});
+	});
+};
+
+__private.sumRound = function (round, cb) {
+	library.db.query(sql.summedRound, { round: round, activeDelegates: constants.activeDelegates }).then(function (rows) {
+		var rewards = [];
+
+		rows[0].rewards.forEach(function (reward) {
+			rewards.push(Math.floor(reward));
+		});
+
+		__private.feesByRound[round] = Math.floor(rows[0].fees);
+		__private.rewardsByRound[round] = rewards;
+		__private.delegatesByRound[round] = rows[0].delegates;
+
+		return setImmediate(cb);
+	}).catch(function (err) {
+		library.logger.error('Failed to sum round', round);
+		library.logger.error(err.stack);
+		return setImmediate(cb, err);
 	});
 };
 

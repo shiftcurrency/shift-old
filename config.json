@@ -1,20 +1,20 @@
 {
     "port": 9405,
     "address": "0.0.0.0",
-    "serveHttpAPI": true,
-    "serveHttpWallet": true,
     "version": "5.2.0t",
     "fileLogLevel": "info",
     "logFileName": "logs/shift.log",
     "logAppend": false,
     "consoleLogLevel": "log",
+    "trustProxy": false,
+    "topAccounts": false,
     "db": {
         "host": "localhost",
         "port": 5432,
         "database": "shift_db_testnet",
         "user": "shift_testnet",
         "password": "testing",
-        "poolSize": 200,
+        "poolSize": 95,
         "poolIdleTimeout": 30000,
         "reapIntervalMillis": 1000,
         "logEvents": [
@@ -73,8 +73,21 @@
         ],
         "blackList": [],
         "options": {
+            "limits": {
+                "max": 0,
+                "delayMs": 0,
+                "delayAfter": 0,
+                "windowMs": 60000
+            },
             "timeout": 5000
         }
+    },
+    "broadcasts": {
+        "broadcastInterval": 5000,
+        "broadcastLimit": 20,
+        "parallelLimit": 20,
+        "releaseLimit": 25,
+        "relayLimit": 2
     },
     "forging": {
         "force": false,
