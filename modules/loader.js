@@ -542,7 +542,7 @@ __private.findGoodPeers = function (heights) {
 		library.logger.debug('Good peers', peers);
 
 		return {height: height, peers: peers};
-	// }
+	}
 };
 
 __private.getPeer = function (peer, cb) {
