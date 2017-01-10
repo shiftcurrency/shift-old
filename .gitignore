@@ -1,0 +1,6 @@
+dapps/
+logs/*.log
+node_modules
+ssl/
+public/
+shift_manager.log
