@@ -27,7 +27,7 @@
     "ip": "=1.1.3",
     "json-schema": "=0.2.3",
     "json-sql": "https://github.com/LiskHQ/json-sql/tarball/master",
-    "lisk-sandbox": "https://github.com/TheGoldenEye/lisk-sandbox/commits/master",
+    "lisk-sandbox": "https://github.com/TheGoldenEye/lisk-sandbox/tarball/master",
     "lodash": "=4.16.2",
     "method-override": "=2.3.6",
     "npm": "=2.15.10",
